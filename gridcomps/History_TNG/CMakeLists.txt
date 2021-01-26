@@ -1,6 +1,7 @@
 esma_set_this (OVERRIDE MAPL.history_tng)
 
 set (srcs
+    MAPL_HistoryConfig.F90
     MAPL_HistoryWriter.F90
     )
 
@@ -11,3 +12,8 @@ target_include_directories (${this} PUBLIC ${INC_ESMF} ${INC_NETCDF}
           $<BUILD_INTERFACE:${MAPL_SOURCE_DIR}/include>)
 
 set_target_properties (${this} PROPERTIES Fortran_MODULE_DIRECTORY ${include_${this}})
+
+if (PFUNIT_FOUND)
+    add_subdirectory(tests EXCLUDE_FROM_ALL)
+endif ()
+

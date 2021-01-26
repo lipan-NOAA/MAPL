@@ -1,0 +1,13 @@
+module Test_MAPL_HistoryConfig
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use yaFyaml
+
+   use MAPL_HistoryFieldConfigMod
+contains
+   @test
+   subroutine test_test()
+      @assert_that(.true., is(true()))
+   end subroutine test_test
+end module Test_MAPL_HistoryConfig
