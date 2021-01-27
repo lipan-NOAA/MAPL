@@ -214,6 +214,17 @@ contains
    end subroutine read_config
 end module MAPL_HistoryFieldConfigMod
 
+module MAPL_HistoryFieldConfigMap
+   use MAPL_HistoryFieldConfigMod
+
+#include "types/key_deferredLengthString.inc"
+#define _value type(HistoryFieldConfig)
+
+#define _map HistoryFieldConfigMap
+#define _iterator HistoryFieldConfigMapIterator
+#include "templates/map.inc"
+end module MAPL_HistoryFieldConfigMap
+
 module MAPL_HistoryConfigMod
    use ESMF
    use NUOPC
