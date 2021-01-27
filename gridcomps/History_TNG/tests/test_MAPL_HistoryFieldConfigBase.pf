@@ -1,0 +1,110 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+#include "unused_dummy.H"
+
+module Test_MAPL_HistoryFieldConfigBase
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use MAPL_ExceptionHandling
+
+   use MAPL_HistoryFieldConfigBase
+
+   character(*), parameter :: registered_name   = 'resgistered_name'
+   character(*), parameter :: unregistered_name = 'unresgistered_name'
+
+   type, extends(HistoryFieldConfigBase) :: test_HistoryFieldConfigBase
+      integer :: has_entry = 0
+      integer :: add_entry = 0
+
+      character(:), allocatable :: has_entry_name
+      character(:), allocatable :: add_entry_name
+   contains
+      procedure :: NUOPC_has_entry
+      procedure :: NUOPC_add_entry
+   end type test_HistoryFieldConfigBase
+contains
+   @test
+   subroutine test_standard_name()
+      type(HistoryFieldConfigBase) :: field_config
+
+      call field_config%initialize('name', 'component')
+      @assert_that(field_config%standard_name(), is(equal_to('name.component')))
+   end subroutine test_standard_name
+
+   subroutine NUOPC_has_entry(this, name, has_entry, rc)
+      class(test_HistoryFieldConfigBase), intent(inout) :: this
+      character(*),                       intent(in   ) :: name
+      logical,                            intent(  out) :: has_entry
+      integer, optional,                  intent(  out) :: rc
+
+      integer :: status = 0
+
+      this%has_entry = this%has_entry + 1
+      this%has_entry_name = name
+
+      select case (name)
+      case (registered_name)
+         has_entry = .true.
+      case (unregistered_name)
+         has_entry = .false.
+      case default
+         status = 1
+      end select
+
+      _RETURN(status)
+   end subroutine NUOPC_has_entry
+
+   subroutine NUOPC_add_entry(this, name, rc)
+      class(test_HistoryFieldConfigBase), intent(inout) :: this
+      character(*),                       intent(in   ) :: name
+      integer, optional,                  intent(  out) :: rc
+
+      integer :: status = 0
+
+      this%add_entry = this%add_entry + 1
+      this%add_entry_name = name
+
+      _RETURN(status)
+   end subroutine NUOPC_add_entry
+
+   @test
+   subroutine test_register_name()
+      type(test_HistoryFieldConfigBase) :: field_config_no_add
+      type(test_HistoryFieldConfigBase) :: field_config_add
+
+      integer :: status
+
+      call field_config_no_add%initialize(registered_name, 'component')
+
+      @assert_that(field_config_no_add%has_entry, is(equal_to(0)))
+      @assert_that(field_config_no_add%add_entry, is(equal_to(0)))
+
+      @assert_that(allocated(field_config_no_add%has_entry_name), is(false()))
+      @assert_that(allocated(field_config_no_add%add_entry_name), is(false()))
+
+      call field_config_no_add%register_name(registered_name, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_no_add%has_entry, is(equal_to(1)))
+      @assert_that(field_config_no_add%add_entry, is(equal_to(0)))
+      @assert_that(allocated(field_config_no_add%has_entry_name), is(true()))
+      @assert_that(allocated(field_config_no_add%add_entry_name), is(false()))
+      @assert_that(field_config_no_add%has_entry_name, is(equal_to(registered_name)))
+
+      call field_config_add%initialize(unregistered_name, 'component')
+      @assert_that(field_config_add%has_entry, is(equal_to(0)))
+      @assert_that(field_config_add%add_entry, is(equal_to(0)))
+
+      @assert_that(allocated(field_config_add%has_entry_name), is(false()))
+      @assert_that(allocated(field_config_add%add_entry_name), is(false()))
+
+      call field_config_add%register_name(unregistered_name, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_add%has_entry, is(equal_to(1)))
+      @assert_that(field_config_add%add_entry, is(equal_to(1)))
+      @assert_that(allocated(field_config_add%has_entry_name), is(true()))
+      @assert_that(allocated(field_config_add%add_entry_name), is(true()))
+      @assert_that(field_config_add%has_entry_name, is(equal_to(unregistered_name)))
+      @assert_that(field_config_add%add_entry_name, is(equal_to(unregistered_name)))
+   end subroutine test_register_name
+end module Test_MAPL_HistoryFieldConfigBase
