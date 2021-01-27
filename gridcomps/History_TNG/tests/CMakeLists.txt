@@ -1,7 +1,8 @@
 add_definitions(-DUSE_MPI)
 
 set (TEST_SRCS
-    test_MAPL_HistoryConfig.pf
+   test_MAPL_HistoryFieldConfigBase.pf
+   test_MAPL_HistoryConfig.pf
 )
 
 add_library (history_tng_extras
