@@ -12,25 +12,38 @@ module Test_MAPL_HistoryFieldConfigBase
 
    character(*), parameter :: registered_name   = 'resgistered_name'
    character(*), parameter :: unregistered_name = 'unresgistered_name'
+   character(*), parameter :: syno_name1        = 'syno_name1'
+   character(*), parameter :: syno_name2        = 'syno_name2'
+   character(*), parameter :: not_syno_name1    = 'not_syno_name1'
+   character(*), parameter :: not_syno_name2    = 'not_syno_name2'
 
    type, extends(HistoryFieldConfigBase) :: test_HistoryFieldConfigBase
       integer :: has_entry = 0
       integer :: add_entry = 0
+      integer :: are_syno  = 0
+      integer :: add_syno  = 0
 
       character(:), allocatable :: has_entry_name
       character(:), allocatable :: add_entry_name
+
+      character(:), allocatable :: are_syno_name1
+      character(:), allocatable :: are_syno_name2
+      character(:), allocatable :: add_syno_name1
+      character(:), allocatable :: add_syno_name2
    contains
+      procedure :: name
       procedure :: NUOPC_has_entry
       procedure :: NUOPC_add_entry
+      procedure :: NUOPC_are_syno
+      procedure :: NUOPC_add_syno
    end type test_HistoryFieldConfigBase
 contains
-   @test
-   subroutine test_standard_name()
-      type(HistoryFieldConfigBase) :: field_config
+   function name(this) result(field_name)
+      character(:), allocatable :: field_name
+      class(test_HistoryFieldConfigBase), intent(in) :: this
 
-      call field_config%initialize('name', 'component')
-      @assert_that(field_config%standard_name(), is(equal_to('name.component')))
-   end subroutine test_standard_name
+      field_name = this%get_short_name()
+   end function name
 
    subroutine NUOPC_has_entry(this, name, has_entry, rc)
       class(test_HistoryFieldConfigBase), intent(inout) :: this
@@ -68,6 +81,47 @@ contains
       _RETURN(status)
    end subroutine NUOPC_add_entry
 
+   subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
+      class(test_HistoryFieldConfigBase), intent(inout) :: this
+      character(*),                       intent(in   ) :: name1
+      character(*),                       intent(in   ) :: name2
+      logical,                            intent(  out) :: are_syno
+      integer, optional,                  intent(  out) :: rc
+
+      integer :: status
+
+      this%are_syno = this%are_syno + 1
+      this%are_syno_name1 = name1
+      this%are_syno_name2 = name2
+
+      are_syno = ((name1 == syno_name1) .and. (name2 == syno_name2))
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_are_syno
+
+   subroutine NUOPC_add_syno(this, name1, name2, rc)
+      class(test_HistoryFieldConfigBase), intent(inout) :: this
+      character(*),                       intent(in   ) :: name1
+      character(*),                       intent(in   ) :: name2
+      integer, optional,                  intent(  out) :: rc
+
+      integer :: status
+
+      this%add_syno = this%add_syno + 1
+      this%add_syno_name1 = name1
+      this%add_syno_name2 = name2
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_add_syno
+
+   @test
+   subroutine test_standard_name()
+      type(test_HistoryFieldConfigBase) :: field_config
+
+      call field_config%initialize('name', 'component')
+      @assert_that(field_config%standard_name(), is(equal_to('name.component')))
+   end subroutine test_standard_name
+
    @test
    subroutine test_register_name()
       type(test_HistoryFieldConfigBase) :: field_config_no_add
@@ -75,11 +129,8 @@ contains
 
       integer :: status
 
-      call field_config_no_add%initialize(registered_name, 'component')
-
       @assert_that(field_config_no_add%has_entry, is(equal_to(0)))
       @assert_that(field_config_no_add%add_entry, is(equal_to(0)))
-
       @assert_that(allocated(field_config_no_add%has_entry_name), is(false()))
       @assert_that(allocated(field_config_no_add%add_entry_name), is(false()))
 
@@ -89,12 +140,10 @@ contains
       @assert_that(field_config_no_add%add_entry, is(equal_to(0)))
       @assert_that(allocated(field_config_no_add%has_entry_name), is(true()))
       @assert_that(allocated(field_config_no_add%add_entry_name), is(false()))
-      @assert_that(field_config_no_add%has_entry_name, is(equal_to(registered_name)))
+      @assert_that(field_config_no_add%has_entry_name == registered_name, is(true()))
 
-      call field_config_add%initialize(unregistered_name, 'component')
       @assert_that(field_config_add%has_entry, is(equal_to(0)))
       @assert_that(field_config_add%add_entry, is(equal_to(0)))
-
       @assert_that(allocated(field_config_add%has_entry_name), is(false()))
       @assert_that(allocated(field_config_add%add_entry_name), is(false()))
 
@@ -104,7 +153,53 @@ contains
       @assert_that(field_config_add%add_entry, is(equal_to(1)))
       @assert_that(allocated(field_config_add%has_entry_name), is(true()))
       @assert_that(allocated(field_config_add%add_entry_name), is(true()))
-      @assert_that(field_config_add%has_entry_name, is(equal_to(unregistered_name)))
-      @assert_that(field_config_add%add_entry_name, is(equal_to(unregistered_name)))
+      @assert_that(field_config_add%has_entry_name == unregistered_name, is(true()))
+      @assert_that(field_config_add%add_entry_name == unregistered_name, is(true()))
    end subroutine test_register_name
+
+   @test
+   subroutine test_register_syno()
+      type(test_HistoryFieldConfigBase) :: field_config_no_syno
+      type(test_HistoryFieldConfigBase) :: field_config_syno
+
+      integer :: status
+
+      @assert_that(field_config_no_syno%are_syno, is(equal_to(0)))
+      @assert_that(field_config_no_syno%add_syno, is(equal_to(0)))
+      @assert_that(allocated(field_config_no_syno%are_syno_name1), is(false()))
+      @assert_that(allocated(field_config_no_syno%are_syno_name2), is(false()))
+      @assert_that(allocated(field_config_no_syno%add_syno_name1), is(false()))
+      @assert_that(allocated(field_config_no_syno%add_syno_name2), is(false()))
+
+      call field_config_no_syno%register_syno(not_syno_name1, not_syno_name2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_no_syno%are_syno, is(equal_to(1)))
+      @assert_that(field_config_no_syno%add_syno, is(equal_to(1)))
+      @assert_that(allocated(field_config_no_syno%are_syno_name1), is(true()))
+      @assert_that(allocated(field_config_no_syno%are_syno_name2), is(true()))
+      @assert_that(allocated(field_config_no_syno%add_syno_name1), is(true()))
+      @assert_that(allocated(field_config_no_syno%add_syno_name2), is(true()))
+      @assert_that(field_config_no_syno%are_syno_name1 == not_syno_name1, is(true()))
+      @assert_that(field_config_no_syno%are_syno_name2 == not_syno_name2, is(true()))
+      @assert_that(field_config_no_syno%add_syno_name1 == not_syno_name1, is(true()))
+      @assert_that(field_config_no_syno%add_syno_name2 == not_syno_name2, is(true()))
+
+      @assert_that(field_config_syno%are_syno, is(equal_to(0)))
+      @assert_that(field_config_syno%add_syno, is(equal_to(0)))
+      @assert_that(allocated(field_config_syno%are_syno_name1), is(false()))
+      @assert_that(allocated(field_config_syno%are_syno_name2), is(false()))
+      @assert_that(allocated(field_config_syno%add_syno_name1), is(false()))
+      @assert_that(allocated(field_config_syno%add_syno_name2), is(false()))
+
+      call field_config_syno%register_syno(syno_name1, syno_name2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_syno%are_syno, is(equal_to(1)))
+      @assert_that(field_config_syno%add_syno, is(equal_to(0)))
+      @assert_that(allocated(field_config_syno%are_syno_name1), is(true()))
+      @assert_that(allocated(field_config_syno%are_syno_name2), is(true()))
+      @assert_that(allocated(field_config_syno%add_syno_name1), is(false()))
+      @assert_that(allocated(field_config_syno%add_syno_name2), is(false()))
+      @assert_that(field_config_syno%are_syno_name1 == syno_name1, is(true()))
+      @assert_that(field_config_syno%are_syno_name2 == syno_name2, is(true()))
+   end subroutine test_register_syno
 end module Test_MAPL_HistoryFieldConfigBase
