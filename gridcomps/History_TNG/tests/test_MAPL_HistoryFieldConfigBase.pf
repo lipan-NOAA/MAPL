@@ -3,21 +3,35 @@
 #include "unused_dummy.H"
 
 module Test_MAPL_HistoryFieldConfigBase
+   use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
    use NUOPC
+   use gFTL_StringVector
    use MAPL_ExceptionHandling
 
    use MAPL_HistoryFieldConfigBase
 
+   character(*), parameter :: short_name        = 'short_name'
+   character(*), parameter :: component_name    = 'component_name'
+   character(*), parameter :: true_standard     = 'short_name.component_name'
    character(*), parameter :: registered_name   = 'resgistered_name'
    character(*), parameter :: unregistered_name = 'unresgistered_name'
    character(*), parameter :: syno_name1        = 'syno_name1'
    character(*), parameter :: syno_name2        = 'syno_name2'
    character(*), parameter :: not_syno_name1    = 'not_syno_name1'
    character(*), parameter :: not_syno_name2    = 'not_syno_name2'
+   character(*), parameter :: match_names       = 'match_names'
+   character(*), parameter :: unmatch_names     = 'unmatch_names'
+   character(*), parameter :: other_name        = 'other_name'
 
    type, extends(HistoryFieldConfigBase) :: test_HistoryFieldConfigBase
+      integer :: call_name = 0
+   contains
+      procedure :: name
+   end type test_HistoryFieldConfigBase
+
+   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_NUOPC
       integer :: has_entry = 0
       integer :: add_entry = 0
       integer :: are_syno  = 0
@@ -31,25 +45,57 @@ module Test_MAPL_HistoryFieldConfigBase
       character(:), allocatable :: add_syno_name1
       character(:), allocatable :: add_syno_name2
    contains
-      procedure :: name
       procedure :: NUOPC_has_entry
       procedure :: NUOPC_add_entry
       procedure :: NUOPC_are_syno
       procedure :: NUOPC_add_syno
-   end type test_HistoryFieldConfigBase
+   end type test_HistoryFieldConfigBase_NUOPC
+
+   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_register
+      integer :: call_standard_name = 0
+      integer :: call_register_name = 0
+      integer :: call_register_syno = 0
+
+      type(StringVector)        :: registered_names
+      character(:), allocatable :: register_syno_name1
+      character(:), allocatable :: register_syno_name2
+   contains
+      procedure :: standard_name
+      procedure :: register_name
+      procedure :: register_syno
+   end type test_HistoryFieldConfigBase_register
+
+   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_advertise
+      integer :: call_register = 0
+      integer :: call_advert   = 0
+
+      character(:), allocatable :: advert_name
+      character(:), allocatable :: TransferOfferGeomObject
+      character(:), allocatable :: SharePolicyField
+      character(:), allocatable :: SharePolicyGeomObject
+   contains
+      procedure :: register
+      procedure :: NUOPC_advert
+   end type test_HistoryFieldConfigBase_advertise
 contains
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(test_HistoryFieldConfigBase), intent(in) :: this
+      class(test_HistoryFieldConfigBase), intent(inout) :: this
 
-      field_name = this%get_short_name()
+      this%call_name = this%call_name + 1
+
+      if (this%get_short_name() == match_names) then
+         field_name = this%get_short_name()
+      else
+         field_name = other_name
+      end if
    end function name
 
    subroutine NUOPC_has_entry(this, name, has_entry, rc)
-      class(test_HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                       intent(in   ) :: name
-      logical,                            intent(  out) :: has_entry
-      integer, optional,                  intent(  out) :: rc
+      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
+      character(*),                             intent(in   ) :: name
+      logical,                                  intent(  out) :: has_entry
+      integer, optional,                        intent(  out) :: rc
 
       integer :: status = 0
 
@@ -69,9 +115,9 @@ contains
    end subroutine NUOPC_has_entry
 
    subroutine NUOPC_add_entry(this, name, rc)
-      class(test_HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                       intent(in   ) :: name
-      integer, optional,                  intent(  out) :: rc
+      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
+      character(*),                             intent(in   ) :: name
+      integer, optional,                        intent(  out) :: rc
 
       integer :: status = 0
 
@@ -82,11 +128,11 @@ contains
    end subroutine NUOPC_add_entry
 
    subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
-      class(test_HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                       intent(in   ) :: name1
-      character(*),                       intent(in   ) :: name2
-      logical,                            intent(  out) :: are_syno
-      integer, optional,                  intent(  out) :: rc
+      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
+      character(*),                             intent(in   ) :: name1
+      character(*),                             intent(in   ) :: name2
+      logical,                                  intent(  out) :: are_syno
+      integer, optional,                        intent(  out) :: rc
 
       integer :: status
 
@@ -100,10 +146,10 @@ contains
    end subroutine NUOPC_are_syno
 
    subroutine NUOPC_add_syno(this, name1, name2, rc)
-      class(test_HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                       intent(in   ) :: name1
-      character(*),                       intent(in   ) :: name2
-      integer, optional,                  intent(  out) :: rc
+      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
+      character(*),                             intent(in   ) :: name1
+      character(*),                             intent(in   ) :: name2
+      integer, optional,                        intent(  out) :: rc
 
       integer :: status
 
@@ -114,18 +160,88 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_add_syno
 
+   function standard_name(this) result(std_name)
+      character(:), allocatable :: std_name
+      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
+
+      this%call_standard_name = this%call_standard_name + 1
+
+      std_name = this%get_short_name()
+   end function standard_name
+
+   subroutine register_name(this, name, rc)
+      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
+      character(*),                                intent(in   ) :: name
+      integer, optional,                           intent(  out) :: rc
+
+      integer :: status
+
+      this%call_register_name = this%call_register_name + 1
+      call this%registered_names%push_back(name)
+
+      _RETURN(_SUCCESS)
+   end subroutine register_name
+
+   subroutine register_syno(this, name1, name2, rc)
+      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
+      character(*),                                intent(in   ) :: name1
+      character(*),                                intent(in   ) :: name2
+      integer, optional,                           intent(  out) :: rc
+
+      integer :: status
+
+      this%call_register_syno = this%call_register_syno + 1
+      this%register_syno_name1 = name1
+      this%register_syno_name2 = name2
+
+      _RETURN(_SUCCESS)
+   end subroutine register_syno
+
+   subroutine register(this, rc)
+      class(test_HistoryFieldConfigBase_advertise), intent(inout) :: this
+      integer, optional,                            intent(  out) :: rc
+
+      integer :: status
+
+      this%call_register = this%call_register + 1
+
+      _RETURN(_SUCCESS)
+   end subroutine register
+
+   subroutine NUOPC_advert(this, state, standard_name,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(test_HistoryFieldConfigBase_advertise), intent(inout) :: this
+      type(ESMF_State),                             intent(inout) :: state
+      character(*),                                 intent(in   ) :: standard_name
+      character(*), optional,                       intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,                       intent(in   ) :: SharePolicyField
+      character(*), optional,                       intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,                       intent(  out) :: rc
+
+      integer :: status
+
+      this%call_advert = this%call_advert + 1
+      this%advert_name = standard_name
+
+      if (present(TransferOfferGeomObject)) this%TransferOfferGeomObject = TransferOfferGeomObject
+      if (present(SharePolicyField))        this%SharePolicyField        = SharePolicyField
+      if (present(SharePolicyGeomObject))   this%SharePolicyGeomObject   = SharePolicyGeomObject
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_advert
+
    @test
    subroutine test_standard_name()
       type(test_HistoryFieldConfigBase) :: field_config
 
-      call field_config%initialize('name', 'component')
-      @assert_that(field_config%standard_name(), is(equal_to('name.component')))
+      call field_config%initialize(short_name, component_name)
+      @assert_that(field_config%standard_name() == true_standard, is(true()))
    end subroutine test_standard_name
 
    @test
    subroutine test_register_name()
-      type(test_HistoryFieldConfigBase) :: field_config_no_add
-      type(test_HistoryFieldConfigBase) :: field_config_add
+      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_no_add
+      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_add
 
       integer :: status
 
@@ -159,8 +275,8 @@ contains
 
    @test
    subroutine test_register_syno()
-      type(test_HistoryFieldConfigBase) :: field_config_no_syno
-      type(test_HistoryFieldConfigBase) :: field_config_syno
+      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_no_syno
+      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_syno
 
       integer :: status
 
@@ -202,4 +318,111 @@ contains
       @assert_that(field_config_syno%are_syno_name1 == syno_name1, is(true()))
       @assert_that(field_config_syno%are_syno_name2 == syno_name2, is(true()))
    end subroutine test_register_syno
+
+   @test
+   subroutine test_register()
+      type(test_HistoryFieldConfigBase_register) :: field_config_no_match
+      type(test_HistoryFieldConfigBase_register) :: field_config_match
+
+      integer :: status
+
+      call field_config_no_match%initialize(unmatch_names, component_name)
+      @assert_that(field_config_no_match%call_name,          is(equal_to(0)))
+      @assert_that(field_config_no_match%call_standard_name, is(equal_to(0)))
+      @assert_that(field_config_no_match%call_register_name, is(equal_to(0)))
+      @assert_that(field_config_no_match%call_register_syno, is(equal_to(0)))
+      @assert_that(field_config_no_match%registered_names%size(), is(equal_to(0_INT64)))
+      @assert_that(allocated(field_config_no_match%register_syno_name1), is(false()))
+      @assert_that(allocated(field_config_no_match%register_syno_name2), is(false()))
+
+      call field_config_no_match%register(rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_no_match%call_name,          is(equal_to(1)))
+      @assert_that(field_config_no_match%call_standard_name, is(equal_to(1)))
+      @assert_that(field_config_no_match%call_register_name, is(equal_to(2)))
+      @assert_that(field_config_no_match%call_register_syno, is(equal_to(1)))
+      @assert_that(field_config_no_match%registered_names%size(), is(equal_to(2_INT64)))
+      @assert_that(field_config_no_match%registered_names%at(1) == unmatch_names, is(true()))
+      @assert_that(field_config_no_match%registered_names%at(2) == other_name,    is(true()))
+      @assert_that(allocated(field_config_no_match%register_syno_name1), is(true()))
+      @assert_that(allocated(field_config_no_match%register_syno_name2), is(true()))
+      @assert_that(field_config_no_match%register_syno_name1 == unmatch_names, is(true()))
+      @assert_that(field_config_no_match%register_syno_name2 == other_name,    is(true()))
+
+      call field_config_match%initialize(match_names, component_name)
+      @assert_that(field_config_match%call_name,          is(equal_to(0)))
+      @assert_that(field_config_match%call_standard_name, is(equal_to(0)))
+      @assert_that(field_config_match%call_register_name, is(equal_to(0)))
+      @assert_that(field_config_match%call_register_syno, is(equal_to(0)))
+      @assert_that(field_config_match%registered_names%size(), is(equal_to(0_INT64)))
+      @assert_that(allocated(field_config_match%register_syno_name1), is(false()))
+      @assert_that(allocated(field_config_match%register_syno_name2), is(false()))
+
+      call field_config_match%register(rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_match%call_name,          is(equal_to(1)))
+      @assert_that(field_config_match%call_standard_name, is(equal_to(1)))
+      @assert_that(field_config_match%call_register_name, is(equal_to(1)))
+      @assert_that(field_config_match%call_register_syno, is(equal_to(0)))
+      @assert_that(field_config_match%registered_names%size(), is(equal_to(1_INT64)))
+      @assert_that(field_config_match%registered_names%at(1) == match_names, is(true()))
+      @assert_that(allocated(field_config_match%register_syno_name1), is(false()))
+      @assert_that(allocated(field_config_match%register_syno_name2), is(false()))
+   end subroutine test_register
+
+   @test
+   subroutine test_advertise()
+      type(test_HistoryFieldConfigBase_advertise) :: field_config_no_optional
+      type(test_HistoryFieldConfigBase_advertise) :: field_config_optional
+
+      type(ESMF_State) :: state
+      integer :: status
+
+      call field_config_no_optional%initialize(unmatch_names, component_name)
+      @assert_that(field_config_optional%call_name,        is(equal_to(0)))
+      @assert_that(field_config_no_optional%call_register, is(equal_to(0)))
+      @assert_that(field_config_no_optional%call_advert,   is(equal_to(0)))
+      @assert_that(allocated(field_config_no_optional%advert_name), is(false()))
+      @assert_that(allocated(field_config_no_optional%TransferOfferGeomObject), is(false()))
+      @assert_that(allocated(field_config_no_optional%SharePolicyField),        is(false()))
+      @assert_that(allocated(field_config_no_optional%SharePolicyGeomObject),   is(false()))
+
+      call field_config_no_optional%advertise(state, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_no_optional%call_name,     is(equal_to(1)))
+      @assert_that(field_config_no_optional%call_register, is(equal_to(1)))
+      @assert_that(field_config_no_optional%call_advert,   is(equal_to(1)))
+      @assert_that(allocated(field_config_no_optional%advert_name), is(true()))
+      @assert_that(field_config_no_optional%advert_name == other_name, is(true()))
+      @assert_that(allocated(field_config_no_optional%TransferOfferGeomObject), is(false()))
+      @assert_that(allocated(field_config_no_optional%SharePolicyField),        is(false()))
+      @assert_that(allocated(field_config_no_optional%SharePolicyGeomObject),   is(false()))
+
+      call field_config_optional%initialize(unmatch_names, component_name)
+      @assert_that(field_config_optional%call_name,        is(equal_to(0)))
+      @assert_that(field_config_optional%call_register, is(equal_to(0)))
+      @assert_that(field_config_optional%call_advert,   is(equal_to(0)))
+      @assert_that(allocated(field_config_optional%advert_name), is(false()))
+      @assert_that(allocated(field_config_optional%TransferOfferGeomObject), is(false()))
+      @assert_that(allocated(field_config_optional%SharePolicyField),        is(false()))
+      @assert_that(allocated(field_config_optional%SharePolicyGeomObject),   is(false()))
+
+      call field_config_optional%advertise(state, &
+         TransferOfferGeomObject='test1', &
+         SharePolicyField='test2', &
+         SharePolicyGeomObject='test3',&
+         rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_config_optional%call_name,     is(equal_to(1)))
+      @assert_that(field_config_optional%call_register, is(equal_to(1)))
+      @assert_that(field_config_optional%call_advert,   is(equal_to(1)))
+      @assert_that(allocated(field_config_optional%advert_name), is(true()))
+      @assert_that(field_config_optional%advert_name == other_name, is(true()))
+      @assert_that(allocated(field_config_optional%TransferOfferGeomObject), is(true()))
+      @assert_that(field_config_optional%TransferOfferGeomObject == 'test1', is(true()))
+      @assert_that(allocated(field_config_optional%SharePolicyField),        is(true()))
+      @assert_that(field_config_optional%SharePolicyField == 'test2', is(true()))
+      @assert_that(allocated(field_config_optional%SharePolicyGeomObject),   is(true()))
+      @assert_that(field_config_optional%SharePolicyGeomObject == 'test3', is(true()))
+   end subroutine test_advertise
 end module Test_MAPL_HistoryFieldConfigBase

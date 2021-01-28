@@ -32,13 +32,16 @@ module MAPL_HistoryFieldConfigBase
       procedure :: register_syno
 
       procedure :: register
+
+      procedure :: NUOPC_advert
+      procedure :: advertise
    end type
 
    abstract interface
       function i_name(this) result(field_name)
          import HistoryFieldConfigBase
          character(:), allocatable :: field_name
-         class(HistoryFieldConfigBase), intent(in) :: this
+         class(HistoryFieldConfigBase), intent(inout) :: this
       end function
    end interface
 
@@ -54,14 +57,14 @@ contains
 
    function get_short_name(this) result(short_name)
       character(:), allocatable :: short_name
-      class(HistoryFieldConfigBase), intent(in) :: this
+      class(HistoryFieldConfigBase), intent(inout) :: this
 
       short_name = this%short_name
    end function get_short_name
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(HistoryFieldConfigBase), intent(in) :: this
+      class(HistoryFieldConfigBase), intent(inout) :: this
 
       std_name = this%short_name // '.' // this%component_name
    end function standard_name
@@ -177,4 +180,48 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine register
+
+   subroutine NUOPC_advert(this, state, standard_name,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(HistoryFieldConfigBase), intent(inout) :: this
+      type(ESMF_State),              intent(inout) :: state
+      character(*),                  intent(in   ) :: standard_name
+      character(*), optional,        intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,        intent(in   ) :: SharePolicyField
+      character(*), optional,        intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,        intent(  out) :: rc
+
+      integer :: status
+
+      call NUOPC_Advertise(state, standard_name, &
+         TransferOfferGeomObject=TransferOfferGeomObject, &
+         SharePolicyField=SharePolicyField, &
+         SharePolicyGeomObject=SharePolicyGeomObject, &
+         __RC__)
+      VERIFY_NUOPC_(status)
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_advert
+
+   subroutine advertise(this, state, &
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(HistoryFieldConfigBase), intent(inout) :: this
+      type(ESMF_State),              intent(inout) :: state
+      character(*), optional,        intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,        intent(in   ) :: SharePolicyField
+      character(*), optional,        intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,        intent(  out) :: rc
+
+      integer :: status
+
+      call this%register(__RC__)
+
+      call this%NUOPC_advert(state, this%name(),&
+         TransferOfferGeomObject=TransferOfferGeomObject, &
+         SharePolicyField=SharePolicyField, &
+         SharePolicyGeomObject=SharePolicyGeomObject, &
+         __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
 end module MAPL_HistoryFieldConfigBase
