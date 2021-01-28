@@ -17,9 +17,12 @@ module MAPL_HistoryFieldConfigBase
       character(:), allocatable :: short_name
       character(:), allocatable :: component_name
    contains
+      procedure, non_overridable :: base_initialize
       procedure :: initialize
 
       procedure :: get_short_name
+      procedure :: get_component_name
+
       procedure :: standard_name
       procedure(i_name), deferred :: name
 
@@ -46,21 +49,39 @@ module MAPL_HistoryFieldConfigBase
    end interface
 
 contains
-   subroutine initialize(this, short_name, component_name)
+   subroutine base_initialize(this, short_name, component_name)
       class(HistoryFieldConfigBase), intent(  out) :: this
       character(*),                  intent(in   ) :: short_name
       character(*),                  intent(in   ) :: component_name
 
       this%short_name = short_name
       this%component_name = component_name
+   end subroutine base_initialize
+
+   subroutine initialize(this, short_name, component_name, alias_name)
+      class(HistoryFieldConfigBase), intent(  out) :: this
+      character(*),                  intent(in   ) :: short_name
+      character(*),                  intent(in   ) :: component_name
+      character(*), optional,        intent(in   ) :: alias_name
+
+      call this%base_initialize(short_name, component_name)
+
+      _UNUSED_DUMMY(alias_name)
    end subroutine initialize
 
    function get_short_name(this) result(short_name)
       character(:), allocatable :: short_name
-      class(HistoryFieldConfigBase), intent(inout) :: this
+      class(HistoryFieldConfigBase), intent(in) :: this
 
       short_name = this%short_name
    end function get_short_name
+
+   function get_component_name(this) result(component_name)
+      character(:), allocatable :: component_name
+      class(HistoryFieldConfigBase), intent(in) :: this
+
+      component_name = this%component_name
+   end function get_component_name
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name

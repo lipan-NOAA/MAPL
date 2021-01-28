@@ -12,9 +12,63 @@ module Test_MAPL_HistoryFieldConfigCollection
 
    use MAPL_HistoryFieldConfigCollection
 
+   character(*), parameter :: short_name     = 'short_name'
+   character(*), parameter :: component_name = 'component_name'
+   character(*), parameter :: alias_name     = 'alias_name'
+   character(*), parameter :: std_out_name   = 'std_out_name'
+   character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
+
+   type, extends(HistoryFieldConfigCollection) :: test_HistoryFieldConfigCollection
+      integer :: call_standard_name = 0
+   contains
+      procedure :: standard_name
+   end type test_HistoryFieldConfigCollection
+
 contains
+   function standard_name(this) result(std_name)
+      character(:), allocatable :: std_name
+      class(test_HistoryFieldConfigCollection), intent(inout) :: this
+
+      this%call_standard_name = this%call_standard_name + 1
+
+      std_name = std_out_name
+   end function standard_name
+
    @test
-   subroutine test_test()
-      @assert_that(.false., is(false()))
-   end subroutine test_test
+   subroutine test_initialize()
+      type(HistoryFieldConfigCollection) :: field_config_no_alias
+      type(HistoryFieldConfigCollection) :: field_config_alias
+
+      @assert_that(field_config_no_alias%get_short_name()     == '',     is(true()))
+      @assert_that(field_config_no_alias%get_component_name() == '',     is(true()))
+      @assert_that(field_config_no_alias%get_alias_name()     == '',     is(true()))
+      call field_config_no_alias%initialize(short_name, component_name)
+      @assert_that(field_config_no_alias%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_config_no_alias%get_component_name() == component_name, is(true()))
+      @assert_that(field_config_no_alias%get_alias_name()     == '',             is(true()))
+
+      @assert_that(field_config_alias%get_short_name()     == '',     is(true()))
+      @assert_that(field_config_alias%get_component_name() == '',     is(true()))
+      @assert_that(field_config_alias%get_alias_name()     == '',     is(true()))
+      call field_config_alias%initialize(short_name, component_name, alias_name)
+      @assert_that(field_config_alias%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_config_alias%get_component_name() == component_name, is(true()))
+      @assert_that(field_config_alias%get_alias_name()     == alias_name,     is(true()))
+   end subroutine test_initialize
+
+   @test
+   subroutine test_name()
+      type(test_HistoryFieldConfigCollection) :: field_config_no_alias
+      type(test_HistoryFieldConfigCollection) :: field_config_alias
+
+      @assert_that(field_config_no_alias%call_standard_name, is(equal_to(0)))
+      call field_config_no_alias%initialize(short_name, component_name)
+      @assert_that(field_config_no_alias%name() == std_out_name, is(true()))
+      @assert_that(field_config_no_alias%call_standard_name, is(equal_to(1)))
+
+      @assert_that(field_config_alias%call_standard_name, is(equal_to(0)))
+      call field_config_alias%initialize(short_name, component_name, alias_name)
+      @assert_that(field_config_alias%name() == alias_out_name, is(true()))
+      @assert_that(field_config_alias%call_standard_name, is(equal_to(1)))
+   end subroutine test_name
 end module Test_MAPL_HistoryFieldConfigCollection
