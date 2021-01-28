@@ -2,6 +2,7 @@ add_definitions(-DUSE_MPI)
 
 set (TEST_SRCS
    test_MAPL_HistoryFieldConfigBase.pf
+   test_MAPL_HistoryFieldConfigCollection.pf
    test_MAPL_HistoryConfig.pf
 )
 

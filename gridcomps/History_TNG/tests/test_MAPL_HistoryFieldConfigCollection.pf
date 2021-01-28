@@ -1,0 +1,20 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+#include "unused_dummy.H"
+
+module Test_MAPL_HistoryFieldConfigCollection
+   use, intrinsic :: iso_fortran_env, only: INT64
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use gFTL_StringVector
+   use MAPL_ExceptionHandling
+
+   use MAPL_HistoryFieldConfigCollection
+
+contains
+   @test
+   subroutine test_test()
+      @assert_that(.false., is(false()))
+   end subroutine test_test
+end module Test_MAPL_HistoryFieldConfigCollection
