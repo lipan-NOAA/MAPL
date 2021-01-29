@@ -4,6 +4,7 @@ set (srcs
     MAPL_AbstractFieldEntry.F90
     MAPL_FieldEntryRegistry.F90
     MAPL_FieldEntryCollection.F90
+    MAPL_FieldRegistry.F90
     MAPL_FieldCollection.F90
     MAPL_HistoryConfig.F90
     MAPL_HistoryWriter.F90
