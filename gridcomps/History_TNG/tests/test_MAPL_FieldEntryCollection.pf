@@ -2,7 +2,7 @@
 #include "NUOPC_ErrLog.h"
 #include "unused_dummy.H"
 
-module Test_MAPL_HistoryFieldConfigCollection
+module Test_MAPL_FieldEntryCollection
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -10,7 +10,7 @@ module Test_MAPL_HistoryFieldConfigCollection
    use gFTL_StringVector
    use MAPL_ExceptionHandling
 
-   use MAPL_HistoryFieldConfigCollection
+   use MAPL_FieldEntryCollection
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -18,16 +18,16 @@ module Test_MAPL_HistoryFieldConfigCollection
    character(*), parameter :: std_out_name   = 'std_out_name'
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
 
-   type, extends(HistoryFieldConfigCollection) :: test_HistoryFieldConfigCollection
+   type, extends(FieldEntryCollection) :: test_FieldEntryCollection
       integer :: call_standard_name = 0
    contains
       procedure :: standard_name
-   end type test_HistoryFieldConfigCollection
+   end type test_FieldEntryCollection
 
 contains
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(test_HistoryFieldConfigCollection), intent(inout) :: this
+      class(test_FieldEntryCollection), intent(inout) :: this
 
       this%call_standard_name = this%call_standard_name + 1
 
@@ -36,8 +36,8 @@ contains
 
    @test
    subroutine test_initialize()
-      type(HistoryFieldConfigCollection) :: field_config_no_alias
-      type(HistoryFieldConfigCollection) :: field_config_alias
+      type(FieldEntryCollection) :: field_config_no_alias
+      type(FieldEntryCollection) :: field_config_alias
 
       @assert_that(field_config_no_alias%get_short_name()     == '',     is(true()))
       @assert_that(field_config_no_alias%get_component_name() == '',     is(true()))
@@ -58,8 +58,8 @@ contains
 
    @test
    subroutine test_name()
-      type(test_HistoryFieldConfigCollection) :: field_config_no_alias
-      type(test_HistoryFieldConfigCollection) :: field_config_alias
+      type(test_FieldEntryCollection) :: field_config_no_alias
+      type(test_FieldEntryCollection) :: field_config_alias
 
       @assert_that(field_config_no_alias%call_standard_name, is(equal_to(0)))
       call field_config_no_alias%initialize(short_name, component_name)
@@ -71,4 +71,4 @@ contains
       @assert_that(field_config_alias%name() == alias_out_name, is(true()))
       @assert_that(field_config_alias%call_standard_name, is(equal_to(1)))
    end subroutine test_name
-end module Test_MAPL_HistoryFieldConfigCollection
+end module Test_MAPL_FieldEntryCollection

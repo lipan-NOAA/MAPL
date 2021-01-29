@@ -2,7 +2,7 @@
 #include "NUOPC_ErrLog.h"
 #include "unused_dummy.H"
 
-module Test_MAPL_HistoryFieldConfigBase
+module Test_MAPL_AbstractFieldEntry
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -10,7 +10,7 @@ module Test_MAPL_HistoryFieldConfigBase
    use gFTL_StringVector
    use MAPL_ExceptionHandling
 
-   use MAPL_HistoryFieldConfigBase
+   use MAPL_AbstractFieldEntry
 
    character(*), parameter :: short_name        = 'short_name'
    character(*), parameter :: component_name    = 'component_name'
@@ -25,13 +25,13 @@ module Test_MAPL_HistoryFieldConfigBase
    character(*), parameter :: unmatch_names     = 'unmatch_names'
    character(*), parameter :: other_name        = 'other_name'
 
-   type, extends(HistoryFieldConfigBase) :: test_HistoryFieldConfigBase
+   type, extends(AbstractFieldEntry) :: test_AbstractFieldEntry
       integer :: call_name = 0
    contains
       procedure :: name
-   end type test_HistoryFieldConfigBase
+   end type test_AbstractFieldEntry
 
-   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_NUOPC
+   type, extends(test_AbstractFieldEntry) :: test_AbstractFieldEntry_NUOPC
       integer :: has_entry = 0
       integer :: add_entry = 0
       integer :: are_syno  = 0
@@ -49,9 +49,9 @@ module Test_MAPL_HistoryFieldConfigBase
       procedure :: NUOPC_add_entry
       procedure :: NUOPC_are_syno
       procedure :: NUOPC_add_syno
-   end type test_HistoryFieldConfigBase_NUOPC
+   end type test_AbstractFieldEntry_NUOPC
 
-   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_register
+   type, extends(test_AbstractFieldEntry) :: test_AbstractFieldEntry_register
       integer :: call_standard_name = 0
       integer :: call_register_name = 0
       integer :: call_register_syno = 0
@@ -63,9 +63,9 @@ module Test_MAPL_HistoryFieldConfigBase
       procedure :: standard_name
       procedure :: register_name
       procedure :: register_syno
-   end type test_HistoryFieldConfigBase_register
+   end type test_AbstractFieldEntry_register
 
-   type, extends(test_HistoryFieldConfigBase) :: test_HistoryFieldConfigBase_advertise
+   type, extends(test_AbstractFieldEntry) :: test_AbstractFieldEntry_advertise
       integer :: call_register = 0
       integer :: call_advert   = 0
 
@@ -76,11 +76,11 @@ module Test_MAPL_HistoryFieldConfigBase
    contains
       procedure :: register
       procedure :: NUOPC_advert
-   end type test_HistoryFieldConfigBase_advertise
+   end type test_AbstractFieldEntry_advertise
 contains
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(test_HistoryFieldConfigBase), intent(inout) :: this
+      class(test_AbstractFieldEntry), intent(inout) :: this
 
       this%call_name = this%call_name + 1
 
@@ -92,10 +92,10 @@ contains
    end function name
 
    subroutine NUOPC_has_entry(this, name, has_entry, rc)
-      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
-      character(*),                             intent(in   ) :: name
-      logical,                                  intent(  out) :: has_entry
-      integer, optional,                        intent(  out) :: rc
+      class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
+      character(*),                         intent(in   ) :: name
+      logical,                              intent(  out) :: has_entry
+      integer, optional,                    intent(  out) :: rc
 
       integer :: status = 0
 
@@ -115,9 +115,9 @@ contains
    end subroutine NUOPC_has_entry
 
    subroutine NUOPC_add_entry(this, name, rc)
-      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
-      character(*),                             intent(in   ) :: name
-      integer, optional,                        intent(  out) :: rc
+      class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
+      character(*),                         intent(in   ) :: name
+      integer, optional,                    intent(  out) :: rc
 
       integer :: status = 0
 
@@ -128,11 +128,11 @@ contains
    end subroutine NUOPC_add_entry
 
    subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
-      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
-      character(*),                             intent(in   ) :: name1
-      character(*),                             intent(in   ) :: name2
-      logical,                                  intent(  out) :: are_syno
-      integer, optional,                        intent(  out) :: rc
+      class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
+      character(*),                         intent(in   ) :: name1
+      character(*),                         intent(in   ) :: name2
+      logical,                              intent(  out) :: are_syno
+      integer, optional,                    intent(  out) :: rc
 
       integer :: status
 
@@ -146,10 +146,10 @@ contains
    end subroutine NUOPC_are_syno
 
    subroutine NUOPC_add_syno(this, name1, name2, rc)
-      class(test_HistoryFieldConfigBase_NUOPC), intent(inout) :: this
-      character(*),                             intent(in   ) :: name1
-      character(*),                             intent(in   ) :: name2
-      integer, optional,                        intent(  out) :: rc
+      class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
+      character(*),                         intent(in   ) :: name1
+      character(*),                         intent(in   ) :: name2
+      integer, optional,                    intent(  out) :: rc
 
       integer :: status
 
@@ -162,7 +162,7 @@ contains
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
+      class(test_AbstractFieldEntry_register), intent(inout) :: this
 
       this%call_standard_name = this%call_standard_name + 1
 
@@ -170,9 +170,9 @@ contains
    end function standard_name
 
    subroutine register_name(this, name, rc)
-      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
-      character(*),                                intent(in   ) :: name
-      integer, optional,                           intent(  out) :: rc
+      class(test_AbstractFieldEntry_register), intent(inout) :: this
+      character(*),                            intent(in   ) :: name
+      integer, optional,                       intent(  out) :: rc
 
       integer :: status
 
@@ -183,10 +183,10 @@ contains
    end subroutine register_name
 
    subroutine register_syno(this, name1, name2, rc)
-      class(test_HistoryFieldConfigBase_register), intent(inout) :: this
-      character(*),                                intent(in   ) :: name1
-      character(*),                                intent(in   ) :: name2
-      integer, optional,                           intent(  out) :: rc
+      class(test_AbstractFieldEntry_register), intent(inout) :: this
+      character(*),                            intent(in   ) :: name1
+      character(*),                            intent(in   ) :: name2
+      integer, optional,                       intent(  out) :: rc
 
       integer :: status
 
@@ -198,8 +198,8 @@ contains
    end subroutine register_syno
 
    subroutine register(this, rc)
-      class(test_HistoryFieldConfigBase_advertise), intent(inout) :: this
-      integer, optional,                            intent(  out) :: rc
+      class(test_AbstractFieldEntry_advertise), intent(inout) :: this
+      integer, optional,                        intent(  out) :: rc
 
       integer :: status
 
@@ -210,13 +210,13 @@ contains
 
    subroutine NUOPC_advert(this, state, standard_name,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(test_HistoryFieldConfigBase_advertise), intent(inout) :: this
-      type(ESMF_State),                             intent(inout) :: state
-      character(*),                                 intent(in   ) :: standard_name
-      character(*), optional,                       intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,                       intent(in   ) :: SharePolicyField
-      character(*), optional,                       intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,                       intent(  out) :: rc
+      class(test_AbstractFieldEntry_advertise), intent(inout) :: this
+      type(ESMF_State),                         intent(inout) :: state
+      character(*),                             intent(in   ) :: standard_name
+      character(*), optional,                   intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,                   intent(in   ) :: SharePolicyField
+      character(*), optional,                   intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,                   intent(  out) :: rc
 
       integer :: status
 
@@ -232,7 +232,7 @@ contains
 
    @test
    subroutine test_standard_name()
-      type(test_HistoryFieldConfigBase) :: field_config
+      type(test_AbstractFieldEntry) :: field_config
 
       call field_config%initialize(short_name, component_name)
       @assert_that(field_config%standard_name() == true_standard, is(true()))
@@ -240,8 +240,8 @@ contains
 
    @test
    subroutine test_register_name()
-      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_no_add
-      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_add
+      type(test_AbstractFieldEntry_NUOPC) :: field_config_no_add
+      type(test_AbstractFieldEntry_NUOPC) :: field_config_add
 
       integer :: status
 
@@ -275,8 +275,8 @@ contains
 
    @test
    subroutine test_register_syno()
-      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_no_syno
-      type(test_HistoryFieldConfigBase_NUOPC) :: field_config_syno
+      type(test_AbstractFieldEntry_NUOPC) :: field_config_no_syno
+      type(test_AbstractFieldEntry_NUOPC) :: field_config_syno
 
       integer :: status
 
@@ -321,8 +321,8 @@ contains
 
    @test
    subroutine test_register()
-      type(test_HistoryFieldConfigBase_register) :: field_config_no_match
-      type(test_HistoryFieldConfigBase_register) :: field_config_match
+      type(test_AbstractFieldEntry_register) :: field_config_no_match
+      type(test_AbstractFieldEntry_register) :: field_config_match
 
       integer :: status
 
@@ -372,8 +372,8 @@ contains
 
    @test
    subroutine test_advertise()
-      type(test_HistoryFieldConfigBase_advertise) :: field_config_no_optional
-      type(test_HistoryFieldConfigBase_advertise) :: field_config_optional
+      type(test_AbstractFieldEntry_advertise) :: field_config_no_optional
+      type(test_AbstractFieldEntry_advertise) :: field_config_optional
 
       type(ESMF_State) :: state
       integer :: status
@@ -425,4 +425,4 @@ contains
       @assert_that(allocated(field_config_optional%SharePolicyGeomObject),   is(true()))
       @assert_that(field_config_optional%SharePolicyGeomObject == 'test3', is(true()))
    end subroutine test_advertise
-end module Test_MAPL_HistoryFieldConfigBase
+end module Test_MAPL_AbstractFieldEntry

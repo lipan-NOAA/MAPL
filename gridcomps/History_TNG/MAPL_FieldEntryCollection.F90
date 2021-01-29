@@ -2,18 +2,18 @@
 #include "NUOPC_ErrLog.h"
 #include "unused_dummy.H"
 
-module MAPL_HistoryFieldConfigCollection
+module MAPL_FieldEntryCollection
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
-   use MAPL_HistoryFieldConfigBase
+   use MAPL_AbstractFieldEntry
 
    implicit none
    private
 
-   public HistoryFieldConfigCollection
+   public FieldEntryCollection
 
-   type, extends(HistoryFieldConfigBase) :: HistoryFieldConfigCollection
+   type, extends(AbstractFieldEntry) :: FieldEntryCollection
       private
       character(:), allocatable :: alias_name
    contains
@@ -21,13 +21,13 @@ module MAPL_HistoryFieldConfigCollection
       procedure :: get_alias_name
 
       procedure :: name
-   end type HistoryFieldConfigCollection
+   end type FieldEntryCollection
 contains
    subroutine initialize(this, short_name, component_name, alias_name)
-      class(HistoryFieldConfigCollection), intent(  out) :: this
-      character(*),                        intent(in   ) :: short_name
-      character(*),                        intent(in   ) :: component_name
-      character(*), optional,              intent(in   ) :: alias_name
+      class(FieldEntryCollection), intent(  out) :: this
+      character(*),                intent(in   ) :: short_name
+      character(*),                intent(in   ) :: component_name
+      character(*), optional,      intent(in   ) :: alias_name
 
       call this%base_initialize(short_name, component_name)
 
@@ -36,14 +36,14 @@ contains
 
    function get_alias_name(this) result(alias)
       character(:), allocatable :: alias
-      class(HistoryFieldConfigCollection), intent(in) :: this
+      class(FieldEntryCollection), intent(in) :: this
 
       alias = this%alias_name
    end function get_alias_name
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(HistoryFieldConfigCollection), intent(inout) :: this
+      class(FieldEntryCollection), intent(inout) :: this
 
       character(:), allocatable :: standard_name
 
@@ -55,16 +55,16 @@ contains
          field_name = standard_name
       end if
    end function name
-end module MAPL_HistoryFieldConfigCollection
+end module MAPL_FieldEntryCollection
 
-module MAPL_HistoryFieldConfigCollectionMap
-   use MAPL_HistoryFieldConfigCollection
+module MAPL_FieldEntryCollectionMap
+   use MAPL_FieldEntryCollection
 
 #include "types/key_deferredLengthString.inc"
-#define _value type(HistoryFieldConfigCollection)
+#define _value type(FieldEntryCollection)
 
-#define _map HistoryFieldConfigCollectionMap
-#define _iterator HistoryFieldConfigCollectionMapIterator
+#define _map FieldEntryCollectionMap
+#define _iterator FieldEntryCollectionMapIterator
 #define _alt
 #include "templates/map.inc"
-end module MAPL_HistoryFieldConfigCollectionMap
+end module MAPL_FieldEntryCollectionMap

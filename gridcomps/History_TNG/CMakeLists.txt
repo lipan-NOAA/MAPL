@@ -1,8 +1,8 @@
 esma_set_this (OVERRIDE MAPL.history_tng)
 
 set (srcs
-    MAPL_HistoryFieldConfigBase.F90
-    MAPL_HistoryFieldConfigCollection.F90
+    MAPL_AbstractFieldEntry.F90
+    MAPL_FieldEntryCollection.F90
     MAPL_HistoryConfig.F90
     MAPL_HistoryWriter.F90
     )

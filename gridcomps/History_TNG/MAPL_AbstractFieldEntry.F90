@@ -2,7 +2,7 @@
 #include "NUOPC_ErrLog.h"
 #include "unused_dummy.H"
 
-module MAPL_HistoryFieldConfigBase
+module MAPL_AbstractFieldEntry
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
@@ -10,9 +10,9 @@ module MAPL_HistoryFieldConfigBase
    implicit none
    private
 
-   public :: HistoryFieldConfigBase
+   public :: AbstractFieldEntry
 
-   type, abstract :: HistoryFieldConfigBase
+   type, abstract :: AbstractFieldEntry
       private
       character(:), allocatable :: short_name
       character(:), allocatable :: component_name
@@ -42,27 +42,27 @@ module MAPL_HistoryFieldConfigBase
 
    abstract interface
       function i_name(this) result(field_name)
-         import HistoryFieldConfigBase
+         import AbstractFieldEntry
          character(:), allocatable :: field_name
-         class(HistoryFieldConfigBase), intent(inout) :: this
+         class(AbstractFieldEntry), intent(inout) :: this
       end function
    end interface
 
 contains
    subroutine base_initialize(this, short_name, component_name)
-      class(HistoryFieldConfigBase), intent(  out) :: this
-      character(*),                  intent(in   ) :: short_name
-      character(*),                  intent(in   ) :: component_name
+      class(AbstractFieldEntry), intent(  out) :: this
+      character(*),              intent(in   ) :: short_name
+      character(*),              intent(in   ) :: component_name
 
       this%short_name = short_name
       this%component_name = component_name
    end subroutine base_initialize
 
    subroutine initialize(this, short_name, component_name, alias_name)
-      class(HistoryFieldConfigBase), intent(  out) :: this
-      character(*),                  intent(in   ) :: short_name
-      character(*),                  intent(in   ) :: component_name
-      character(*), optional,        intent(in   ) :: alias_name
+      class(AbstractFieldEntry), intent(  out) :: this
+      character(*),              intent(in   ) :: short_name
+      character(*),              intent(in   ) :: component_name
+      character(*), optional,    intent(in   ) :: alias_name
 
       call this%base_initialize(short_name, component_name)
 
@@ -71,30 +71,30 @@ contains
 
    function get_short_name(this) result(short_name)
       character(:), allocatable :: short_name
-      class(HistoryFieldConfigBase), intent(in) :: this
+      class(AbstractFieldEntry), intent(in) :: this
 
       short_name = this%short_name
    end function get_short_name
 
    function get_component_name(this) result(component_name)
       character(:), allocatable :: component_name
-      class(HistoryFieldConfigBase), intent(in) :: this
+      class(AbstractFieldEntry), intent(in) :: this
 
       component_name = this%component_name
    end function get_component_name
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(HistoryFieldConfigBase), intent(inout) :: this
+      class(AbstractFieldEntry), intent(inout) :: this
 
       std_name = this%short_name // '.' // this%component_name
    end function standard_name
 
    subroutine NUOPC_has_entry(this, name, has_entry, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name
-      logical,                       intent(  out) :: has_entry
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name
+      logical,                   intent(  out) :: has_entry
+      integer, optional,         intent(  out) :: rc
 
       integer :: status
 
@@ -105,9 +105,9 @@ contains
    end subroutine NUOPC_has_entry
 
    subroutine NUOPC_add_entry(this, name, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name
+      integer, optional,         intent(  out) :: rc
 
       integer :: status
 
@@ -118,9 +118,9 @@ contains
    end subroutine NUOPC_add_entry
 
    subroutine register_name(this, name, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name
+      integer, optional,         intent(  out) :: rc
 
       logical :: has_entry
       integer :: status
@@ -135,11 +135,11 @@ contains
    end subroutine register_name
 
    subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name1
-      character(*),                  intent(in   ) :: name2
-      logical,                       intent(  out) :: are_syno
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name1
+      character(*),              intent(in   ) :: name2
+      logical,                   intent(  out) :: are_syno
+      integer, optional,         intent(  out) :: rc
 
       integer :: status
 
@@ -150,10 +150,10 @@ contains
    end subroutine NUOPC_are_syno
 
    subroutine NUOPC_add_syno(this, name1, name2, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name1
-      character(*),                  intent(in   ) :: name2
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name1
+      character(*),              intent(in   ) :: name2
+      integer, optional,         intent(  out) :: rc
 
       integer :: status
 
@@ -164,10 +164,10 @@ contains
    end subroutine NUOPC_add_syno
 
    subroutine register_syno(this, name1, name2, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      character(*),                  intent(in   ) :: name1
-      character(*),                  intent(in   ) :: name2
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: name1
+      character(*),              intent(in   ) :: name2
+      integer, optional,         intent(  out) :: rc
 
       logical :: are_syno
       integer :: status
@@ -182,8 +182,8 @@ contains
    end subroutine register_syno
 
    subroutine register(this, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      integer, optional,             intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      integer, optional,         intent(  out) :: rc
 
       character(:), allocatable :: standard_name
       character(:), allocatable :: name
@@ -204,13 +204,13 @@ contains
 
    subroutine NUOPC_advert(this, state, standard_name,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      type(ESMF_State),              intent(inout) :: state
-      character(*),                  intent(in   ) :: standard_name
-      character(*), optional,        intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,        intent(in   ) :: SharePolicyField
-      character(*), optional,        intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,        intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      type(ESMF_State),          intent(inout) :: state
+      character(*),              intent(in   ) :: standard_name
+      character(*), optional,    intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,    intent(in   ) :: SharePolicyField
+      character(*), optional,    intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,    intent(  out) :: rc
 
       integer :: status
 
@@ -226,12 +226,12 @@ contains
 
    subroutine advertise(this, state, &
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(HistoryFieldConfigBase), intent(inout) :: this
-      type(ESMF_State),              intent(inout) :: state
-      character(*), optional,        intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,        intent(in   ) :: SharePolicyField
-      character(*), optional,        intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,        intent(  out) :: rc
+      class(AbstractFieldEntry), intent(inout) :: this
+      type(ESMF_State),          intent(inout) :: state
+      character(*), optional,    intent(in   ) :: TransferOfferGeomObject
+      character(*), optional,    intent(in   ) :: SharePolicyField
+      character(*), optional,    intent(in   ) :: SharePolicyGeomObject
+      integer,      optional,    intent(  out) :: rc
 
       integer :: status
 
@@ -245,4 +245,4 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
-end module MAPL_HistoryFieldConfigBase
+end module MAPL_AbstractFieldEntry
