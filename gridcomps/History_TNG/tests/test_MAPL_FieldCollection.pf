@@ -15,6 +15,7 @@ module Test_MAPL_FieldCollection
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
+   character(*), parameter :: units          = 'units'
    character(*), parameter :: alias_name     = 'alias_name'
    character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
 
@@ -25,7 +26,7 @@ contains
       type(FieldEntryCollection)          :: field_entry
       type(FieldEntryCollection), pointer :: field_collection_entry
 
-      call field_entry%initialize(short_name, component_name, alias_name)
+      call field_entry%initialize(short_name, component_name, units, alias_name)
 
       @assert_that(field_collection%size(),            is(equal_to(0_INT64)))
       @assert_that(field_collection%count(entry_name), is(equal_to(0_INT64)))

@@ -19,15 +19,16 @@ module MAPL_FieldEntryRegistry
       procedure :: name
    end type FieldEntryRegistry
 contains
-   subroutine initialize(this, short_name, component_name, alias_name)
+   subroutine initialize(this, short_name, component_name, units, alias_name)
       class(FieldEntryRegistry), intent(  out) :: this
       character(*),              intent(in   ) :: short_name
       character(*),              intent(in   ) :: component_name
+      character(*), optional,    intent(in   ) :: units
       character(*), optional,    intent(in   ) :: alias_name
 
       _UNUSED_DUMMY(alias_name)
 
-      call this%base_initialize(short_name, component_name)
+      call this%base_initialize(short_name, component_name, units=units)
    end subroutine initialize
 
    function name(this) result(field_name)

@@ -14,6 +14,7 @@ module Test_MAPL_AbstractFieldEntry
 
    character(*), parameter :: short_name        = 'short_name'
    character(*), parameter :: component_name    = 'component_name'
+   character(*), parameter :: field_units       = 'field_units'
    character(*), parameter :: true_standard     = 'short_name.component_name'
    character(*), parameter :: registered_name   = 'resgistered_name'
    character(*), parameter :: unregistered_name = 'unresgistered_name'
@@ -40,6 +41,7 @@ module Test_MAPL_AbstractFieldEntry
 
       character(:), allocatable :: has_entry_name
       character(:), allocatable :: add_entry_name
+      character(:), allocatable :: add_entry_units
 
       character(:), allocatable :: are_syno_name1
       character(:), allocatable :: are_syno_name2
@@ -58,6 +60,7 @@ module Test_MAPL_AbstractFieldEntry
       integer :: call_register_syno = 0
 
       type(StringVector)        :: registered_names
+      type(StringVector)        :: registered_units
       character(:), allocatable :: register_syno_name1
       character(:), allocatable :: register_syno_name2
    contains
@@ -79,15 +82,16 @@ module Test_MAPL_AbstractFieldEntry
       procedure :: NUOPC_advert
    end type test_AbstractFieldEntry_advertise
 contains
-   subroutine init(this, short_name, component_name, alias_name)
+   subroutine init(this, short_name, component_name, units, alias_name)
       class(test_AbstractFieldEntry), intent(  out) :: this
       character(*),                   intent(in   ) :: short_name
       character(*),                   intent(in   ) :: component_name
+      character(*), optional,         intent(in   ) :: units
       character(*), optional,         intent(in   ) :: alias_name
 
       _UNUSED_DUMMY(alias_name)
 
-      call this%base_initialize(short_name, component_name)
+      call this%base_initialize(short_name, component_name, units=units)
    end subroutine init
 
    function name(this) result(field_name)
@@ -126,15 +130,17 @@ contains
       _RETURN(status)
    end subroutine NUOPC_has_entry
 
-   subroutine NUOPC_add_entry(this, name, rc)
+   subroutine NUOPC_add_entry(this, name, units, rc)
       class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
       character(*),                         intent(in   ) :: name
+      character(*),                         intent(in   ) :: units
       integer, optional,                    intent(  out) :: rc
 
       integer :: status = 0
 
       this%add_entry = this%add_entry + 1
-      this%add_entry_name = name
+      this%add_entry_name  = name
+      this%add_entry_units = units
 
       _RETURN(status)
    end subroutine NUOPC_add_entry
@@ -181,15 +187,17 @@ contains
       std_name = this%get_short_name()
    end function standard_name
 
-   subroutine register_name(this, name, rc)
+   subroutine register_name(this, name, units, rc)
       class(test_AbstractFieldEntry_register), intent(inout) :: this
       character(*),                            intent(in   ) :: name
+      character(*),                            intent(in   ) :: units
       integer, optional,                       intent(  out) :: rc
 
       integer :: status
 
       this%call_register_name = this%call_register_name + 1
       call this%registered_names%push_back(name)
+      call this%registered_units%push_back(units)
 
       _RETURN(_SUCCESS)
    end subroutine register_name
@@ -243,10 +251,32 @@ contains
    end subroutine NUOPC_advert
 
    @test
+   subroutine test_base_initialize()
+      type(test_AbstractFieldEntry) :: field_entry_no_units
+      type(test_AbstractFieldEntry) :: field_entry_units
+
+      @assert_that(field_entry_no_units%get_short_name()     == '', is(true()))
+      @assert_that(field_entry_no_units%get_component_name() == '', is(true()))
+      @assert_that(field_entry_no_units%get_units()          == '', is(true()))
+      call field_entry_no_units%base_initialize(short_name, component_name)
+      @assert_that(field_entry_no_units%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry_no_units%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry_no_units%get_units()          == default_units,  is(true()))
+
+      @assert_that(field_entry_units%get_short_name()     == '', is(true()))
+      @assert_that(field_entry_units%get_component_name() == '', is(true()))
+      @assert_that(field_entry_units%get_units()          == '', is(true()))
+      call field_entry_units%base_initialize(short_name, component_name, units=field_units)
+      @assert_that(field_entry_units%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry_units%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry_units%get_units()          == field_units,    is(true()))
+   end subroutine test_base_initialize
+
+   @test
    subroutine test_standard_name()
       type(test_AbstractFieldEntry) :: field_entry
 
-      call field_entry%initialize(short_name, component_name)
+      call field_entry%initialize(short_name, component_name, units=field_units)
       @assert_that(field_entry%standard_name() == true_standard, is(true()))
    end subroutine test_standard_name
 
@@ -259,30 +289,35 @@ contains
 
       @assert_that(field_entry_no_add%has_entry, is(equal_to(0)))
       @assert_that(field_entry_no_add%add_entry, is(equal_to(0)))
-      @assert_that(allocated(field_entry_no_add%has_entry_name), is(false()))
-      @assert_that(allocated(field_entry_no_add%add_entry_name), is(false()))
+      @assert_that(allocated(field_entry_no_add%has_entry_name),  is(false()))
+      @assert_that(allocated(field_entry_no_add%add_entry_name),  is(false()))
+      @assert_that(allocated(field_entry_no_add%add_entry_units), is(false()))
 
-      call field_entry_no_add%register_name(registered_name, rc=status)
+      call field_entry_no_add%register_name(registered_name, field_units, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_entry_no_add%has_entry, is(equal_to(1)))
       @assert_that(field_entry_no_add%add_entry, is(equal_to(0)))
-      @assert_that(allocated(field_entry_no_add%has_entry_name), is(true()))
-      @assert_that(allocated(field_entry_no_add%add_entry_name), is(false()))
+      @assert_that(allocated(field_entry_no_add%has_entry_name),  is(true()))
+      @assert_that(allocated(field_entry_no_add%add_entry_name),  is(false()))
+      @assert_that(allocated(field_entry_no_add%add_entry_units), is(false()))
       @assert_that(field_entry_no_add%has_entry_name == registered_name, is(true()))
 
       @assert_that(field_entry_add%has_entry, is(equal_to(0)))
       @assert_that(field_entry_add%add_entry, is(equal_to(0)))
-      @assert_that(allocated(field_entry_add%has_entry_name), is(false()))
-      @assert_that(allocated(field_entry_add%add_entry_name), is(false()))
+      @assert_that(allocated(field_entry_add%has_entry_name),  is(false()))
+      @assert_that(allocated(field_entry_add%add_entry_name),  is(false()))
+      @assert_that(allocated(field_entry_add%add_entry_units), is(false()))
 
-      call field_entry_add%register_name(unregistered_name, rc=status)
+      call field_entry_add%register_name(unregistered_name, field_units, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_entry_add%has_entry, is(equal_to(1)))
       @assert_that(field_entry_add%add_entry, is(equal_to(1)))
-      @assert_that(allocated(field_entry_add%has_entry_name), is(true()))
-      @assert_that(allocated(field_entry_add%add_entry_name), is(true()))
-      @assert_that(field_entry_add%has_entry_name == unregistered_name, is(true()))
-      @assert_that(field_entry_add%add_entry_name == unregistered_name, is(true()))
+      @assert_that(allocated(field_entry_add%has_entry_name),  is(true()))
+      @assert_that(allocated(field_entry_add%add_entry_name),  is(true()))
+      @assert_that(allocated(field_entry_add%add_entry_units), is(true()))
+      @assert_that(field_entry_add%has_entry_name  == unregistered_name, is(true()))
+      @assert_that(field_entry_add%add_entry_name  == unregistered_name, is(true()))
+      @assert_that(field_entry_add%add_entry_units == field_units,       is(true()))
    end subroutine test_register_name
 
    @test
@@ -338,12 +373,13 @@ contains
 
       integer :: status
 
-      call field_entry_no_match%initialize(unmatch_names, component_name)
+      call field_entry_no_match%initialize(unmatch_names, component_name, units=field_units)
       @assert_that(field_entry_no_match%call_name,          is(equal_to(0)))
       @assert_that(field_entry_no_match%call_standard_name, is(equal_to(0)))
       @assert_that(field_entry_no_match%call_register_name, is(equal_to(0)))
       @assert_that(field_entry_no_match%call_register_syno, is(equal_to(0)))
       @assert_that(field_entry_no_match%registered_names%size(), is(equal_to(0_INT64)))
+      @assert_that(field_entry_no_match%registered_units%size(), is(equal_to(0_INT64)))
       @assert_that(allocated(field_entry_no_match%register_syno_name1), is(false()))
       @assert_that(allocated(field_entry_no_match%register_syno_name2), is(false()))
 
@@ -356,17 +392,21 @@ contains
       @assert_that(field_entry_no_match%registered_names%size(), is(equal_to(2_INT64)))
       @assert_that(field_entry_no_match%registered_names%at(1) == unmatch_names, is(true()))
       @assert_that(field_entry_no_match%registered_names%at(2) == other_name,    is(true()))
+      @assert_that(field_entry_no_match%registered_units%size(), is(equal_to(2_INT64)))
+      @assert_that(field_entry_no_match%registered_units%at(1) == field_units, is(true()))
+      @assert_that(field_entry_no_match%registered_units%at(2) == field_units, is(true()))
       @assert_that(allocated(field_entry_no_match%register_syno_name1), is(true()))
       @assert_that(allocated(field_entry_no_match%register_syno_name2), is(true()))
       @assert_that(field_entry_no_match%register_syno_name1 == unmatch_names, is(true()))
       @assert_that(field_entry_no_match%register_syno_name2 == other_name,    is(true()))
 
-      call field_entry_match%initialize(match_names, component_name)
+      call field_entry_match%initialize(match_names, component_name, units=field_units)
       @assert_that(field_entry_match%call_name,          is(equal_to(0)))
       @assert_that(field_entry_match%call_standard_name, is(equal_to(0)))
       @assert_that(field_entry_match%call_register_name, is(equal_to(0)))
       @assert_that(field_entry_match%call_register_syno, is(equal_to(0)))
       @assert_that(field_entry_match%registered_names%size(), is(equal_to(0_INT64)))
+      @assert_that(field_entry_match%registered_units%size(), is(equal_to(0_INT64)))
       @assert_that(allocated(field_entry_match%register_syno_name1), is(false()))
       @assert_that(allocated(field_entry_match%register_syno_name2), is(false()))
 
@@ -378,6 +418,8 @@ contains
       @assert_that(field_entry_match%call_register_syno, is(equal_to(0)))
       @assert_that(field_entry_match%registered_names%size(), is(equal_to(1_INT64)))
       @assert_that(field_entry_match%registered_names%at(1) == match_names, is(true()))
+      @assert_that(field_entry_match%registered_units%size(), is(equal_to(1_INT64)))
+      @assert_that(field_entry_match%registered_units%at(1) == field_units, is(true()))
       @assert_that(allocated(field_entry_match%register_syno_name1), is(false()))
       @assert_that(allocated(field_entry_match%register_syno_name2), is(false()))
    end subroutine test_register

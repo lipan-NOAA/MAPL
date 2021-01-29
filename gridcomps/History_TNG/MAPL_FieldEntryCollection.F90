@@ -27,13 +27,14 @@ module MAPL_FieldEntryCollection
       procedure :: registry_entry
    end type FieldEntryCollection
 contains
-   subroutine initialize(this, short_name, component_name, alias_name)
+   subroutine initialize(this, short_name, component_name, units, alias_name)
       class(FieldEntryCollection), intent(  out) :: this
       character(*),                intent(in   ) :: short_name
       character(*),                intent(in   ) :: component_name
+      character(*), optional,      intent(in   ) :: units
       character(*), optional,      intent(in   ) :: alias_name
 
-      call this%base_initialize(short_name, component_name)
+      call this%base_initialize(short_name, component_name, units=units)
 
       if (present(alias_name)) this%alias_name = alias_name
    end subroutine initialize
@@ -64,7 +65,8 @@ contains
       type(FieldEntryRegistry) :: field_entry
       class(FieldEntryCollection), intent(in) :: this
 
-      call field_entry%initialize(this%get_short_name(), this%get_component_name())
+      call field_entry%initialize(this%get_short_name(), &
+         this%get_component_name(), units=this%get_units())
    end function registry_entry
 end module MAPL_FieldEntryCollection
 

@@ -11,17 +11,22 @@ module MAPL_AbstractFieldEntry
    private
 
    public :: AbstractFieldEntry
+   public :: default_units
+
+   character(*), parameter :: default_units = '1'
 
    type, abstract :: AbstractFieldEntry
       private
       character(:), allocatable :: short_name
       character(:), allocatable :: component_name
+      character(:), allocatable :: units
    contains
       procedure, non_overridable :: base_initialize
       procedure(i_initialize), deferred :: initialize
 
       procedure :: get_short_name
       procedure :: get_component_name
+      procedure :: get_units
 
       procedure :: standard_name
       procedure(i_name), deferred :: name
@@ -47,23 +52,31 @@ module MAPL_AbstractFieldEntry
          class(AbstractFieldEntry), intent(inout) :: this
       end function
 
-      subroutine i_initialize(this, short_name, component_name, alias_name)
+      subroutine i_initialize(this, short_name, component_name, units, alias_name)
          import AbstractFieldEntry
          class(AbstractFieldEntry), intent(  out) :: this
          character(*),              intent(in   ) :: short_name
          character(*),              intent(in   ) :: component_name
+         character(*), optional,    intent(in   ) :: units
          character(*), optional,    intent(in   ) :: alias_name
       end subroutine i_initialize
    end interface
 
 contains
-   subroutine base_initialize(this, short_name, component_name)
+   subroutine base_initialize(this, short_name, component_name, units)
       class(AbstractFieldEntry), intent(  out) :: this
       character(*),              intent(in   ) :: short_name
       character(*),              intent(in   ) :: component_name
+      character(*), optional,    intent(in   ) :: units
 
-      this%short_name = short_name
+      this%short_name     = short_name
       this%component_name = component_name
+
+      if (present(units)) then
+         this%units = units
+      else
+         this%units = default_units
+      end if
    end subroutine base_initialize
 
    function get_short_name(this) result(short_name)
@@ -79,6 +92,13 @@ contains
 
       component_name = this%component_name
    end function get_component_name
+
+   function get_units(this) result(units)
+      character(:), allocatable :: units
+      class(AbstractFieldEntry), intent(in) :: this
+
+      units = this%units
+   end function get_units
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
@@ -101,22 +121,24 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_has_entry
 
-   subroutine NUOPC_add_entry(this, name, rc)
+   subroutine NUOPC_add_entry(this, name, units, rc)
       class(AbstractFieldEntry), intent(inout) :: this
       character(*),              intent(in   ) :: name
+      character(*),              intent(in   ) :: units
       integer, optional,         intent(  out) :: rc
 
       integer :: status
 
-      call NUOPC_FieldDictionaryAddEntry(name, "1", rc=status)
+      call NUOPC_FieldDictionaryAddEntry(name, units, rc=status)
       VERIFY_NUOPC_(status)
 
       _RETURN(_SUCCESS)
    end subroutine NUOPC_add_entry
 
-   subroutine register_name(this, name, rc)
+   subroutine register_name(this, name, units, rc)
       class(AbstractFieldEntry), intent(inout) :: this
       character(*),              intent(in   ) :: name
+      character(*),              intent(in   ) :: units
       integer, optional,         intent(  out) :: rc
 
       logical :: has_entry
@@ -125,7 +147,7 @@ contains
       call this%NUOPC_has_entry(name, has_entry, __RC__)
 
       if (.not. has_entry) then
-         call this%NUOPC_add_entry(name, __RC__)
+         call this%NUOPC_add_entry(name, units, __RC__)
       end if
 
       _RETURN(_SUCCESS)
@@ -184,15 +206,18 @@ contains
 
       character(:), allocatable :: standard_name
       character(:), allocatable :: name
+      character(:), allocatable :: units
 
       integer :: status
 
+      units = this%get_units()
+
       standard_name = this%standard_name()
-      call this%register_name(standard_name, __RC__)
+      call this%register_name(standard_name, units, __RC__)
 
       name = this%name()
       if (standard_name /= name) then
-         call this%register_name(name, __RC__)
+         call this%register_name(name, units, __RC__)
          call this%register_syno(standard_name, name, __RC__)
       end if
 

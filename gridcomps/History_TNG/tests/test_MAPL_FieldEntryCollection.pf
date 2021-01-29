@@ -14,6 +14,7 @@ module Test_MAPL_FieldEntryCollection
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
+   character(*), parameter :: units          = 'units'
    character(*), parameter :: alias_name     = 'alias_name'
    character(*), parameter :: std_out_name   = 'std_out_name'
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
@@ -49,7 +50,7 @@ contains
       @assert_that(field_entry_alias%get_short_name()     == '',     is(true()))
       @assert_that(field_entry_alias%get_component_name() == '',     is(true()))
       @assert_that(field_entry_alias%get_alias_name()     == '',     is(true()))
-      call field_entry_alias%initialize(short_name, component_name, alias_name)
+      call field_entry_alias%initialize(short_name, component_name, units, alias_name)
       @assert_that(field_entry_alias%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_alias%get_component_name() == component_name, is(true()))
       @assert_that(field_entry_alias%get_alias_name()     == alias_name,     is(true()))
@@ -60,10 +61,11 @@ contains
       type(FieldEntryCollection) :: field
       type(FieldEntryRegistry)   :: field_entry
 
-      call field%initialize(short_name, component_name, alias_name)
+      call field%initialize(short_name, component_name, units, alias_name)
       field_entry = field%registry_entry()
       @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry%get_units()          == units,          is(true()))
    end subroutine test_registry_entry
 
    @test
@@ -77,7 +79,7 @@ contains
       @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(1)))
 
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(0)))
-      call field_entry_alias%initialize(short_name, component_name, alias_name)
+      call field_entry_alias%initialize(short_name, component_name, units, alias_name)
       @assert_that(field_entry_alias%name() == alias_out_name, is(true()))
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(1)))
    end subroutine test_name
