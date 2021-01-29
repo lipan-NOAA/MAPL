@@ -1,6 +1,5 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
 module MAPL_FieldRegistry
    use, intrinsic :: iso_fortran_env, only: INT64

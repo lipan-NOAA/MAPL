@@ -1,6 +1,5 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
 module Test_MAPL_AbstractFieldEntry
    use, intrinsic :: iso_fortran_env, only: INT64
@@ -9,6 +8,7 @@ module Test_MAPL_AbstractFieldEntry
    use NUOPC
    use gFTL_StringVector
    use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
 
    use MAPL_AbstractFieldEntry
 
@@ -82,13 +82,15 @@ module Test_MAPL_AbstractFieldEntry
       procedure :: NUOPC_advert
    end type test_AbstractFieldEntry_advertise
 contains
-   subroutine init(this, short_name, component_name, units, alias_name)
-      class(test_AbstractFieldEntry), intent(  out) :: this
-      character(*),                   intent(in   ) :: short_name
-      character(*),                   intent(in   ) :: component_name
-      character(*), optional,         intent(in   ) :: units
-      character(*), optional,         intent(in   ) :: alias_name
+   subroutine init(this, short_name, component_name, unusable, units, alias_name)
+      class(test_AbstractFieldEntry),   intent(  out) :: this
+      character(*),                     intent(in   ) :: short_name
+      character(*),                     intent(in   ) :: component_name
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: units
+      character(*),           optional, intent(in   ) :: alias_name
 
+      _UNUSED_DUMMY(unusable)
       _UNUSED_DUMMY(alias_name)
 
       call this%base_initialize(short_name, component_name, units=units)

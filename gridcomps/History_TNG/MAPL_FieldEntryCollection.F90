@@ -1,11 +1,11 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
 module MAPL_FieldEntryCollection
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
 
    use MAPL_AbstractFieldEntry
    use MAPL_FieldEntryRegistry
@@ -27,12 +27,15 @@ module MAPL_FieldEntryCollection
       procedure :: registry_entry
    end type FieldEntryCollection
 contains
-   subroutine initialize(this, short_name, component_name, units, alias_name)
-      class(FieldEntryCollection), intent(  out) :: this
-      character(*),                intent(in   ) :: short_name
-      character(*),                intent(in   ) :: component_name
-      character(*), optional,      intent(in   ) :: units
-      character(*), optional,      intent(in   ) :: alias_name
+   subroutine initialize(this, short_name, component_name, unusable, units, alias_name)
+      class(FieldEntryCollection),      intent(  out) :: this
+      character(*),                     intent(in   ) :: short_name
+      character(*),                     intent(in   ) :: component_name
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: units
+      character(*),           optional, intent(in   ) :: alias_name
+
+      _UNUSED_DUMMY(unusable)
 
       call this%base_initialize(short_name, component_name, units=units)
 

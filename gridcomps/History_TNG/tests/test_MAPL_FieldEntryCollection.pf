@@ -1,6 +1,5 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
 module Test_MAPL_FieldEntryCollection
    use, intrinsic :: iso_fortran_env, only: INT64
@@ -50,7 +49,7 @@ contains
       @assert_that(field_entry_alias%get_short_name()     == '',     is(true()))
       @assert_that(field_entry_alias%get_component_name() == '',     is(true()))
       @assert_that(field_entry_alias%get_alias_name()     == '',     is(true()))
-      call field_entry_alias%initialize(short_name, component_name, units, alias_name)
+      call field_entry_alias%initialize(short_name, component_name, units=units, alias_name=alias_name)
       @assert_that(field_entry_alias%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_alias%get_component_name() == component_name, is(true()))
       @assert_that(field_entry_alias%get_alias_name()     == alias_name,     is(true()))
@@ -61,7 +60,7 @@ contains
       type(FieldEntryCollection) :: field
       type(FieldEntryRegistry)   :: field_entry
 
-      call field%initialize(short_name, component_name, units, alias_name)
+      call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
       field_entry = field%registry_entry()
       @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry%get_component_name() == component_name, is(true()))
@@ -79,7 +78,7 @@ contains
       @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(1)))
 
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(0)))
-      call field_entry_alias%initialize(short_name, component_name, units, alias_name)
+      call field_entry_alias%initialize(short_name, component_name, units=units, alias_name=alias_name)
       @assert_that(field_entry_alias%name() == alias_out_name, is(true()))
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(1)))
    end subroutine test_name

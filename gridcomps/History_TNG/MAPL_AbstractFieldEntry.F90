@@ -1,11 +1,11 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
 module MAPL_AbstractFieldEntry
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
 
    implicit none
    private
@@ -48,26 +48,31 @@ module MAPL_AbstractFieldEntry
    abstract interface
       function i_name(this) result(field_name)
          import AbstractFieldEntry
-         character(:), allocatable :: field_name
-         class(AbstractFieldEntry), intent(inout) :: this
+            character(:), allocatable :: field_name
+            class(AbstractFieldEntry), intent(inout) :: this
       end function
 
-      subroutine i_initialize(this, short_name, component_name, units, alias_name)
+      subroutine i_initialize(this, short_name, component_name, unusable, units, alias_name)
+         use MAPL_KeywordEnforcerMod
          import AbstractFieldEntry
-         class(AbstractFieldEntry), intent(  out) :: this
-         character(*),              intent(in   ) :: short_name
-         character(*),              intent(in   ) :: component_name
-         character(*), optional,    intent(in   ) :: units
-         character(*), optional,    intent(in   ) :: alias_name
+            class(AbstractFieldEntry),        intent(  out) :: this
+            character(*),                     intent(in   ) :: short_name
+            character(*),                     intent(in   ) :: component_name
+            class(KeywordEnforcer), optional, intent(in   ) :: unusable
+            character(*),           optional, intent(in   ) :: units
+            character(*),           optional, intent(in   ) :: alias_name
       end subroutine i_initialize
    end interface
 
 contains
-   subroutine base_initialize(this, short_name, component_name, units)
-      class(AbstractFieldEntry), intent(  out) :: this
-      character(*),              intent(in   ) :: short_name
-      character(*),              intent(in   ) :: component_name
-      character(*), optional,    intent(in   ) :: units
+   subroutine base_initialize(this, short_name, component_name, unusable, units)
+      class(AbstractFieldEntry),        intent(  out) :: this
+      character(*),                     intent(in   ) :: short_name
+      character(*),                     intent(in   ) :: component_name
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: units
+
+      _UNUSED_DUMMY(unusable)
 
       this%short_name     = short_name
       this%component_name = component_name
