@@ -11,6 +11,9 @@ module MAPL_FieldCollection
    use MAPL_FieldEntryCollection
    use MAPL_FieldEntryCollectionMap
 
+   use MAPL_FieldEntryRegistry
+   use MAPL_FieldRegistry
+
    implicit none
    private
 
@@ -24,6 +27,9 @@ module MAPL_FieldCollection
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: advertise
+      procedure :: register
    end type FieldCollection
 contains
    integer(kind=INT64) function size(this)
@@ -48,11 +54,58 @@ contains
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldCollection),      intent(inout) :: this
-      class(FieldEntryCollection), intent(inout) :: field_entry
+      class(FieldCollection),     intent(inout) :: this
+      type(FieldEntryCollection), intent(inout) :: field_entry
 
       character(:), allocatable :: name
 
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
+
+   subroutine advertise(this, state, &
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(FieldCollection), intent(inout) :: this
+      type(ESMF_State),       intent(inout) :: state
+      character(*), optional, intent(in   ) :: TransferOfferGeomObject
+      character(*), optional, intent(in   ) :: SharePolicyField
+      character(*), optional, intent(in   ) :: SharePolicyGeomObject
+      integer,      optional, intent(  out) :: rc
+
+      type(FieldEntryCollection)            :: field_entry
+      type(FieldEntryCollectionMapIterator) :: iter
+
+      integer :: status
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry = iter%value()
+         call field_entry%advertise(state, &
+            TransferOfferGeomObject=TransferOfferGeomObject, &
+            SharePolicyField=SharePolicyField, &
+            SharePolicyGeomObject=SharePolicyGeomObject, &
+            __RC__)
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
+
+   subroutine register(this, field_registry)
+      class(FieldCollection), intent(inout) :: this
+      type(FieldRegistry),    intent(inout) :: field_registry
+
+      type(FieldEntryCollection)            :: field_entry
+      type(FieldEntryRegistry)              :: registry_entry
+      type(FieldEntryCollectionMapIterator) :: iter
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry    = iter%value()
+         registry_entry = field_entry%registry_entry()
+         call field_registry%insert(registry_entry)
+
+         call iter%next()
+      end do
+   end subroutine register
 end module MAPL_FieldCollection

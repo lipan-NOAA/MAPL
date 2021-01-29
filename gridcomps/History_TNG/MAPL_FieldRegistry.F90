@@ -24,6 +24,8 @@ module MAPL_FieldRegistry
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: advertise
    end type FieldRegistry
 contains
    integer(kind=INT64) function size(this)
@@ -48,11 +50,40 @@ contains
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldRegistry),      intent(inout) :: this
-      class(FieldEntryRegistry), intent(inout) :: field_entry
+      class(FieldRegistry),     intent(inout) :: this
+      type(FieldEntryRegistry), intent(inout) :: field_entry
 
       character(:), allocatable :: name
 
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
+
+   subroutine advertise(this, state, &
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(FieldRegistry),   intent(inout) :: this
+      type(ESMF_State),       intent(inout) :: state
+      character(*), optional, intent(in   ) :: TransferOfferGeomObject
+      character(*), optional, intent(in   ) :: SharePolicyField
+      character(*), optional, intent(in   ) :: SharePolicyGeomObject
+      integer,      optional, intent(  out) :: rc
+
+      type(FieldEntryRegistry)            :: field_entry
+      type(FieldEntryRegistryMapIterator) :: iter
+
+      integer :: status
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry = iter%value()
+         call field_entry%advertise(state, &
+            TransferOfferGeomObject=TransferOfferGeomObject, &
+            SharePolicyField=SharePolicyField, &
+            SharePolicyGeomObject=SharePolicyGeomObject, &
+            __RC__)
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
 end module MAPL_FieldRegistry
