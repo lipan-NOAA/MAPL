@@ -9,8 +9,8 @@ module Test_MAPL_FieldEntryCollection
    use NUOPC
    use MAPL_ExceptionHandling
 
-   use MAPL_FieldEntryCollection
    use MAPL_FieldEntryRegistry
+   use MAPL_FieldEntryCollection
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'

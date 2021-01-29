@@ -1,0 +1,41 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+#include "unused_dummy.H"
+
+module Test_MAPL_FieldCollection
+   use, intrinsic :: iso_fortran_env, only: INT64
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use MAPL_ExceptionHandling
+
+   use MAPL_FieldEntryRegistry
+   use MAPL_FieldEntryCollection
+   use MAPL_FieldCollection
+
+   character(*), parameter :: short_name     = 'short_name'
+   character(*), parameter :: component_name = 'component_name'
+   character(*), parameter :: alias_name     = 'alias_name'
+   character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
+
+contains
+   @test
+   subroutine test_map()
+      type(FieldCollection)               :: field_collection
+      type(FieldEntryCollection)          :: field_entry
+      type(FieldEntryCollection), pointer :: field_collection_entry
+
+      call field_entry%initialize(short_name, component_name, alias_name)
+
+      @assert_that(field_collection%size(),            is(equal_to(0_INT64)))
+      @assert_that(field_collection%count(entry_name), is(equal_to(0_INT64)))
+      call field_collection%insert(field_entry)
+      @assert_that(field_collection%size(),            is(equal_to(1_INT64)))
+      @assert_that(field_collection%count(entry_name), is(equal_to(1_INT64)))
+
+      field_collection_entry = field_collection%at(entry_name)
+      @assert_that(field_collection_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_collection_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_collection_entry%get_alias_name()     == alias_name,     is(true()))
+   end subroutine test_map
+end module Test_MAPL_FieldCollection
