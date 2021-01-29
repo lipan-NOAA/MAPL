@@ -32,22 +32,22 @@ contains
 
    @test
    subroutine test_initialize()
-      type(FieldEntryRegistry) :: field_config
+      type(FieldEntryRegistry) :: field_entry
 
-      @assert_that(field_config%get_short_name()     == '',     is(true()))
-      @assert_that(field_config%get_component_name() == '',     is(true()))
-      call field_config%initialize(short_name, component_name)
-      @assert_that(field_config%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_config%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry%get_short_name()     == '',     is(true()))
+      @assert_that(field_entry%get_component_name() == '',     is(true()))
+      call field_entry%initialize(short_name, component_name)
+      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry%get_component_name() == component_name, is(true()))
    end subroutine test_initialize
 
    @test
    subroutine test_name()
-      type(test_FieldEntryRegistry) :: field_config
+      type(test_FieldEntryRegistry) :: field_entry
 
-      @assert_that(field_config%call_standard_name, is(equal_to(0)))
-      call field_config%initialize(short_name, component_name)
-      @assert_that(field_config%name() == std_out_name, is(true()))
-      @assert_that(field_config%call_standard_name, is(equal_to(1)))
+      @assert_that(field_entry%call_standard_name, is(equal_to(0)))
+      call field_entry%initialize(short_name, component_name)
+      @assert_that(field_entry%name() == std_out_name, is(true()))
+      @assert_that(field_entry%call_standard_name, is(equal_to(1)))
    end subroutine test_name
 end module Test_MAPL_FieldEntryRegistry
