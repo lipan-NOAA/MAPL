@@ -71,8 +71,8 @@ contains
       character(*), optional, intent(in   ) :: SharePolicyGeomObject
       integer,      optional, intent(  out) :: rc
 
-      type(FieldEntryCollection)            :: field_entry
-      type(FieldEntryCollectionMapIterator) :: iter
+      class(FieldEntryCollection), allocatable :: field_entry
+      type(FieldEntryCollectionMapIterator)    :: iter
 
       integer :: status
 
@@ -95,9 +95,9 @@ contains
       class(FieldCollection), intent(inout) :: this
       type(FieldRegistry),    intent(inout) :: field_registry
 
-      type(FieldEntryCollection)            :: field_entry
-      type(FieldEntryRegistry)              :: registry_entry
-      type(FieldEntryCollectionMapIterator) :: iter
+      class(FieldEntryCollection), allocatable :: field_entry
+      type(FieldEntryRegistry)                 :: registry_entry
+      type(FieldEntryCollectionMapIterator)    :: iter
 
       iter = this%map%begin()
       do while(iter /= this%map%end())

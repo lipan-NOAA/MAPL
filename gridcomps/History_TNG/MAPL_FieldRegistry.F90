@@ -67,8 +67,8 @@ contains
       character(*), optional, intent(in   ) :: SharePolicyGeomObject
       integer,      optional, intent(  out) :: rc
 
-      type(FieldEntryRegistry)            :: field_entry
-      type(FieldEntryRegistryMapIterator) :: iter
+      class(FieldEntryRegistry), allocatable :: field_entry
+      type(FieldEntryRegistryMapIterator)    :: iter
 
       integer :: status
 
