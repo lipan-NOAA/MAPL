@@ -7,7 +7,6 @@ module Test_MAPL_FieldEntryCollection
    use pFUnit
    use ESMF
    use NUOPC
-   use gFTL_StringVector
    use MAPL_ExceptionHandling
 
    use MAPL_FieldEntryCollection
@@ -23,7 +22,6 @@ module Test_MAPL_FieldEntryCollection
    contains
       procedure :: standard_name
    end type test_FieldEntryCollection
-
 contains
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name

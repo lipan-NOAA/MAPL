@@ -18,7 +18,7 @@ module MAPL_AbstractFieldEntry
       character(:), allocatable :: component_name
    contains
       procedure, non_overridable :: base_initialize
-      procedure :: initialize
+      procedure(i_initialize), deferred :: initialize
 
       procedure :: get_short_name
       procedure :: get_component_name
@@ -46,6 +46,14 @@ module MAPL_AbstractFieldEntry
          character(:), allocatable :: field_name
          class(AbstractFieldEntry), intent(inout) :: this
       end function
+
+      subroutine i_initialize(this, short_name, component_name, alias_name)
+         import AbstractFieldEntry
+         class(AbstractFieldEntry), intent(  out) :: this
+         character(*),              intent(in   ) :: short_name
+         character(*),              intent(in   ) :: component_name
+         character(*), optional,    intent(in   ) :: alias_name
+      end subroutine i_initialize
    end interface
 
 contains
@@ -57,17 +65,6 @@ contains
       this%short_name = short_name
       this%component_name = component_name
    end subroutine base_initialize
-
-   subroutine initialize(this, short_name, component_name, alias_name)
-      class(AbstractFieldEntry), intent(  out) :: this
-      character(*),              intent(in   ) :: short_name
-      character(*),              intent(in   ) :: component_name
-      character(*), optional,    intent(in   ) :: alias_name
-
-      call this%base_initialize(short_name, component_name)
-
-      _UNUSED_DUMMY(alias_name)
-   end subroutine initialize
 
    function get_short_name(this) result(short_name)
       character(:), allocatable :: short_name

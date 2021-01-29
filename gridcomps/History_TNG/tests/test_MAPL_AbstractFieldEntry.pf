@@ -28,6 +28,7 @@ module Test_MAPL_AbstractFieldEntry
    type, extends(AbstractFieldEntry) :: test_AbstractFieldEntry
       integer :: call_name = 0
    contains
+      procedure :: initialize => init
       procedure :: name
    end type test_AbstractFieldEntry
 
@@ -78,6 +79,17 @@ module Test_MAPL_AbstractFieldEntry
       procedure :: NUOPC_advert
    end type test_AbstractFieldEntry_advertise
 contains
+   subroutine init(this, short_name, component_name, alias_name)
+      class(test_AbstractFieldEntry), intent(  out) :: this
+      character(*),                   intent(in   ) :: short_name
+      character(*),                   intent(in   ) :: component_name
+      character(*), optional,         intent(in   ) :: alias_name
+
+      _UNUSED_DUMMY(alias_name)
+
+      call this%base_initialize(short_name, component_name)
+   end subroutine init
+
    function name(this) result(field_name)
       character(:), allocatable :: field_name
       class(test_AbstractFieldEntry), intent(inout) :: this
