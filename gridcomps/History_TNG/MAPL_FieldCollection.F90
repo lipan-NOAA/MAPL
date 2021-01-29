@@ -6,6 +6,7 @@ module MAPL_FieldCollection
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
 
    use MAPL_FieldEntryCollection
    use MAPL_FieldEntryCollectionMap
@@ -61,19 +62,22 @@ contains
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
 
-   subroutine advertise(this, state, &
+   subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(FieldCollection), intent(inout) :: this
-      type(ESMF_State),       intent(inout) :: state
-      character(*), optional, intent(in   ) :: TransferOfferGeomObject
-      character(*), optional, intent(in   ) :: SharePolicyField
-      character(*), optional, intent(in   ) :: SharePolicyGeomObject
-      integer,      optional, intent(  out) :: rc
+      class(FieldCollection),           intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
 
       class(FieldEntryCollection), allocatable :: field_entry
       type(FieldEntryCollectionMapIterator)    :: iter
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       iter = this%map%begin()
       do while(iter /= this%map%end())

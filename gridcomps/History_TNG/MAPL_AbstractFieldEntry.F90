@@ -251,16 +251,19 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_advert
 
-   subroutine advertise(this, state, &
+   subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      type(ESMF_State),          intent(inout) :: state
-      character(*), optional,    intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,    intent(in   ) :: SharePolicyField
-      character(*), optional,    intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,    intent(  out) :: rc
+      class(AbstractFieldEntry),        intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call this%register(__RC__)
 
