@@ -6,7 +6,9 @@ module MAPL_FieldEntryCollection
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
+
    use MAPL_AbstractFieldEntry
+   use MAPL_FieldEntryRegistry
 
    implicit none
    private
@@ -21,6 +23,8 @@ module MAPL_FieldEntryCollection
       procedure :: get_alias_name
 
       procedure :: name
+
+      procedure :: registry_entry
    end type FieldEntryCollection
 contains
    subroutine initialize(this, short_name, component_name, alias_name)
@@ -55,6 +59,13 @@ contains
          field_name = standard_name
       end if
    end function name
+
+   function registry_entry(this) result(field_entry)
+      type(FieldEntryRegistry) :: field_entry
+      class(FieldEntryCollection), intent(in) :: this
+
+      call field_entry%initialize(this%get_short_name(), this%get_component_name())
+   end function registry_entry
 end module MAPL_FieldEntryCollection
 
 module MAPL_FieldEntryCollectionMap

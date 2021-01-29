@@ -10,6 +10,7 @@ module Test_MAPL_FieldEntryCollection
    use MAPL_ExceptionHandling
 
    use MAPL_FieldEntryCollection
+   use MAPL_FieldEntryRegistry
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -53,6 +54,17 @@ contains
       @assert_that(field_config_alias%get_component_name() == component_name, is(true()))
       @assert_that(field_config_alias%get_alias_name()     == alias_name,     is(true()))
    end subroutine test_initialize
+
+   @test
+   subroutine test_registry_entry()
+      type(FieldEntryCollection) :: field
+      type(FieldEntryRegistry)   :: field_entry
+
+      call field%initialize(short_name, component_name, alias_name)
+      field_entry = field%registry_entry()
+      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry%get_component_name() == component_name, is(true()))
+   end subroutine test_registry_entry
 
    @test
    subroutine test_name()
