@@ -56,3 +56,15 @@ contains
       end if
    end function name
 end module MAPL_HistoryFieldConfigCollection
+
+module MAPL_HistoryFieldConfigCollectionMap
+   use MAPL_HistoryFieldConfigCollection
+
+#include "types/key_deferredLengthString.inc"
+#define _value type(HistoryFieldConfigCollection)
+
+#define _map HistoryFieldConfigCollectionMap
+#define _iterator HistoryFieldConfigCollectionMapIterator
+#define _alt
+#include "templates/map.inc"
+end module MAPL_HistoryFieldConfigCollectionMap
