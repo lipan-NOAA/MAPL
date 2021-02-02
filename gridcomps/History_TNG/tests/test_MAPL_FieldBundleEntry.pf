@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module Test_MAPL_FieldEntryCollection
+module Test_MAPL_FieldBundleEntry
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -9,7 +9,7 @@ module Test_MAPL_FieldEntryCollection
    use MAPL_ExceptionHandling
 
    use MAPL_FieldEntryRegistry
-   use MAPL_FieldEntryCollection
+   use MAPL_FieldBundleEntry
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -18,15 +18,15 @@ module Test_MAPL_FieldEntryCollection
    character(*), parameter :: std_out_name   = 'std_out_name'
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
 
-   type, extends(FieldEntryCollection) :: test_FieldEntryCollection
+   type, extends(FieldBundleEntry) :: test_FieldBundleEntry
       integer :: call_standard_name = 0
    contains
       procedure :: standard_name
-   end type test_FieldEntryCollection
+   end type test_FieldBundleEntry
 contains
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(test_FieldEntryCollection), intent(inout) :: this
+      class(test_FieldBundleEntry), intent(inout) :: this
 
       this%call_standard_name = this%call_standard_name + 1
 
@@ -35,8 +35,8 @@ contains
 
    @test
    subroutine test_initialize()
-      type(FieldEntryCollection) :: field_entry_no_alias
-      type(FieldEntryCollection) :: field_entry_alias
+      type(FieldBundleEntry) :: field_entry_no_alias
+      type(FieldBundleEntry) :: field_entry_alias
 
       @assert_that(field_entry_no_alias%get_short_name()     == '',     is(true()))
       @assert_that(field_entry_no_alias%get_component_name() == '',     is(true()))
@@ -57,7 +57,7 @@ contains
 
    @test
    subroutine test_registry_entry()
-      type(FieldEntryCollection) :: field
+      type(FieldBundleEntry) :: field
       type(FieldEntryRegistry)   :: field_entry
 
       call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
@@ -69,8 +69,8 @@ contains
 
    @test
    subroutine test_name()
-      type(test_FieldEntryCollection) :: field_entry_no_alias
-      type(test_FieldEntryCollection) :: field_entry_alias
+      type(test_FieldBundleEntry) :: field_entry_no_alias
+      type(test_FieldBundleEntry) :: field_entry_alias
 
       @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(0)))
       call field_entry_no_alias%initialize(short_name, component_name)
@@ -82,4 +82,4 @@ contains
       @assert_that(field_entry_alias%name() == alias_out_name, is(true()))
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(1)))
    end subroutine test_name
-end module Test_MAPL_FieldEntryCollection
+end module Test_MAPL_FieldBundleEntry

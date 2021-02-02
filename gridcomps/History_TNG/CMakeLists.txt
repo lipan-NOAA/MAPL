@@ -4,10 +4,10 @@ set (srcs
     MAPL_AbstractFieldEntry.F90
     MAPL_FieldEntryRegistry.F90
     MAPL_FieldEntryRegistryMap.F90
-    MAPL_FieldEntryCollection.F90
-    MAPL_FieldEntryCollectionMap.F90
     MAPL_FieldRegistry.F90
-    MAPL_FieldCollection.F90
+    MAPL_FieldBundleEntry.F90
+    MAPL_FieldBundleEntryMap.F90
+    MAPL_FieldBundle.F90
     MAPL_Collection.F90
     MAPL_HistoryConfig.F90
     MAPL_HistoryWriter.F90

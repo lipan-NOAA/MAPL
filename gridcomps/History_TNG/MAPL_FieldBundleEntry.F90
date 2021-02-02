@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldEntryCollection
+module MAPL_FieldBundleEntry
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
@@ -13,9 +13,9 @@ module MAPL_FieldEntryCollection
    implicit none
    private
 
-   public FieldEntryCollection
+   public FieldBundleEntry
 
-   type, extends(AbstractFieldEntry) :: FieldEntryCollection
+   type, extends(AbstractFieldEntry) :: FieldBundleEntry
       private
       character(:), allocatable :: alias_name
    contains
@@ -27,10 +27,10 @@ module MAPL_FieldEntryCollection
       procedure :: name
 
       procedure :: registry_entry
-   end type FieldEntryCollection
+   end type FieldBundleEntry
 contains
    subroutine initialize(this, short_name, component_name, unusable, units, alias_name)
-      class(FieldEntryCollection),      intent(  out) :: this
+      class(FieldBundleEntry),          intent(  out) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
@@ -46,13 +46,13 @@ contains
 
    function get_alias_name(this) result(alias)
       character(:), allocatable :: alias
-      class(FieldEntryCollection), intent(in) :: this
+      class(FieldBundleEntry), intent(in) :: this
 
       alias = this%alias_name
    end function get_alias_name
 
    subroutine set_alias_name(this, alias_name, rc)
-      class(FieldEntryCollection), intent(inout) :: this
+      class(FieldBundleEntry), intent(inout) :: this
       character(*),                intent(in   ) :: alias_name
       integer, optional,           intent(  out) :: rc
 
@@ -69,7 +69,7 @@ contains
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(FieldEntryCollection), intent(inout) :: this
+      class(FieldBundleEntry), intent(inout) :: this
 
       character(:), allocatable :: standard_name
 
@@ -84,9 +84,9 @@ contains
 
    function registry_entry(this) result(field_entry)
       type(FieldEntryRegistry) :: field_entry
-      class(FieldEntryCollection), intent(in) :: this
+      class(FieldBundleEntry), intent(in) :: this
 
       call field_entry%initialize(this%get_short_name(), &
          this%get_component_name(), units=this%get_units())
    end function registry_entry
-end module MAPL_FieldEntryCollection
+end module MAPL_FieldBundleEntry

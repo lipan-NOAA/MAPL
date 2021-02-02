@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldCollection
+module MAPL_FieldBundle
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
@@ -9,8 +9,8 @@ module MAPL_FieldCollection
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldEntryCollection
-   use MAPL_FieldEntryCollectionMap
+   use MAPL_FieldBundleEntry
+   use MAPL_FieldBundleEntryMap
 
    use MAPL_FieldEntryRegistry
    use MAPL_FieldRegistry
@@ -18,14 +18,14 @@ module MAPL_FieldCollection
    implicit none
    private
 
-   public FieldCollection
+   public FieldBundle
 
    character(*), parameter :: alias_key = 'alias'
    character(*), parameter :: units_key = 'units'
 
-   type :: FieldCollection
+   type :: FieldBundle
       private
-      type(FieldEntryCollectionMap) :: map
+      type(FieldBundleEntryMap) :: map
    contains
       procedure :: size
       procedure :: count
@@ -38,32 +38,32 @@ module MAPL_FieldCollection
 
       procedure :: advertise
       procedure :: register
-   end type FieldCollection
+   end type FieldBundle
 contains
    integer(kind=INT64) function size(this)
-      class(FieldCollection), intent(in) :: this
+      class(FieldBundle), intent(in) :: this
 
       size = this%map%size()
    end function size
 
    integer(kind=INT64) function count(this, key)
-      class(FieldCollection), intent(in) :: this
+      class(FieldBundle), intent(in) :: this
       character(*),           intent(in) :: key
 
       count = this%map%count(key)
    end function count
 
    function at(this, key) result(field_entry)
-      class(FieldEntryCollection), pointer :: field_entry
-      class(FieldCollection), intent(in) :: this
+      class(FieldBundleEntry), pointer :: field_entry
+      class(FieldBundle), intent(in) :: this
       character(*),           intent(in) :: key
 
       field_entry => this%map%at(key)
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldCollection),     intent(inout) :: this
-      type(FieldEntryCollection), intent(inout) :: field_entry
+      class(FieldBundle),     intent(inout) :: this
+      type(FieldBundleEntry), intent(inout) :: field_entry
 
       character(:), allocatable :: name
 
@@ -71,7 +71,7 @@ contains
    end subroutine insert
 
    subroutine import_set(this, config, rc)
-      class(FieldCollection), intent(inout) :: this
+      class(FieldBundle), intent(inout) :: this
       type(Configuration),    intent(inout) :: config
       integer, optional,      intent(  out) :: rc
 
@@ -94,7 +94,7 @@ contains
    end subroutine import_set
 
    subroutine import_component(this, component_name, config, rc)
-      class(FieldCollection), intent(inout) :: this
+      class(FieldBundle), intent(inout) :: this
       character(*),           intent(in   ) :: component_name
       type(Configuration),    intent(inout) :: config
       integer, optional,      intent(  out) :: rc
@@ -118,7 +118,7 @@ contains
    end subroutine import_component
 
    subroutine import_field(this, short_name, component_name, config, unusable, rc)
-      class(FieldCollection),           intent(inout) :: this
+      class(FieldBundle),           intent(inout) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       type(Configuration),              intent(inout) :: config
@@ -127,7 +127,7 @@ contains
 
       character(:), allocatable  :: alias
       character(:), allocatable  :: units
-      type(FieldEntryCollection) :: field_entry
+      type(FieldBundleEntry) :: field_entry
 
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
@@ -161,7 +161,7 @@ contains
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(FieldCollection),           intent(inout) :: this
+      class(FieldBundle),           intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -169,8 +169,8 @@ contains
       character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
-      class(FieldEntryCollection), allocatable :: field_entry
-      type(FieldEntryCollectionMapIterator)    :: iter
+      class(FieldBundleEntry), allocatable :: field_entry
+      type(FieldBundleEntryMapIterator)    :: iter
 
       integer :: status
 
@@ -192,12 +192,12 @@ contains
    end subroutine advertise
 
    subroutine register(this, field_registry)
-      class(FieldCollection), intent(inout) :: this
+      class(FieldBundle), intent(inout) :: this
       type(FieldRegistry),    intent(inout) :: field_registry
 
-      class(FieldEntryCollection), allocatable :: field_entry
+      class(FieldBundleEntry), allocatable :: field_entry
       type(FieldEntryRegistry)                 :: registry_entry
-      type(FieldEntryCollectionMapIterator)    :: iter
+      type(FieldBundleEntryMapIterator)    :: iter
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
@@ -208,4 +208,4 @@ contains
          call iter%next()
       end do
    end subroutine register
-end module MAPL_FieldCollection
+end module MAPL_FieldBundle

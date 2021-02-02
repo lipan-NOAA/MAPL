@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module Test_MAPL_FieldCollection
+module Test_MAPL_FieldBundle
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -9,8 +9,8 @@ module Test_MAPL_FieldCollection
    use MAPL_ExceptionHandling
 
    use MAPL_FieldEntryRegistry
-   use MAPL_FieldEntryCollection
-   use MAPL_FieldCollection
+   use MAPL_FieldBundleEntry
+   use MAPL_FieldBundle
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -21,9 +21,9 @@ module Test_MAPL_FieldCollection
 contains
    @test
    subroutine test_map()
-      type(FieldCollection)               :: field_collection
-      type(FieldEntryCollection)          :: field_entry
-      type(FieldEntryCollection), pointer :: field_collection_entry
+      type(FieldBundle)               :: field_collection
+      type(FieldBundleEntry)          :: field_entry
+      type(FieldBundleEntry), pointer :: field_collection_entry
 
       call field_entry%initialize(short_name, component_name, units=units, alias_name=alias_name)
 
@@ -38,4 +38,4 @@ contains
       @assert_that(field_collection_entry%get_component_name() == component_name, is(true()))
       @assert_that(field_collection_entry%get_alias_name()     == alias_name,     is(true()))
    end subroutine test_map
-end module Test_MAPL_FieldCollection
+end module Test_MAPL_FieldBundle

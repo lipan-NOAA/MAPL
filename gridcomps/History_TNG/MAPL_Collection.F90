@@ -9,7 +9,7 @@ module MAPL_Collection
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldCollection
+   use MAPL_FieldBundle
 
    implicit none
    private
@@ -20,7 +20,7 @@ module MAPL_Collection
       character(:), allocatable :: name
       character(:), allocatable :: template
       character(:), allocatable :: frequency
-      type(FieldCollection)     :: fields
+      type(FieldBundle)         :: fields
    contains
    end type Collection
 contains
