@@ -32,6 +32,8 @@ module MAPL_FieldCollection
       procedure :: at
       procedure :: insert
 
+      procedure :: import_set
+      procedure :: import_component
       procedure :: import_field
 
       procedure :: advertise
@@ -67,6 +69,53 @@ contains
 
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
+
+   subroutine import_set(this, config, rc)
+      class(FieldCollection), intent(inout) :: this
+      type(Configuration),    intent(inout) :: config
+      integer, optional,      intent(  out) :: rc
+
+      character(:), pointer       :: component_name
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      iter = config%begin()
+      do while(iter /= config%end())
+         component_name => iter%key()
+         sub_config     =  iter%value()
+
+         call this%import_component(component_name, sub_config, __RC__)
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine import_set
+
+   subroutine import_component(this, component_name, config, rc)
+      class(FieldCollection), intent(inout) :: this
+      character(*),           intent(in   ) :: component_name
+      type(Configuration),    intent(inout) :: config
+      integer, optional,      intent(  out) :: rc
+
+      character(:), pointer       :: short_name
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      iter = config%begin()
+      do while(iter /= config%end())
+         short_name => iter%key()
+         sub_config =  iter%value()
+
+         call this%import_field(short_name, component_name, sub_config, __RC__)
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine import_component
 
    subroutine import_field(this, short_name, component_name, config, unusable, rc)
       class(FieldCollection),           intent(inout) :: this
