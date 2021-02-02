@@ -109,13 +109,16 @@ contains
       end if
    end function name
 
-   subroutine NUOPC_has_entry(this, name, has_entry, rc)
+   subroutine NUOPC_has_entry(this, name, has_entry, unusable, rc)
       class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
       character(*),                         intent(in   ) :: name
       logical,                              intent(  out) :: has_entry
-      integer, optional,                    intent(  out) :: rc
+      class(KeywordEnforcer), optional,     intent(  out) :: unusable
+      integer,                optional,     intent(  out) :: rc
 
       integer :: status = 0
+
+      _UNUSED_DUMMY(unusable)
 
       this%has_entry = this%has_entry + 1
       this%has_entry_name = name
@@ -132,13 +135,16 @@ contains
       _RETURN(status)
    end subroutine NUOPC_has_entry
 
-   subroutine NUOPC_add_entry(this, name, units, rc)
+   subroutine NUOPC_add_entry(this, name, units, unusable, rc)
       class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
       character(*),                         intent(in   ) :: name
       character(*),                         intent(in   ) :: units
-      integer, optional,                    intent(  out) :: rc
+      class(KeywordEnforcer), optional,     intent(  out) :: unusable
+      integer,                optional,     intent(  out) :: rc
 
       integer :: status = 0
+
+      _UNUSED_DUMMY(unusable)
 
       this%add_entry = this%add_entry + 1
       this%add_entry_name  = name
@@ -147,14 +153,17 @@ contains
       _RETURN(status)
    end subroutine NUOPC_add_entry
 
-   subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
+   subroutine NUOPC_are_syno(this, name1, name2, are_syno, unusable, rc)
       class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
       character(*),                         intent(in   ) :: name1
       character(*),                         intent(in   ) :: name2
       logical,                              intent(  out) :: are_syno
-      integer, optional,                    intent(  out) :: rc
+      class(KeywordEnforcer), optional,     intent(  out) :: unusable
+      integer,                optional,     intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%are_syno = this%are_syno + 1
       this%are_syno_name1 = name1
@@ -165,13 +174,16 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_are_syno
 
-   subroutine NUOPC_add_syno(this, name1, name2, rc)
+   subroutine NUOPC_add_syno(this, name1, name2, unusable, rc)
       class(test_AbstractFieldEntry_NUOPC), intent(inout) :: this
       character(*),                         intent(in   ) :: name1
       character(*),                         intent(in   ) :: name2
-      integer, optional,                    intent(  out) :: rc
+      class(KeywordEnforcer), optional,     intent(  out) :: unusable
+      integer,                optional,     intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%add_syno = this%add_syno + 1
       this%add_syno_name1 = name1
@@ -189,13 +201,16 @@ contains
       std_name = this%get_short_name()
    end function standard_name
 
-   subroutine register_name(this, name, units, rc)
+   subroutine register_name(this, name, units, unusable, rc)
       class(test_AbstractFieldEntry_register), intent(inout) :: this
       character(*),                            intent(in   ) :: name
       character(*),                            intent(in   ) :: units
-      integer, optional,                       intent(  out) :: rc
+      class(KeywordEnforcer), optional,        intent(  out) :: unusable
+      integer,                optional,        intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%call_register_name = this%call_register_name + 1
       call this%registered_names%push_back(name)
@@ -204,13 +219,16 @@ contains
       _RETURN(_SUCCESS)
    end subroutine register_name
 
-   subroutine register_syno(this, name1, name2, rc)
+   subroutine register_syno(this, name1, name2, unusable, rc)
       class(test_AbstractFieldEntry_register), intent(inout) :: this
       character(*),                            intent(in   ) :: name1
       character(*),                            intent(in   ) :: name2
-      integer, optional,                       intent(  out) :: rc
+      class(KeywordEnforcer), optional,        intent(  out) :: unusable
+      integer,                optional,        intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%call_register_syno = this%call_register_syno + 1
       this%register_syno_name1 = name1
@@ -219,28 +237,34 @@ contains
       _RETURN(_SUCCESS)
    end subroutine register_syno
 
-   subroutine register(this, rc)
+   subroutine register(this, unusable, rc)
       class(test_AbstractFieldEntry_advertise), intent(inout) :: this
-      integer, optional,                        intent(  out) :: rc
+      class(KeywordEnforcer), optional,         intent(  out) :: unusable
+      integer,                optional,         intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%call_register = this%call_register + 1
 
       _RETURN(_SUCCESS)
    end subroutine register
 
-   subroutine NUOPC_advert(this, state, standard_name,&
+   subroutine NUOPC_advert(this, state, standard_name, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
       class(test_AbstractFieldEntry_advertise), intent(inout) :: this
       type(ESMF_State),                         intent(inout) :: state
       character(*),                             intent(in   ) :: standard_name
-      character(*), optional,                   intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,                   intent(in   ) :: SharePolicyField
-      character(*), optional,                   intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,                   intent(  out) :: rc
+      class(KeywordEnforcer), optional,         intent(in   ) :: unusable
+      character(*),           optional,         intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional,         intent(in   ) :: SharePolicyField
+      character(*),           optional,         intent(in   ) :: SharePolicyGeomObject
+      integer,                optional,         intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%call_advert = this%call_advert + 1
       this%advert_name = standard_name

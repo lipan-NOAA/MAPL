@@ -107,12 +107,15 @@ contains
       units = this%units
    end function get_units
 
-   subroutine set_units(this, units, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: units
-      integer, optional,         intent(  out) :: rc
+   subroutine set_units(this, units, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: units
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status = 0
+
+      _UNUSED_DUMMY(unusable)
 
       if (this%units /= default_units) then
          status = 1
@@ -130,13 +133,16 @@ contains
       std_name = this%short_name // '.' // this%component_name
    end function standard_name
 
-   subroutine NUOPC_has_entry(this, name, has_entry, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name
-      logical,                   intent(  out) :: has_entry
-      integer, optional,         intent(  out) :: rc
+   subroutine NUOPC_has_entry(this, name, has_entry, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      logical,                          intent(  out) :: has_entry
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       has_entry = NUOPC_FieldDictionaryHasEntry(name, rc=status)
       VERIFY_NUOPC_(status)
@@ -144,13 +150,16 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_has_entry
 
-   subroutine NUOPC_add_entry(this, name, units, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name
-      character(*),              intent(in   ) :: units
-      integer, optional,         intent(  out) :: rc
+   subroutine NUOPC_add_entry(this, name, units, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      character(*),                     intent(in   ) :: units
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call NUOPC_FieldDictionaryAddEntry(name, units, rc=status)
       VERIFY_NUOPC_(status)
@@ -158,14 +167,17 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_add_entry
 
-   subroutine register_name(this, name, units, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name
-      character(*),              intent(in   ) :: units
-      integer, optional,         intent(  out) :: rc
+   subroutine register_name(this, name, units, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      character(*),                     intent(in   ) :: units
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       logical :: has_entry
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call this%NUOPC_has_entry(name, has_entry, __RC__)
 
@@ -176,14 +188,17 @@ contains
       _RETURN(_SUCCESS)
    end subroutine register_name
 
-   subroutine NUOPC_are_syno(this, name1, name2, are_syno, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name1
-      character(*),              intent(in   ) :: name2
-      logical,                   intent(  out) :: are_syno
-      integer, optional,         intent(  out) :: rc
+   subroutine NUOPC_are_syno(this, name1, name2, are_syno, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name1
+      character(*),                     intent(in   ) :: name2
+      logical,                          intent(  out) :: are_syno
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       are_syno = NUOPC_FieldDictionaryMatchSyno(name1, name2, rc=status)
       VERIFY_NUOPC_(status)
@@ -191,13 +206,16 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_are_syno
 
-   subroutine NUOPC_add_syno(this, name1, name2, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name1
-      character(*),              intent(in   ) :: name2
-      integer, optional,         intent(  out) :: rc
+   subroutine NUOPC_add_syno(this, name1, name2, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name1
+      character(*),                     intent(in   ) :: name2
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call NUOPC_FieldDictionarySetSyno([name1, name2], rc=status)
       VERIFY_NUOPC_(status)
@@ -205,14 +223,17 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_add_syno
 
-   subroutine register_syno(this, name1, name2, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      character(*),              intent(in   ) :: name1
-      character(*),              intent(in   ) :: name2
-      integer, optional,         intent(  out) :: rc
+   subroutine register_syno(this, name1, name2, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name1
+      character(*),                     intent(in   ) :: name2
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       logical :: are_syno
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call this%NUOPC_are_syno(name1, name2, are_syno, __RC__)
 
@@ -223,15 +244,18 @@ contains
       _RETURN(_SUCCESS)
    end subroutine register_syno
 
-   subroutine register(this, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      integer, optional,         intent(  out) :: rc
+   subroutine register(this, unusable, rc)
+      class(AbstractFieldEntry),        intent(inout) :: this
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), allocatable :: standard_name
       character(:), allocatable :: name
       character(:), allocatable :: units
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       units = this%get_units()
 
@@ -247,15 +271,16 @@ contains
       _RETURN(_SUCCESS)
    end subroutine register
 
-   subroutine NUOPC_advert(this, state, standard_name,&
+   subroutine NUOPC_advert(this, state, standard_name, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(AbstractFieldEntry), intent(inout) :: this
-      type(ESMF_State),          intent(inout) :: state
-      character(*),              intent(in   ) :: standard_name
-      character(*), optional,    intent(in   ) :: TransferOfferGeomObject
-      character(*), optional,    intent(in   ) :: SharePolicyField
-      character(*), optional,    intent(in   ) :: SharePolicyGeomObject
-      integer,      optional,    intent(  out) :: rc
+      class(AbstractFieldEntry),        intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      character(*),                     intent(in   ) :: standard_name
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
 

@@ -68,12 +68,13 @@ contains
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
 
-   subroutine import_field(this, short_name, component_name, config, rc)
-      class(FieldCollection), intent(inout) :: this
-      character(*),           intent(in   ) :: short_name
-      character(*),           intent(in   ) :: component_name
-      type(Configuration),    intent(inout) :: config
-      integer, optional,      intent(  out) :: rc
+   subroutine import_field(this, short_name, component_name, config, unusable, rc)
+      class(FieldCollection),           intent(inout) :: this
+      character(*),                     intent(in   ) :: short_name
+      character(*),                     intent(in   ) :: component_name
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), allocatable  :: alias
       character(:), allocatable  :: units
@@ -84,6 +85,8 @@ contains
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call field_entry%initialize(short_name, component_name)
 
