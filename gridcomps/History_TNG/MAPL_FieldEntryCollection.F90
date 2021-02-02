@@ -22,6 +22,8 @@ module MAPL_FieldEntryCollection
       procedure :: initialize
       procedure :: get_alias_name
 
+      procedure :: set_alias_name
+
       procedure :: name
 
       procedure :: registry_entry
@@ -48,6 +50,22 @@ contains
 
       alias = this%alias_name
    end function get_alias_name
+
+   subroutine set_alias_name(this, alias_name, rc)
+      class(FieldEntryCollection), intent(inout) :: this
+      character(*),                intent(in   ) :: alias_name
+      integer, optional,           intent(  out) :: rc
+
+      integer :: status = 0
+
+      if (allocated(this%alias_name)) then
+         status = 1
+      else
+         this%alias_name = alias_name
+      end if
+
+      _RETURN(status)
+   end subroutine set_alias_name
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name

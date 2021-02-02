@@ -20,6 +20,9 @@ module MAPL_FieldCollection
 
    public FieldCollection
 
+   character(*), parameter :: alias_key = 'alias'
+   character(*), parameter :: units_key = 'units'
+
    type :: FieldCollection
       private
       type(FieldEntryCollectionMap) :: map
@@ -29,7 +32,7 @@ module MAPL_FieldCollection
       procedure :: at
       procedure :: insert
 
-      procedure :: insert_config
+      procedure :: import_field
 
       procedure :: advertise
       procedure :: register
@@ -65,13 +68,44 @@ contains
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
 
-   subroutine insert_config(this, component_name, config)
+   subroutine import_field(this, short_name, component_name, config, rc)
       class(FieldCollection), intent(inout) :: this
+      character(*),           intent(in   ) :: short_name
       character(*),           intent(in   ) :: component_name
       type(Configuration),    intent(inout) :: config
+      integer, optional,      intent(  out) :: rc
 
+      character(:), allocatable  :: alias
+      character(:), allocatable  :: units
       type(FieldEntryCollection) :: field_entry
-   end subroutine insert_config
+
+      character(:), pointer       :: key
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      call field_entry%initialize(short_name, component_name)
+
+      iter =  config%begin()
+      do while(iter /= config%end())
+         key => iter%key()
+
+         select case (key)
+         case (alias_key)
+            alias = iter%value()
+            call field_entry%set_alias_name(alias, __RC__)
+         case (units_key)
+            units = iter%value()
+            call field_entry%set_units(units, __RC__)
+         end select
+
+         call iter%next()
+      end do
+
+      call this%insert(field_entry)
+      _RETURN(_SUCCESS)
+   end subroutine import_field
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)

@@ -28,6 +28,8 @@ module MAPL_AbstractFieldEntry
       procedure :: get_component_name
       procedure :: get_units
 
+      procedure :: set_units
+
       procedure :: standard_name
       procedure(i_name), deferred :: name
 
@@ -104,6 +106,22 @@ contains
 
       units = this%units
    end function get_units
+
+   subroutine set_units(this, units, rc)
+      class(AbstractFieldEntry), intent(inout) :: this
+      character(*),              intent(in   ) :: units
+      integer, optional,         intent(  out) :: rc
+
+      integer :: status = 0
+
+      if (this%units /= default_units) then
+         status = 1
+      else
+         this%units = units
+      end if
+
+      _RETURN(status)
+   end subroutine set_units
 
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name

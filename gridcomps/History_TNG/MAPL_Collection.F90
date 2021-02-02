@@ -26,39 +26,51 @@ module MAPL_Collection
       procedure :: import_bundle
    end type Collection
 contains
-   subroutine import_fields(this, config)
+   subroutine import_fields(this, config, rc)
       class(Collection),   intent(inout) :: this
       type(Configuration), intent(inout) :: config
+      integer, optional,   intent(  out) :: rc
 
       character(:), pointer       :: component_name
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
+
+      integer :: status
 
       iter = config%begin()
       do while(iter /= config%end())
          component_name => iter%key()
          sub_config     =  iter%value()
 
-         call this%import_bundle(component_name, sub_config)
+         call this%import_bundle(component_name, sub_config, __RC__)
          call iter%next()
       end do
+
+      _RETURN(_SUCCESS)
    end subroutine import_fields
 
-   subroutine import_bundle(this, component_name, config)
+   subroutine import_bundle(this, component_name, config, rc)
       class(Collection),   intent(inout) :: this
       character(*),        intent(in   ) :: component_name
       type(Configuration), intent(inout) :: config
+      integer, optional,   intent(  out) :: rc
 
+      character(:), pointer       :: short_name
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
+      integer :: status
+
       iter = config%begin()
       do while(iter /= config%end())
-         sub_config = iter%value()
+         short_name => iter%key()
+         sub_config =  iter%value()
 
-         call this%fields%insert_config(component_name, sub_config)
+         call this%fields%import_field(short_name, component_name, sub_config, __RC__)
          call iter%next()
       end do
+
+      _RETURN(_SUCCESS)
    end subroutine import_bundle
 end module MAPL_Collection
 
