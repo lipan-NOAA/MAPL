@@ -1,0 +1,24 @@
+test_collections:
+  test_collection1:
+    template:   '%y4%m2%d2_%h2%n2z.nc4'
+    frequency:  060000
+    fields:
+      AGCM:
+        - PHIS
+        - QITOT:
+            alias: QI
+        - QLTOT:
+            alias: QL
+      DYN:
+        - SLP
+        - T
+        - PS
+        - ZLE:
+            alias: H
+        - OMEGA
+      MOIST:
+        - QV
+        - RH2:
+            alias: RH
+      CHEMISTRY:
+        - O3

@@ -8,6 +8,7 @@ set (srcs
     MAPL_FieldEntryCollectionMap.F90
     MAPL_FieldRegistry.F90
     MAPL_FieldCollection.F90
+    MAPL_Collection.F90
     MAPL_HistoryConfig.F90
     MAPL_HistoryWriter.F90
     )

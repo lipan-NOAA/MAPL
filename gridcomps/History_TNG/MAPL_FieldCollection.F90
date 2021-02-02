@@ -5,6 +5,7 @@ module MAPL_FieldCollection
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
+   use yaFyaml
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
@@ -27,6 +28,8 @@ module MAPL_FieldCollection
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: insert_config
 
       procedure :: advertise
       procedure :: register
@@ -61,6 +64,14 @@ contains
 
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
+
+   subroutine insert_config(this, component_name, config)
+      class(FieldCollection), intent(inout) :: this
+      character(*),           intent(in   ) :: component_name
+      type(Configuration),    intent(inout) :: config
+
+      type(FieldEntryCollection) :: field_entry
+   end subroutine insert_config
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
