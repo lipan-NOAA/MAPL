@@ -8,7 +8,7 @@ module MAPL_FieldBundleEntry
    use MAPL_KeywordEnforcerMod
 
    use MAPL_AbstractFieldEntry
-   use MAPL_FieldEntryRegistry
+   use MAPL_FieldRegistryEntry
 
    implicit none
    private
@@ -83,7 +83,7 @@ contains
    end function name
 
    function registry_entry(this) result(field_entry)
-      type(FieldEntryRegistry) :: field_entry
+      type(FieldRegistryEntry) :: field_entry
       class(FieldBundleEntry), intent(in) :: this
 
       call field_entry%initialize(this%get_short_name(), &

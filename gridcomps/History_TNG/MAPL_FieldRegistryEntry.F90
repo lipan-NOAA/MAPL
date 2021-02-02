@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldEntryRegistry
+module MAPL_FieldRegistryEntry
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
@@ -11,16 +11,16 @@ module MAPL_FieldEntryRegistry
    implicit none
    private
 
-   public FieldEntryRegistry
+   public FieldRegistryEntry
 
-   type, extends(AbstractFieldEntry) :: FieldEntryRegistry
+   type, extends(AbstractFieldEntry) :: FieldRegistryEntry
    contains
       procedure :: initialize
       procedure :: name
-   end type FieldEntryRegistry
+   end type FieldRegistryEntry
 contains
    subroutine initialize(this, short_name, component_name, unusable, units, alias_name)
-      class(FieldEntryRegistry),        intent(  out) :: this
+      class(FieldRegistryEntry),        intent(  out) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
@@ -35,8 +35,8 @@ contains
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(FieldEntryRegistry), intent(inout) :: this
+      class(FieldRegistryEntry), intent(inout) :: this
 
       field_name = this%standard_name()
    end function name
-end module MAPL_FieldEntryRegistry
+end module MAPL_FieldRegistryEntry

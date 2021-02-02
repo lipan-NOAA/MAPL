@@ -12,7 +12,7 @@ module MAPL_FieldBundle
    use MAPL_FieldBundleEntry
    use MAPL_FieldBundleEntryMap
 
-   use MAPL_FieldEntryRegistry
+   use MAPL_FieldRegistryEntry
    use MAPL_FieldRegistry
 
    implicit none
@@ -48,7 +48,7 @@ contains
 
    integer(kind=INT64) function count(this, key)
       class(FieldBundle), intent(in) :: this
-      character(*),           intent(in) :: key
+      character(*),       intent(in) :: key
 
       count = this%map%count(key)
    end function count
@@ -71,9 +71,9 @@ contains
    end subroutine insert
 
    subroutine import_set(this, config, rc)
-      class(FieldBundle), intent(inout) :: this
-      type(Configuration),    intent(inout) :: config
-      integer, optional,      intent(  out) :: rc
+      class(FieldBundle),  intent(inout) :: this
+      type(Configuration), intent(inout) :: config
+      integer, optional,   intent(  out) :: rc
 
       character(:), pointer       :: component_name
       type(ConfigurationIterator) :: iter
@@ -94,10 +94,10 @@ contains
    end subroutine import_set
 
    subroutine import_component(this, component_name, config, rc)
-      class(FieldBundle), intent(inout) :: this
-      character(*),           intent(in   ) :: component_name
-      type(Configuration),    intent(inout) :: config
-      integer, optional,      intent(  out) :: rc
+      class(FieldBundle),  intent(inout) :: this
+      character(*),        intent(in   ) :: component_name
+      type(Configuration), intent(inout) :: config
+      integer, optional,   intent(  out) :: rc
 
       character(:), pointer       :: short_name
       type(ConfigurationIterator) :: iter
@@ -118,7 +118,7 @@ contains
    end subroutine import_component
 
    subroutine import_field(this, short_name, component_name, config, unusable, rc)
-      class(FieldBundle),           intent(inout) :: this
+      class(FieldBundle),               intent(inout) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       type(Configuration),              intent(inout) :: config
@@ -161,7 +161,7 @@ contains
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(FieldBundle),           intent(inout) :: this
+      class(FieldBundle),               intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -192,11 +192,11 @@ contains
    end subroutine advertise
 
    subroutine register(this, field_registry)
-      class(FieldBundle), intent(inout) :: this
-      type(FieldRegistry),    intent(inout) :: field_registry
+      class(FieldBundle),  intent(inout) :: this
+      type(FieldRegistry), intent(inout) :: field_registry
 
       class(FieldBundleEntry), allocatable :: field_entry
-      type(FieldEntryRegistry)                 :: registry_entry
+      type(FieldRegistryEntry)             :: registry_entry
       type(FieldBundleEntryMapIterator)    :: iter
 
       iter = this%map%begin()

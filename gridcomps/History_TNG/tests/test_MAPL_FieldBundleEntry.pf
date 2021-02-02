@@ -8,7 +8,7 @@ module Test_MAPL_FieldBundleEntry
    use NUOPC
    use MAPL_ExceptionHandling
 
-   use MAPL_FieldEntryRegistry
+   use MAPL_FieldRegistryEntry
    use MAPL_FieldBundleEntry
 
    character(*), parameter :: short_name     = 'short_name'
@@ -57,8 +57,8 @@ contains
 
    @test
    subroutine test_registry_entry()
-      type(FieldBundleEntry) :: field
-      type(FieldEntryRegistry)   :: field_entry
+      type(FieldBundleEntry)   :: field
+      type(FieldRegistryEntry) :: field_entry
 
       call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
       field_entry = field%registry_entry()
