@@ -50,8 +50,8 @@ contains
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldRegistry),     intent(inout) :: this
-      type(FieldRegistryEntry), intent(inout) :: field_entry
+      class(FieldRegistry),      intent(inout) :: this
+      class(FieldRegistryEntry), intent(inout) :: field_entry
 
       character(:), allocatable :: name
 

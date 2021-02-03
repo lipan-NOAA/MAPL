@@ -56,14 +56,14 @@ contains
    function at(this, key) result(field_entry)
       class(FieldBundleEntry), pointer :: field_entry
       class(FieldBundle), intent(in) :: this
-      character(*),           intent(in) :: key
+      character(*),       intent(in) :: key
 
       field_entry => this%map%at(key)
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldBundle),     intent(inout) :: this
-      type(FieldBundleEntry), intent(inout) :: field_entry
+      class(FieldBundle),      intent(inout) :: this
+      class(FieldBundleEntry), intent(inout) :: field_entry
 
       character(:), allocatable :: name
 
