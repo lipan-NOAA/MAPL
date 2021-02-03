@@ -9,7 +9,9 @@ module Test_MAPL_FieldBundle
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
+   use MAPL_AbstractFieldEntry
    use MAPL_FieldRegistryEntry
+   use MAPL_FieldRegistry
    use MAPL_FieldBundleEntry
    use MAPL_FieldBundle
 
@@ -119,4 +121,42 @@ contains
       @assert_that(field_entry_1_call_advertise, is(equal_to(1)))
       @assert_that(field_entry_2_call_advertise, is(equal_to(1)))
    end subroutine test_advertise
+
+   @test
+   subroutine test_register()
+      type(FieldBundle)                 :: field_bundle
+      type(FieldBundleEntry)            :: field_entry_1
+      type(FieldBundleEntry)            :: field_entry_2
+      type(FieldRegistry)               :: field_registry
+      type(FieldRegistryEntry), pointer :: field_registry_entry
+
+      character(*), parameter :: short_name_1     = 'short_name_1'
+      character(*), parameter :: short_name_2     = 'short_name_2'
+      character(*), parameter :: component_name_1 = 'component_name_1'
+      character(*), parameter :: component_name_2 = 'component_name_2'
+      character(*), parameter :: standard_name_1  = 'short_name_1.component_name_1'
+      character(*), parameter :: standard_name_2  = 'short_name_2.component_name_2'
+
+      call field_entry_1%initialize(short_name_1, component_name_1, units=units)
+      call field_entry_2%initialize(short_name_2, component_name_2)
+      call field_bundle%insert(field_entry_1)
+      call field_bundle%insert(field_entry_2)
+      @assert_that(field_bundle%size(), is(equal_to(2_INT64)))
+
+      @assert_that(field_registry%size(), is(equal_to(0_INT64)))
+      call field_bundle%register(field_registry)
+      @assert_that(field_registry%size(), is(equal_to(2_INT64)))
+
+      @assert_that(field_registry%count(standard_name_1), is(equal_to(1_INT64)))
+      field_registry_entry = field_registry%at(standard_name_1)
+      @assert_that(field_registry_entry%get_short_name()     == short_name_1,     is(true()))
+      @assert_that(field_registry_entry%get_component_name() == component_name_1, is(true()))
+      @assert_that(field_registry_entry%get_units()          == units,            is(true()))
+
+      @assert_that(field_registry%count(standard_name_2), is(equal_to(1_INT64)))
+      field_registry_entry = field_registry%at(standard_name_2)
+      @assert_that(field_registry_entry%get_short_name()     == short_name_2,     is(true()))
+      @assert_that(field_registry_entry%get_component_name() == component_name_2, is(true()))
+      @assert_that(field_registry_entry%get_units()          == default_units,    is(true()))
+   end subroutine test_register
 end module Test_MAPL_FieldBundle
