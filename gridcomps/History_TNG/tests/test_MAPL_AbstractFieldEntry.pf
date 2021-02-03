@@ -299,6 +299,26 @@ contains
    end subroutine test_base_initialize
 
    @test
+   subroutine test_set_units()
+      type(test_AbstractFieldEntry) :: field_entry
+
+      integer :: status
+
+      @assert_that(field_units == default_units, is(false()))
+
+      call field_entry%base_initialize(short_name, component_name)
+      @assert_that(field_entry%get_units() == default_units,  is(true()))
+
+      call field_entry%set_units(field_units, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_entry%get_units() == field_units, is(true()))
+
+      call field_entry%set_units(default_units, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_entry%get_units() == field_units, is(true()))
+   end subroutine test_set_units
+
+   @test
    subroutine test_standard_name()
       type(test_AbstractFieldEntry) :: field_entry
 

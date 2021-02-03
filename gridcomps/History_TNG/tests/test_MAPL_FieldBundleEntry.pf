@@ -15,6 +15,7 @@ module Test_MAPL_FieldBundleEntry
    character(*), parameter :: component_name = 'component_name'
    character(*), parameter :: units          = 'units'
    character(*), parameter :: alias_name     = 'alias_name'
+   character(*), parameter :: fail_name      = 'fail_name'
    character(*), parameter :: std_out_name   = 'std_out_name'
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
 
@@ -56,16 +57,25 @@ contains
    end subroutine test_initialize
 
    @test
-   subroutine test_registry_entry()
-      type(FieldBundleEntry)   :: field
-      type(FieldRegistryEntry) :: field_entry
+   subroutine test_set_alias_name()
+      type(FieldBundleEntry) :: field_entry
 
-      call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
-      field_entry = field%registry_entry()
-      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_entry%get_component_name() == component_name, is(true()))
-      @assert_that(field_entry%get_units()          == units,          is(true()))
-   end subroutine test_registry_entry
+      integer :: status
+
+      @assert_that(alias_name == '',         is(false()))
+      @assert_that(fail_name  == alias_name, is(false()))
+
+      call field_entry%initialize(short_name, component_name)
+      @assert_that(field_entry%get_alias_name() == '', is(true()))
+
+      call field_entry%set_alias_name(alias_name, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_entry%get_alias_name() == alias_name, is(true()))
+
+      call field_entry%set_alias_name(fail_name, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_entry%get_alias_name() == alias_name, is(true()))
+   end subroutine test_set_alias_name
 
    @test
    subroutine test_name()
@@ -82,4 +92,16 @@ contains
       @assert_that(field_entry_alias%name() == alias_out_name, is(true()))
       @assert_that(field_entry_alias%call_standard_name, is(equal_to(1)))
    end subroutine test_name
+
+   @test
+   subroutine test_registry_entry()
+      type(FieldBundleEntry)   :: field
+      type(FieldRegistryEntry) :: field_entry
+
+      call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
+      field_entry = field%registry_entry()
+      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry%get_units()          == units,          is(true()))
+   end subroutine test_registry_entry
 end module Test_MAPL_FieldBundleEntry

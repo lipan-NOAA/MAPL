@@ -32,12 +32,12 @@ module MAPL_FieldBundle
       procedure :: at
       procedure :: insert
 
+      procedure :: advertise
+      procedure :: register
+
       procedure :: import_set
       procedure :: import_component
       procedure :: import_field
-
-      procedure :: advertise
-      procedure :: register
    end type FieldBundle
 contains
    integer(kind=INT64) function size(this)
@@ -69,6 +69,56 @@ contains
 
       call this%map%insert(field_entry%name(), field_entry)
    end subroutine insert
+
+   subroutine advertise(this, state, unusable,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(FieldBundle),               intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
+
+      class(FieldBundleEntry), allocatable :: field_entry
+      type(FieldBundleEntryMapIterator)    :: iter
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry = iter%value()
+         call field_entry%advertise(state, &
+            TransferOfferGeomObject=TransferOfferGeomObject, &
+            SharePolicyField=SharePolicyField, &
+            SharePolicyGeomObject=SharePolicyGeomObject, &
+            __RC__)
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
+
+   subroutine register(this, field_registry)
+      class(FieldBundle),  intent(inout) :: this
+      type(FieldRegistry), intent(inout) :: field_registry
+
+      class(FieldBundleEntry), allocatable :: field_entry
+      type(FieldRegistryEntry)             :: registry_entry
+      type(FieldBundleEntryMapIterator)    :: iter
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry    = iter%value()
+         registry_entry = field_entry%registry_entry()
+         call field_registry%insert(registry_entry)
+
+         call iter%next()
+      end do
+   end subroutine register
 
    subroutine import_set(this, config, rc)
       class(FieldBundle),  intent(inout) :: this
@@ -158,54 +208,4 @@ contains
       call this%insert(field_entry)
       _RETURN(_SUCCESS)
    end subroutine import_field
-
-   subroutine advertise(this, state, unusable,&
-         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(FieldBundle),               intent(inout) :: this
-      type(ESMF_State),                 intent(inout) :: state
-      class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
-      character(*),           optional, intent(in   ) :: SharePolicyField
-      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
-      integer,                optional, intent(  out) :: rc
-
-      class(FieldBundleEntry), allocatable :: field_entry
-      type(FieldBundleEntryMapIterator)    :: iter
-
-      integer :: status
-
-      _UNUSED_DUMMY(unusable)
-
-      iter = this%map%begin()
-      do while(iter /= this%map%end())
-         field_entry = iter%value()
-         call field_entry%advertise(state, &
-            TransferOfferGeomObject=TransferOfferGeomObject, &
-            SharePolicyField=SharePolicyField, &
-            SharePolicyGeomObject=SharePolicyGeomObject, &
-            __RC__)
-
-         call iter%next()
-      end do
-
-      _RETURN(_SUCCESS)
-   end subroutine advertise
-
-   subroutine register(this, field_registry)
-      class(FieldBundle),  intent(inout) :: this
-      type(FieldRegistry), intent(inout) :: field_registry
-
-      class(FieldBundleEntry), allocatable :: field_entry
-      type(FieldRegistryEntry)             :: registry_entry
-      type(FieldBundleEntryMapIterator)    :: iter
-
-      iter = this%map%begin()
-      do while(iter /= this%map%end())
-         field_entry    = iter%value()
-         registry_entry = field_entry%registry_entry()
-         call field_registry%insert(registry_entry)
-
-         call iter%next()
-      end do
-   end subroutine register
 end module MAPL_FieldBundle

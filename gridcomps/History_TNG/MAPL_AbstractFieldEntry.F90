@@ -123,7 +123,7 @@ contains
          this%units = units
       end if
 
-      _RETURN(status)
+      if(present(rc)) rc = status
    end subroutine set_units
 
    function standard_name(this) result(std_name)

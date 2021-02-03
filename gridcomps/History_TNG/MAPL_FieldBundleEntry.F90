@@ -64,7 +64,7 @@ contains
          this%alias_name = alias_name
       end if
 
-      _RETURN(status)
+      if (present(rc)) rc = status
    end subroutine set_alias_name
 
    function name(this) result(field_name)
