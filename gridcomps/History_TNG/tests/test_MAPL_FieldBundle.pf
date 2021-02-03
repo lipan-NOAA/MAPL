@@ -6,6 +6,7 @@ module Test_MAPL_FieldBundle
    use pFUnit
    use ESMF
    use NUOPC
+   use yaFyaml
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
@@ -14,6 +15,9 @@ module Test_MAPL_FieldBundle
    use MAPL_FieldRegistry
    use MAPL_FieldBundleEntry
    use MAPL_FieldBundle
+
+   character(*), parameter :: test_yaml_file  = 'test_History.yaml'
+   character(*), parameter :: test_fields_key = 'Bundle_test_fields'
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -78,6 +82,36 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   subroutine get_yaml_fields_config(config)
+      type(Configuration), intent(out) :: config
+
+      type(Parser)     :: P
+      type(FileStream) :: file_stream
+
+      character(:), pointer       :: key
+      type(Configuration)         :: main_config
+      type(ConfigurationIterator) :: iter
+
+      P           = Parser('core')
+      file_stream = FileStream(test_yaml_file)
+      main_config = P%load(file_stream)
+
+      iter = main_config%begin()
+      do while(iter /= main_config%end())
+         key => iter%key()
+
+         select case (key)
+         case (test_fields_key)
+            print*, "Config is: ", key
+            config = iter%value()
+         end select
+
+         call iter%next()
+      end do
+
+      call file_stream%close()
+   end subroutine get_yaml_fields_config
 
    @test
    subroutine test_map()
@@ -159,4 +193,36 @@ contains
       @assert_that(field_registry_entry%get_component_name() == component_name_2, is(true()))
       @assert_that(field_registry_entry%get_units()          == default_units,    is(true()))
    end subroutine test_register
+
+   @test
+   subroutine test_import_yaml()
+      type(FieldBundle)   :: field_bundle
+      type(Configuration) :: config
+
+      character(:), pointer       :: component_name
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      call get_yaml_fields_config(config)
+
+      print*, "start import_bundle"
+      print*, "config is mapping: ", config%is_mapping()
+
+      iter = config%begin()
+      print*, "Created iter"
+      do while(iter /= config%end())
+         print*, "iter step"
+         component_name => iter%key()
+         ! print*, "importing component:", iter%key()
+         ! sub_config     =  iter%value()
+
+         ! call this%import_component(component_name, sub_config, __RC__)
+         call iter%next()
+      end do
+
+!       call field_bundle%import_bundle(config, rc=status)
+!       @assert_that(status, is(equal_to(0)))
+   end subroutine test_import_yaml
 end module Test_MAPL_FieldBundle

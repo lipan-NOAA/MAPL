@@ -35,7 +35,7 @@ module MAPL_FieldBundle
       procedure :: advertise
       procedure :: register
 
-      procedure :: import_set
+      procedure :: import_bundle
       procedure :: import_component
       procedure :: import_field
    end type FieldBundle
@@ -120,7 +120,7 @@ contains
       end do
    end subroutine register
 
-   subroutine import_set(this, config, rc)
+   subroutine import_bundle(this, config, rc)
       class(FieldBundle),  intent(inout) :: this
       type(Configuration), intent(inout) :: config
       integer, optional,   intent(  out) :: rc
@@ -131,17 +131,25 @@ contains
 
       integer :: status
 
-      iter = config%begin()
-      do while(iter /= config%end())
-         component_name => iter%key()
-         sub_config     =  iter%value()
+      print*, "start import_bundle"
+      print*, "config is mapping: ", config%is_mapping()
 
-         call this%import_component(component_name, sub_config, __RC__)
+      iter = config%begin()
+      print*, "Created iter"
+      do while(iter /= config%end())
+         print*, "iter step"
+         component_name => iter%key()
+         ! print*, "importing component:", iter%key()
+         ! sub_config     =  iter%value()
+
+         ! call this%import_component(component_name, sub_config, __RC__)
          call iter%next()
       end do
 
+      print*, "end import_bundle"
+
       _RETURN(_SUCCESS)
-   end subroutine import_set
+   end subroutine import_bundle
 
    subroutine import_component(this, component_name, config, rc)
       class(FieldBundle),  intent(inout) :: this

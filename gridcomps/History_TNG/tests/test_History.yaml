@@ -1,4 +1,27 @@
-test_collections:
+Bundle_test_fields:
+  AGCM:
+    PHIS: {}
+    QITOT:
+      units: unit1
+      alias: QI
+    QLTOT:
+      alias: QL
+  DYN:
+    SLP:
+      units: unit2
+    T: {}
+    PS: {}
+    ZLE:
+      alias: H
+    OMEGA: {}
+  MOIST:
+    QV: {}
+    RH2:
+      alias: RH
+  CHEMISTRY:
+    O3: {}
+
+Collections_test:
   test_collection1:
     template:   '%y4%m2%d2_%h2%n2z.nc4'
     frequency:  060000
@@ -9,12 +32,13 @@ test_collections:
       AGCM:
         PHIS: {}
         QITOT:
-          units: stuff
+          units: unit1
           alias: QI
         QLTOT:
           alias: QL
       DYN:
-        SLP: {}
+        SLP:
+          units: unit2
         T: {}
         PS: {}
         ZLE:
