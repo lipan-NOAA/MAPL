@@ -281,17 +281,11 @@ contains
       type(test_AbstractFieldEntry) :: field_entry_no_units
       type(test_AbstractFieldEntry) :: field_entry_units
 
-      @assert_that(field_entry_no_units%get_short_name()     == '', is(true()))
-      @assert_that(field_entry_no_units%get_component_name() == '', is(true()))
-      @assert_that(field_entry_no_units%get_units()          == '', is(true()))
       call field_entry_no_units%base_initialize(short_name, component_name)
       @assert_that(field_entry_no_units%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_no_units%get_component_name() == component_name, is(true()))
       @assert_that(field_entry_no_units%get_units()          == default_units,  is(true()))
 
-      @assert_that(field_entry_units%get_short_name()     == '', is(true()))
-      @assert_that(field_entry_units%get_component_name() == '', is(true()))
-      @assert_that(field_entry_units%get_units()          == '', is(true()))
       call field_entry_units%base_initialize(short_name, component_name, units=field_units)
       @assert_that(field_entry_units%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_units%get_component_name() == component_name, is(true()))

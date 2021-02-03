@@ -33,8 +33,6 @@ contains
    subroutine test_initialize()
       type(FieldRegistryEntry) :: field_entry
 
-      @assert_that(field_entry%get_short_name()     == '',     is(true()))
-      @assert_that(field_entry%get_component_name() == '',     is(true()))
       call field_entry%initialize(short_name, component_name)
       @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry%get_component_name() == component_name, is(true()))

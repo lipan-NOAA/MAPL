@@ -127,7 +127,7 @@ contains
       @assert_that(field_bundle%size(),            is(equal_to(1_INT64)))
       @assert_that(field_bundle%count(entry_name), is(equal_to(1_INT64)))
 
-      field_bundle_entry = field_bundle%at(entry_name)
+      field_bundle_entry => field_bundle%at(entry_name)
       @assert_that(field_bundle_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_bundle_entry%get_component_name() == component_name, is(true()))
       @assert_that(field_bundle_entry%get_alias_name()     == alias_name,     is(true()))
@@ -182,13 +182,13 @@ contains
       @assert_that(field_registry%size(), is(equal_to(2_INT64)))
 
       @assert_that(field_registry%count(standard_name_1), is(equal_to(1_INT64)))
-      field_registry_entry = field_registry%at(standard_name_1)
+      field_registry_entry => field_registry%at(standard_name_1)
       @assert_that(field_registry_entry%get_short_name()     == short_name_1,     is(true()))
       @assert_that(field_registry_entry%get_component_name() == component_name_1, is(true()))
       @assert_that(field_registry_entry%get_units()          == units,            is(true()))
 
       @assert_that(field_registry%count(standard_name_2), is(equal_to(1_INT64)))
-      field_registry_entry = field_registry%at(standard_name_2)
+      field_registry_entry => field_registry%at(standard_name_2)
       @assert_that(field_registry_entry%get_short_name()     == short_name_2,     is(true()))
       @assert_that(field_registry_entry%get_component_name() == component_name_2, is(true()))
       @assert_that(field_registry_entry%get_units()          == default_units,    is(true()))
@@ -214,7 +214,7 @@ contains
       print*, "Created iter"
       do while(iter /= config%end())
          print*, "iter step"
-         component_name => iter%key()
+         ! component_name => iter%key()
          ! print*, "importing component:", iter%key()
          ! sub_config     =  iter%value()
 

@@ -89,7 +89,7 @@ contains
       @assert_that(field_registry%size(),            is(equal_to(1_INT64)))
       @assert_that(field_registry%count(entry_name), is(equal_to(1_INT64)))
 
-      field_registry_entry = field_registry%at(entry_name)
+      field_registry_entry => field_registry%at(entry_name)
       @assert_that(field_registry_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_registry_entry%get_component_name() == component_name, is(true()))
    end subroutine test_map

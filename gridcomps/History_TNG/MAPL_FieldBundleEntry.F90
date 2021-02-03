@@ -14,6 +14,9 @@ module MAPL_FieldBundleEntry
    private
 
    public FieldBundleEntry
+   public default_alias
+
+   character(*), parameter :: default_alias = "no_alias"
 
    type, extends(AbstractFieldEntry) :: FieldBundleEntry
       private
@@ -41,7 +44,11 @@ contains
 
       call this%base_initialize(short_name, component_name, units=units)
 
-      if (present(alias_name)) this%alias_name = alias_name
+      if (present(alias_name)) then
+         this%alias_name = alias_name
+      else
+         this%alias_name = default_alias
+      end if
    end subroutine initialize
 
    function get_alias_name(this) result(alias)
@@ -58,10 +65,10 @@ contains
 
       integer :: status = 0
 
-      if (allocated(this%alias_name)) then
-         status = 1
-      else
+      if (this%alias_name == default_alias) then
          this%alias_name = alias_name
+      else
+         status = 1
       end if
 
       if (present(rc)) rc = status
@@ -75,10 +82,10 @@ contains
 
       standard_name = this%standard_name()
 
-      if (allocated(this%alias_name)) then
-         field_name = this%alias_name // '.' // standard_name
-      else
+      if (this%alias_name == default_alias) then
          field_name = standard_name
+      else
+         field_name = this%alias_name // '.' // standard_name
       end if
    end function name
 

@@ -39,17 +39,11 @@ contains
       type(FieldBundleEntry) :: field_entry_no_alias
       type(FieldBundleEntry) :: field_entry_alias
 
-      @assert_that(field_entry_no_alias%get_short_name()     == '',     is(true()))
-      @assert_that(field_entry_no_alias%get_component_name() == '',     is(true()))
-      @assert_that(field_entry_no_alias%get_alias_name()     == '',     is(true()))
       call field_entry_no_alias%initialize(short_name, component_name)
       @assert_that(field_entry_no_alias%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_no_alias%get_component_name() == component_name, is(true()))
-      @assert_that(field_entry_no_alias%get_alias_name()     == '',             is(true()))
+      @assert_that(field_entry_no_alias%get_alias_name()     == default_alias,  is(true()))
 
-      @assert_that(field_entry_alias%get_short_name()     == '',     is(true()))
-      @assert_that(field_entry_alias%get_component_name() == '',     is(true()))
-      @assert_that(field_entry_alias%get_alias_name()     == '',     is(true()))
       call field_entry_alias%initialize(short_name, component_name, units=units, alias_name=alias_name)
       @assert_that(field_entry_alias%get_short_name()     == short_name,     is(true()))
       @assert_that(field_entry_alias%get_component_name() == component_name, is(true()))
@@ -66,7 +60,7 @@ contains
       @assert_that(fail_name  == alias_name, is(false()))
 
       call field_entry%initialize(short_name, component_name)
-      @assert_that(field_entry%get_alias_name() == '', is(true()))
+      @assert_that(field_entry%get_alias_name() == default_alias, is(true()))
 
       call field_entry%set_alias_name(alias_name, rc=status)
       @assert_that(status, is(equal_to(0)))
