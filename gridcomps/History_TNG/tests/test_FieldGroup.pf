@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module test_FieldBundle
+module test_FieldGroup
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -13,8 +13,8 @@ module test_FieldBundle
    use AbstractFieldEntryMod
    use FieldRegistryEntryMod
    use FieldRegistryMod
-   use FieldBundleEntryMod
-   use FieldBundleMod
+   use FieldGroupEntryMod
+   use FieldGroupMod
 
    character(*), parameter :: test_yaml_file  = 'test_History.yaml'
    character(*), parameter :: test_fields_key = 'Bundle_test_fields'
@@ -26,15 +26,15 @@ module test_FieldBundle
    character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
    character(*), parameter :: standard_name  = 'short_name.component_name'
 
-   type, extends(FieldBundleEntry) :: mock_FieldBundleEntry
+   type, extends(FieldGroupEntry) :: mock_FieldGroupEntry
       integer :: call_advertise = 0
    contains
       procedure :: advertise
-   end type mock_FieldBundleEntry
+   end type mock_FieldGroupEntry
 contains
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(mock_FieldBundleEntry),     intent(inout) :: this
+      class(mock_FieldGroupEntry),      intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -57,9 +57,9 @@ contains
 
    @test
    subroutine test_map()
-      type(FieldBundle)               :: field_bundle
-      type(FieldBundleEntry)          :: field_entry
-      type(FieldBundleEntry), pointer :: field_bundle_entry
+      type(FieldGroup)               :: field_bundle
+      type(FieldGroupEntry)          :: field_entry
+      type(FieldGroupEntry), pointer :: field_bundle_entry
 
       call field_entry%initialize(short_name, component_name, units=units, alias_name=alias_name)
 
@@ -77,13 +77,13 @@ contains
 
    @test
    subroutine test_advertise()
-      type(FieldBundle)           :: field_bundle
-      type(mock_FieldBundleEntry) :: field_entry_1
-      type(mock_FieldBundleEntry) :: field_entry_2
-      type(ESMF_State)            :: state
+      type(FieldGroup)           :: field_bundle
+      type(mock_FieldGroupEntry) :: field_entry_1
+      type(mock_FieldGroupEntry) :: field_entry_2
+      type(ESMF_State)           :: state
 
-      class(FieldBundleEntry), pointer :: field_entry_ptr1
-      class(FieldBundleEntry), pointer :: field_entry_ptr2
+      class(FieldGroupEntry), pointer :: field_entry_ptr1
+      class(FieldGroupEntry), pointer :: field_entry_ptr2
 
       integer :: status
 
@@ -98,22 +98,22 @@ contains
 
       field_entry_ptr1 => field_bundle%at(entry_name)
       select type (field_entry_ptr1)
-      type is (mock_FieldBundleEntry)
+      type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       end select
 
       field_entry_ptr2 => field_bundle%at(standard_name)
       select type (field_entry_ptr2)
-      type is (mock_FieldBundleEntry)
+      type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
       end select
    end subroutine test_advertise
 
    @test
    subroutine test_register()
-      type(FieldBundle)                 :: field_bundle
-      type(FieldBundleEntry)            :: field_entry_1
-      type(FieldBundleEntry)            :: field_entry_2
+      type(FieldGroup)                  :: field_bundle
+      type(FieldGroupEntry)             :: field_entry_1
+      type(FieldGroupEntry)             :: field_entry_2
       type(FieldRegistry)               :: field_registry
       type(FieldRegistryEntry), pointer :: field_registry_entry
 
@@ -149,7 +149,7 @@ contains
 
    @test
    subroutine test_import_yaml()
-      type(FieldBundle)   :: field_bundle
+      type(FieldGroup)   :: field_bundle
 
       type(Parser)     :: P
       type(FileStream) :: file_stream
@@ -182,4 +182,4 @@ contains
       call field_bundle%import_bundle(config, rc=status)
       @assert_that(status, is(equal_to(0)))
    end subroutine test_import_yaml
-end module test_FieldBundle
+end module test_FieldGroup

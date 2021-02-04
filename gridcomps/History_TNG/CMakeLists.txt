@@ -5,9 +5,9 @@ set (srcs
     FieldRegistryEntry.F90
     FieldRegistryEntryMap.F90
     FieldRegistry.F90
-    FieldBundleEntry.F90
-    FieldBundleEntryMap.F90
-    FieldBundle.F90
+    FieldGroupEntry.F90
+    FieldGroupEntryMap.F90
+    FieldGroup.F90
     Collection.F90
     # MAPL_HistoryConfig.F90
     # MAPL_HistoryWriter.F90

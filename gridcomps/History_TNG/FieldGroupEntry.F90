@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module FieldBundleEntryMod
+module FieldGroupEntryMod
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
@@ -13,12 +13,12 @@ module FieldBundleEntryMod
    implicit none
    private
 
-   public FieldBundleEntry
+   public FieldGroupEntry
    public default_alias
 
    character(*), parameter :: default_alias = "no_alias"
 
-   type, extends(AbstractFieldEntry) :: FieldBundleEntry
+   type, extends(AbstractFieldEntry) :: FieldGroupEntry
       private
       character(:), allocatable :: alias_name
    contains
@@ -30,10 +30,10 @@ module FieldBundleEntryMod
       procedure :: name
 
       procedure :: registry_entry
-   end type FieldBundleEntry
+   end type FieldGroupEntry
 contains
    subroutine initialize(this, short_name, component_name, unusable, units, alias_name)
-      class(FieldBundleEntry),          intent(  out) :: this
+      class(FieldGroupEntry),           intent(  out) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
@@ -53,15 +53,15 @@ contains
 
    function get_alias_name(this) result(alias)
       character(:), allocatable :: alias
-      class(FieldBundleEntry), intent(in) :: this
+      class(FieldGroupEntry), intent(in) :: this
 
       alias = this%alias_name
    end function get_alias_name
 
    subroutine set_alias_name(this, alias_name, rc)
-      class(FieldBundleEntry), intent(inout) :: this
-      character(*),                intent(in   ) :: alias_name
-      integer, optional,           intent(  out) :: rc
+      class(FieldGroupEntry), intent(inout) :: this
+      character(*),           intent(in   ) :: alias_name
+      integer, optional,      intent(  out) :: rc
 
       integer :: status
 
@@ -78,7 +78,7 @@ contains
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name
-      class(FieldBundleEntry), intent(inout) :: this
+      class(FieldGroupEntry), intent(inout) :: this
 
       character(:), allocatable :: standard_name
 
@@ -93,9 +93,9 @@ contains
 
    function registry_entry(this) result(field_entry)
       type(FieldRegistryEntry) :: field_entry
-      class(FieldBundleEntry), intent(in) :: this
+      class(FieldGroupEntry), intent(in) :: this
 
       call field_entry%initialize(this%get_short_name(), &
          this%get_component_name(), units=this%get_units())
    end function registry_entry
-end module FieldBundleEntryMod
+end module FieldGroupEntryMod

@@ -4,8 +4,8 @@ set (TEST_SRCS
     test_AbstractFieldEntry.pf
     test_FieldRegistryEntry.pf
     test_FieldRegistry.pf
-    test_FieldBundleEntry.pf
-    test_FieldBundle.pf
+    test_FieldGroupEntry.pf
+    test_FieldGroup.pf
     # test_MAPL_HistoryConfig.pf
 )
 
