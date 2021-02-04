@@ -131,22 +131,14 @@ contains
 
       integer :: status
 
-      print*, "start import_bundle"
-      print*, "config is mapping: ", config%is_mapping()
-
       iter = config%begin()
-      print*, "Created iter"
       do while(iter /= config%end())
-         print*, "iter step"
          component_name => iter%key()
-         ! print*, "importing component:", iter%key()
-         ! sub_config     =  iter%value()
+         sub_config     =  iter%value()
 
-         ! call this%import_component(component_name, sub_config, __RC__)
+         call this%import_component(component_name, sub_config, __RC__)
          call iter%next()
       end do
-
-      print*, "end import_bundle"
 
       _RETURN(_SUCCESS)
    end subroutine import_bundle

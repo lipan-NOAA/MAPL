@@ -113,9 +113,11 @@ contains
       class(KeywordEnforcer), optional, intent(  out) :: unusable
       integer,                optional, intent(  out) :: rc
 
-      integer :: status = 0
+      integer :: status
 
       _UNUSED_DUMMY(unusable)
+
+      status = 0
 
       if (this%units /= default_units) then
          status = 1

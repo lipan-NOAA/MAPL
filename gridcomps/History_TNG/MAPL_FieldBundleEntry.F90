@@ -63,7 +63,9 @@ contains
       character(*),                intent(in   ) :: alias_name
       integer, optional,           intent(  out) :: rc
 
-      integer :: status = 0
+      integer :: status
+
+      status = 0
 
       if (this%alias_name == default_alias) then
          this%alias_name = alias_name

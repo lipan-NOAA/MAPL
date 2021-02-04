@@ -83,36 +83,6 @@ contains
       _RETURN(_SUCCESS)
    end subroutine advertise
 
-   subroutine get_yaml_fields_config(config)
-      type(Configuration), intent(out) :: config
-
-      type(Parser)     :: P
-      type(FileStream) :: file_stream
-
-      character(:), pointer       :: key
-      type(Configuration)         :: main_config
-      type(ConfigurationIterator) :: iter
-
-      P           = Parser('core')
-      file_stream = FileStream(test_yaml_file)
-      main_config = P%load(file_stream)
-
-      iter = main_config%begin()
-      do while(iter /= main_config%end())
-         key => iter%key()
-
-         select case (key)
-         case (test_fields_key)
-            print*, "Config is: ", key
-            config = iter%value()
-         end select
-
-         call iter%next()
-      end do
-
-      call file_stream%close()
-   end subroutine get_yaml_fields_config
-
    @test
    subroutine test_map()
       type(FieldBundle)               :: field_bundle
@@ -197,32 +167,36 @@ contains
    @test
    subroutine test_import_yaml()
       type(FieldBundle)   :: field_bundle
-      type(Configuration) :: config
 
-      character(:), pointer       :: component_name
+      type(Parser)     :: P
+      type(FileStream) :: file_stream
+
+      character(:), pointer       :: key
+      type(Configuration)         :: main_config, config
       type(ConfigurationIterator) :: iter
-      type(Configuration)         :: sub_config
 
       integer :: status
 
-      call get_yaml_fields_config(config)
+      P           = Parser('core')
+      file_stream = FileStream(test_yaml_file)
+      main_config = P%load(file_stream)
 
-      print*, "start import_bundle"
-      print*, "config is mapping: ", config%is_mapping()
+      iter = main_config%begin()
+      do while(iter /= main_config%end())
+         key => iter%key()
 
-      iter = config%begin()
-      print*, "Created iter"
-      do while(iter /= config%end())
-         print*, "iter step"
-         ! component_name => iter%key()
-         ! print*, "importing component:", iter%key()
-         ! sub_config     =  iter%value()
+         select case (key)
+         case (test_fields_key)
+            config = iter%value()
+            exit
+         end select
 
-         ! call this%import_component(component_name, sub_config, __RC__)
          call iter%next()
       end do
 
-!       call field_bundle%import_bundle(config, rc=status)
-!       @assert_that(status, is(equal_to(0)))
+      call file_stream%close()
+
+      call field_bundle%import_bundle(config, rc=status)
+      @assert_that(status, is(equal_to(0)))
    end subroutine test_import_yaml
 end module Test_MAPL_FieldBundle
