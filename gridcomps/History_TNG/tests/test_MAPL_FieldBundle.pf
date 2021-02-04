@@ -26,35 +26,12 @@ module Test_MAPL_FieldBundle
    character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
    character(*), parameter :: standard_name  = 'short_name.component_name'
 
-   ! HACK for testing if advertise is called
-   integer :: field_entry_1_call_advertise
-   integer :: field_entry_2_call_advertise
-
    type, extends(FieldBundleEntry) :: test_FieldBundleEntry
+      integer :: call_advertise = 0
    contains
-      procedure :: initialize => init
       procedure :: advertise
    end type test_FieldBundleEntry
 contains
-   subroutine init(this, short_name, component_name, unusable, units, alias_name)
-      class(test_FieldBundleEntry),     intent(  out) :: this
-      character(*),                     intent(in   ) :: short_name
-      character(*),                     intent(in   ) :: component_name
-      class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: units
-      character(*),           optional, intent(in   ) :: alias_name
-
-      _UNUSED_DUMMY(unusable)
-
-      call this%FieldBundleEntry%initialize(short_name, component_name, &
-         units=units, alias_name=alias_name)
-
-      if (present(alias_name)) then
-         field_entry_2_call_advertise = 0
-      else
-         field_entry_1_call_advertise = 0
-      end if
-   end subroutine init
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
@@ -74,11 +51,7 @@ contains
       _UNUSED_DUMMY(SharePolicyField)
       _UNUSED_DUMMY(SharePolicyGeomObject)
 
-      if (this%name() == entry_name) then
-         field_entry_1_call_advertise = field_entry_1_call_advertise + 1
-      else if (this%name() == standard_name) then
-         field_entry_2_call_advertise = field_entry_2_call_advertise + 1
-      end if
+      this%call_advertise = this%call_advertise + 1
 
       _RETURN(_SUCCESS)
    end subroutine advertise
@@ -110,6 +83,9 @@ contains
       type(test_FieldBundleEntry) :: field_entry_2
       type(ESMF_State)            :: state
 
+      class(FieldBundleEntry), pointer :: field_entry_ptr1
+      class(FieldBundleEntry), pointer :: field_entry_ptr2
+
       integer :: status
 
       call field_entry_1%initialize(short_name, component_name, units=units)
@@ -118,12 +94,20 @@ contains
       call field_bundle%insert(field_entry_2)
       @assert_that(field_bundle%size(), is(equal_to(2_INT64)))
 
-      @assert_that(field_entry_1_call_advertise, is(equal_to(0)))
-      @assert_that(field_entry_2_call_advertise, is(equal_to(0)))
       call field_bundle%advertise(state, rc=status)
       @assert_that(status, is(equal_to(0)))
-      @assert_that(field_entry_1_call_advertise, is(equal_to(1)))
-      @assert_that(field_entry_2_call_advertise, is(equal_to(1)))
+
+      field_entry_ptr1 => field_bundle%at(entry_name)
+      select type (field_entry_ptr1)
+      type is (test_FieldBundleEntry)
+         @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
+      end select
+
+      field_entry_ptr2 => field_bundle%at(standard_name)
+      select type (field_entry_ptr2)
+      type is (test_FieldBundleEntry)
+         @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
+      end select
    end subroutine test_advertise
 
    @test

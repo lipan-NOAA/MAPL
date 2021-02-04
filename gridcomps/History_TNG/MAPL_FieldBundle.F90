@@ -80,8 +80,8 @@ contains
       character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
-      class(FieldBundleEntry), allocatable :: field_entry
-      type(FieldBundleEntryMapIterator)    :: iter
+      class(FieldBundleEntry), pointer  :: field_entry
+      type(FieldBundleEntryMapIterator) :: iter
 
       integer :: status
 
@@ -89,7 +89,7 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         field_entry = iter%value()
+         field_entry => iter%value()
          call field_entry%advertise(state, &
             TransferOfferGeomObject=TransferOfferGeomObject, &
             SharePolicyField=SharePolicyField, &
@@ -106,14 +106,14 @@ contains
       class(FieldBundle),  intent(inout) :: this
       type(FieldRegistry), intent(inout) :: field_registry
 
-      class(FieldBundleEntry), allocatable :: field_entry
-      type(FieldRegistryEntry)             :: registry_entry
-      type(FieldBundleEntryMapIterator)    :: iter
+      class(FieldBundleEntry), pointer  :: field_entry
+      type(FieldRegistryEntry)          :: registry_entry
+      type(FieldBundleEntryMapIterator) :: iter
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         field_entry    = iter%value()
-         registry_entry = field_entry%registry_entry()
+         field_entry    => iter%value()
+         registry_entry =  field_entry%registry_entry()
          call field_registry%insert(registry_entry)
 
          call iter%next()

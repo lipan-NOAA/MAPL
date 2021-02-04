@@ -68,8 +68,8 @@ contains
       character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
-      class(FieldRegistryEntry), allocatable :: field_entry
-      type(FieldRegistryEntryMapIterator)    :: iter
+      class(FieldRegistryEntry), pointer  :: field_entry
+      type(FieldRegistryEntryMapIterator) :: iter
 
       integer :: status
 
@@ -77,7 +77,7 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         field_entry = iter%value()
+         field_entry => iter%value()
          call field_entry%advertise(state, &
             TransferOfferGeomObject=TransferOfferGeomObject, &
             SharePolicyField=SharePolicyField, &

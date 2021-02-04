@@ -52,23 +52,38 @@ contains
 
    @test
    subroutine test_set_alias_name()
-      type(FieldBundleEntry) :: field_entry
+      type(FieldBundleEntry) :: field_entry1
+      type(FieldBundleEntry) :: field_entry2
 
       integer :: status
 
       @assert_that(alias_name == '',         is(false()))
       @assert_that(fail_name  == alias_name, is(false()))
 
-      call field_entry%initialize(short_name, component_name)
-      @assert_that(field_entry%get_alias_name() == default_alias, is(true()))
+      call field_entry1%initialize(short_name, component_name)
+      @assert_that(field_entry1%get_alias_name() == default_alias, is(true()))
 
-      call field_entry%set_alias_name(alias_name, rc=status)
+      call field_entry1%set_alias_name(alias_name, rc=status)
       @assert_that(status, is(equal_to(0)))
-      @assert_that(field_entry%get_alias_name() == alias_name, is(true()))
+      @assert_that(field_entry1%get_alias_name() == alias_name, is(true()))
 
-      call field_entry%set_alias_name(fail_name, rc=status)
+      call field_entry1%set_alias_name(fail_name, rc=status)
       @assert_that(status, is(equal_to(1)))
-      @assert_that(field_entry%get_alias_name() == alias_name, is(true()))
+      @assert_that(field_entry1%get_alias_name() == alias_name, is(true()))
+
+      @assert_that(alias_name == '',         is(false()))
+      @assert_that(fail_name  == alias_name, is(false()))
+
+      call field_entry2%initialize(short_name, component_name)
+      @assert_that(field_entry2%get_alias_name() == default_alias, is(true()))
+
+      call field_entry2%set_alias_name(alias_name, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_entry2%get_alias_name() == alias_name, is(true()))
+
+      call field_entry2%set_alias_name(fail_name, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_entry2%get_alias_name() == alias_name, is(true()))
    end subroutine test_set_alias_name
 
    @test
