@@ -17,7 +17,7 @@ module test_FieldGroup
    use FieldGroupMod
 
    character(*), parameter :: test_yaml_file  = 'test_History.yaml'
-   character(*), parameter :: test_fields_key = 'Bundle_test_fields'
+   character(*), parameter :: test_fields_key = 'Field_Group_tests'
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -57,27 +57,27 @@ contains
 
    @test
    subroutine test_map()
-      type(FieldGroup)               :: field_bundle
+      type(FieldGroup)               :: field_group
       type(FieldGroupEntry)          :: field_entry
-      type(FieldGroupEntry), pointer :: field_bundle_entry
+      type(FieldGroupEntry), pointer :: field_group_entry
 
       call field_entry%initialize(short_name, component_name, units=units, alias_name=alias_name)
 
-      @assert_that(field_bundle%size(),            is(equal_to(0_INT64)))
-      @assert_that(field_bundle%count(entry_name), is(equal_to(0_INT64)))
-      call field_bundle%insert(field_entry)
-      @assert_that(field_bundle%size(),            is(equal_to(1_INT64)))
-      @assert_that(field_bundle%count(entry_name), is(equal_to(1_INT64)))
+      @assert_that(field_group%size(),            is(equal_to(0_INT64)))
+      @assert_that(field_group%count(entry_name), is(equal_to(0_INT64)))
+      call field_group%insert(field_entry)
+      @assert_that(field_group%size(),            is(equal_to(1_INT64)))
+      @assert_that(field_group%count(entry_name), is(equal_to(1_INT64)))
 
-      field_bundle_entry => field_bundle%at(entry_name)
-      @assert_that(field_bundle_entry%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_bundle_entry%get_component_name() == component_name, is(true()))
-      @assert_that(field_bundle_entry%get_alias_name()     == alias_name,     is(true()))
+      field_group_entry => field_group%at(entry_name)
+      @assert_that(field_group_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_group_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_group_entry%get_alias_name()     == alias_name,     is(true()))
    end subroutine test_map
 
    @test
    subroutine test_advertise()
-      type(FieldGroup)           :: field_bundle
+      type(FieldGroup)           :: field_group
       type(mock_FieldGroupEntry) :: field_entry_1
       type(mock_FieldGroupEntry) :: field_entry_2
       type(ESMF_State)           :: state
@@ -89,20 +89,20 @@ contains
 
       call field_entry_1%initialize(short_name, component_name, units=units)
       call field_entry_2%initialize(short_name, component_name, units=units, alias_name=alias_name)
-      call field_bundle%insert(field_entry_1)
-      call field_bundle%insert(field_entry_2)
-      @assert_that(field_bundle%size(), is(equal_to(2_INT64)))
+      call field_group%insert(field_entry_1)
+      call field_group%insert(field_entry_2)
+      @assert_that(field_group%size(), is(equal_to(2_INT64)))
 
-      call field_bundle%advertise(state, rc=status)
+      call field_group%advertise(state, rc=status)
       @assert_that(status, is(equal_to(0)))
 
-      field_entry_ptr1 => field_bundle%at(entry_name)
+      field_entry_ptr1 => field_group%at(entry_name)
       select type (field_entry_ptr1)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       end select
 
-      field_entry_ptr2 => field_bundle%at(standard_name)
+      field_entry_ptr2 => field_group%at(standard_name)
       select type (field_entry_ptr2)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
@@ -111,7 +111,7 @@ contains
 
    @test
    subroutine test_register()
-      type(FieldGroup)                  :: field_bundle
+      type(FieldGroup)                  :: field_group
       type(FieldGroupEntry)             :: field_entry_1
       type(FieldGroupEntry)             :: field_entry_2
       type(FieldRegistry)               :: field_registry
@@ -126,12 +126,12 @@ contains
 
       call field_entry_1%initialize(short_name_1, component_name_1, units=units)
       call field_entry_2%initialize(short_name_2, component_name_2)
-      call field_bundle%insert(field_entry_1)
-      call field_bundle%insert(field_entry_2)
-      @assert_that(field_bundle%size(), is(equal_to(2_INT64)))
+      call field_group%insert(field_entry_1)
+      call field_group%insert(field_entry_2)
+      @assert_that(field_group%size(), is(equal_to(2_INT64)))
 
       @assert_that(field_registry%size(), is(equal_to(0_INT64)))
-      call field_bundle%register(field_registry)
+      call field_group%register(field_registry)
       @assert_that(field_registry%size(), is(equal_to(2_INT64)))
 
       @assert_that(field_registry%count(standard_name_1), is(equal_to(1_INT64)))
@@ -149,7 +149,8 @@ contains
 
    @test
    subroutine test_import_yaml()
-      type(FieldGroup)   :: field_bundle
+      type(FieldGroup)               :: field_group
+      type(FieldGroupEntry), pointer :: field_entry
 
       type(Parser)     :: P
       type(FileStream) :: file_stream
@@ -159,6 +160,7 @@ contains
       type(ConfigurationIterator) :: iter
 
       integer :: status
+
 
       P           = Parser('core')
       file_stream = FileStream(test_yaml_file)
@@ -179,7 +181,79 @@ contains
 
       call file_stream%close()
 
-      call field_bundle%import_bundle(config, rc=status)
+      call field_group%import_group(config, rc=status)
       @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group%size(), is(equal_to(11_INT64)))
+
+      @assert_that(field_group%count('PHIS.AGCM'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'PHIS.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'PHIS',        is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',        is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(field_group%count('QI.QITOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'QI.QITOT.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'QITOT', is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',  is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'QI',    is(true()))
+      @assert_that(field_entry%get_units()          == 'unit1', is(true()))
+      @assert_that(field_group%count('QL.QLTOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'QL.QLTOT.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'QLTOT',       is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',        is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'QL',          is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(field_group%count('SLP.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'SLP.DYN')
+      @assert_that(field_entry%get_short_name()     == 'SLP',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == 'unit2',       is(true()))
+      @assert_that(field_group%count('T.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'T.DYN')
+      @assert_that(field_entry%get_short_name()     == 'T',           is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(field_group%count('PS.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'PS.DYN')
+      @assert_that(field_entry%get_short_name()     == 'PS',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(field_group%count('H.ZLE.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'H.ZLE.DYN')
+      @assert_that(field_entry%get_short_name()     == 'ZLE',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'H',           is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(field_group%count('OMEGA.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'OMEGA.DYN')
+      @assert_that(field_entry%get_short_name()     == 'OMEGA',       is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(field_group%count('QV.MOIST'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'QV.MOIST')
+      @assert_that(field_entry%get_short_name()     == 'QV',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(field_group%count('RH.RH2.MOIST'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'RH.RH2.MOIST')
+      @assert_that(field_entry%get_short_name()     == 'RH2',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'RH',          is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(field_group%count('O3.CHEMISTRY'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'O3.CHEMISTRY')
+      @assert_that(field_entry%get_short_name()     == 'O3',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'CHEMISTRY',   is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
    end subroutine test_import_yaml
 end module test_FieldGroup

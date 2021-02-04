@@ -35,7 +35,7 @@ module FieldGroupMod
       procedure :: advertise
       procedure :: register
 
-      procedure :: import_bundle
+      procedure :: import_group
       procedure :: import_component
       procedure :: import_field
    end type FieldGroup
@@ -120,7 +120,7 @@ contains
       end do
    end subroutine register
 
-   subroutine import_bundle(this, config, rc)
+   subroutine import_group(this, config, rc)
       class(FieldGroup),   intent(inout) :: this
       type(Configuration), intent(inout) :: config
       integer, optional,   intent(  out) :: rc
@@ -141,7 +141,7 @@ contains
       end do
 
       _RETURN(_SUCCESS)
-   end subroutine import_bundle
+   end subroutine import_group
 
    subroutine import_component(this, component_name, config, rc)
       class(FieldGroup),   intent(inout) :: this
