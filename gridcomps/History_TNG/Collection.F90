@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_Collection
+module CollectionMod
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
@@ -9,7 +9,7 @@ module MAPL_Collection
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldBundle
+   use FieldBundleMod
 
    implicit none
    private
@@ -24,5 +24,5 @@ module MAPL_Collection
    contains
    end type Collection
 contains
-end module MAPL_Collection
+end module CollectionMod
 

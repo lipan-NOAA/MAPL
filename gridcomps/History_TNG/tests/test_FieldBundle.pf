@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module Test_MAPL_FieldBundle
+module test_FieldBundle
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -10,11 +10,11 @@ module Test_MAPL_FieldBundle
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_AbstractFieldEntry
-   use MAPL_FieldRegistryEntry
-   use MAPL_FieldRegistry
-   use MAPL_FieldBundleEntry
-   use MAPL_FieldBundle
+   use AbstractFieldEntryMod
+   use FieldRegistryEntryMod
+   use FieldRegistryMod
+   use FieldBundleEntryMod
+   use FieldBundleMod
 
    character(*), parameter :: test_yaml_file  = 'test_History.yaml'
    character(*), parameter :: test_fields_key = 'Bundle_test_fields'
@@ -26,16 +26,15 @@ module Test_MAPL_FieldBundle
    character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
    character(*), parameter :: standard_name  = 'short_name.component_name'
 
-   type, extends(FieldBundleEntry) :: test_FieldBundleEntry
+   type, extends(FieldBundleEntry) :: mock_FieldBundleEntry
       integer :: call_advertise = 0
    contains
       procedure :: advertise
-   end type test_FieldBundleEntry
+   end type mock_FieldBundleEntry
 contains
-
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(test_FieldBundleEntry),     intent(inout) :: this
+      class(mock_FieldBundleEntry),     intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -79,8 +78,8 @@ contains
    @test
    subroutine test_advertise()
       type(FieldBundle)           :: field_bundle
-      type(test_FieldBundleEntry) :: field_entry_1
-      type(test_FieldBundleEntry) :: field_entry_2
+      type(mock_FieldBundleEntry) :: field_entry_1
+      type(mock_FieldBundleEntry) :: field_entry_2
       type(ESMF_State)            :: state
 
       class(FieldBundleEntry), pointer :: field_entry_ptr1
@@ -99,13 +98,13 @@ contains
 
       field_entry_ptr1 => field_bundle%at(entry_name)
       select type (field_entry_ptr1)
-      type is (test_FieldBundleEntry)
+      type is (mock_FieldBundleEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       end select
 
       field_entry_ptr2 => field_bundle%at(standard_name)
       select type (field_entry_ptr2)
-      type is (test_FieldBundleEntry)
+      type is (mock_FieldBundleEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
       end select
    end subroutine test_advertise
@@ -183,4 +182,4 @@ contains
       call field_bundle%import_bundle(config, rc=status)
       @assert_that(status, is(equal_to(0)))
    end subroutine test_import_yaml
-end module Test_MAPL_FieldBundle
+end module test_FieldBundle

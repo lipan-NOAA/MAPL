@@ -1,15 +1,15 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module Test_MAPL_FieldBundleEntry
+module test_FieldBundleEntry
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
 
-   use MAPL_FieldRegistryEntry
-   use MAPL_FieldBundleEntry
+   use FieldRegistryEntryMod
+   use FieldBundleEntryMod
 
    character(*), parameter :: short_name     = 'short_name'
    character(*), parameter :: component_name = 'component_name'
@@ -19,15 +19,15 @@ module Test_MAPL_FieldBundleEntry
    character(*), parameter :: std_out_name   = 'std_out_name'
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
 
-   type, extends(FieldBundleEntry) :: test_FieldBundleEntry
+   type, extends(FieldBundleEntry) :: mock_FieldBundleEntry
       integer :: call_standard_name = 0
    contains
       procedure :: standard_name
-   end type test_FieldBundleEntry
+   end type mock_FieldBundleEntry
 contains
    function standard_name(this) result(std_name)
       character(:), allocatable :: std_name
-      class(test_FieldBundleEntry), intent(inout) :: this
+      class(mock_FieldBundleEntry), intent(inout) :: this
 
       this%call_standard_name = this%call_standard_name + 1
 
@@ -88,8 +88,8 @@ contains
 
    @test
    subroutine test_name()
-      type(test_FieldBundleEntry) :: field_entry_no_alias
-      type(test_FieldBundleEntry) :: field_entry_alias
+      type(mock_FieldBundleEntry) :: field_entry_no_alias
+      type(mock_FieldBundleEntry) :: field_entry_alias
 
       @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(0)))
       call field_entry_no_alias%initialize(short_name, component_name)
@@ -113,4 +113,4 @@ contains
       @assert_that(field_entry%get_component_name() == component_name, is(true()))
       @assert_that(field_entry%get_units()          == units,          is(true()))
    end subroutine test_registry_entry
-end module Test_MAPL_FieldBundleEntry
+end module test_FieldBundleEntry

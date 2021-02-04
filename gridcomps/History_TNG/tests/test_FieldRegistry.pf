@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module Test_MAPL_FieldRegistry
+module test_FieldRegistry
    use, intrinsic :: iso_fortran_env, only: INT64
    use pFUnit
    use ESMF
@@ -9,8 +9,8 @@ module Test_MAPL_FieldRegistry
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldRegistryEntry
-   use MAPL_FieldRegistry
+   use FieldRegistryEntryMod
+   use FieldRegistryMod
 
    character(*), parameter :: short_name       = 'short_name'
    character(*), parameter :: other_name       = 'other_name'
@@ -18,16 +18,15 @@ module Test_MAPL_FieldRegistry
    character(*), parameter :: entry_name       = 'short_name.component_name'
    character(*), parameter :: other_entry_name = 'other_name.component_name'
 
-   type, extends(FieldRegistryEntry) :: test_FieldRegistryEntry
+   type, extends(FieldRegistryEntry) :: mock_FieldRegistryEntry
       integer :: call_advertise = 0
    contains
       procedure :: advertise
-   end type test_FieldRegistryEntry
-
+   end type mock_FieldRegistryEntry
 contains
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(test_FieldRegistryEntry),   intent(inout) :: this
+      class(mock_FieldRegistryEntry),   intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -69,8 +68,8 @@ contains
    @test
    subroutine test_advertise()
       type(FieldRegistry)           :: field_registry
-      type(test_FieldRegistryEntry) :: field_entry_1
-      type(test_FieldRegistryEntry) :: field_entry_2
+      type(mock_FieldRegistryEntry) :: field_entry_1
+      type(mock_FieldRegistryEntry) :: field_entry_2
       type(ESMF_State)              :: state
 
       class(FieldRegistryEntry), pointer :: field_entry_ptr1
@@ -89,14 +88,14 @@ contains
 
       field_entry_ptr1 => field_registry%at(entry_name)
       select type (field_entry_ptr1)
-      type is (test_FieldRegistryEntry)
+      type is (mock_FieldRegistryEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       end select
 
       field_entry_ptr2 => field_registry%at(other_entry_name)
       select type (field_entry_ptr2)
-      type is (test_FieldRegistryEntry)
+      type is (mock_FieldRegistryEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
       end select
    end subroutine test_advertise
-end module Test_MAPL_FieldRegistry
+end module test_FieldRegistry

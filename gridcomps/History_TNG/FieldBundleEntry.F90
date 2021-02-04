@@ -1,14 +1,14 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldBundleEntry
+module FieldBundleEntryMod
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_AbstractFieldEntry
-   use MAPL_FieldRegistryEntry
+   use AbstractFieldEntryMod
+   use FieldRegistryEntryMod
 
    implicit none
    private
@@ -98,4 +98,4 @@ contains
       call field_entry%initialize(this%get_short_name(), &
          this%get_component_name(), units=this%get_units())
    end function registry_entry
-end module MAPL_FieldBundleEntry
+end module FieldBundleEntryMod

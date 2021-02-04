@@ -1,5 +1,5 @@
-module MAPL_FieldRegistryEntryMap
-   use MAPL_FieldRegistryEntry
+module FieldRegistryEntryMapMod
+   use FieldRegistryEntryMod
 
 #include "types/key_deferredLengthString.inc"
 #define _value class(FieldRegistryEntry)
@@ -10,4 +10,4 @@ module MAPL_FieldRegistryEntryMap
 #define _pair FieldRegistryEntryPair
 #define _alt
 #include "templates/map.inc"
-end module MAPL_FieldRegistryEntryMap
+end module FieldRegistryEntryMapMod

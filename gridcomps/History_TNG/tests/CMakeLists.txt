@@ -1,12 +1,12 @@
 add_definitions(-DUSE_MPI)
 
 set (TEST_SRCS
-    test_MAPL_AbstractFieldEntry.pf
-    test_MAPL_FieldRegistryEntry.pf
-    test_MAPL_FieldRegistry.pf
-    test_MAPL_FieldBundleEntry.pf
-    test_MAPL_FieldBundle.pf
-    test_MAPL_HistoryConfig.pf
+    test_AbstractFieldEntry.pf
+    test_FieldRegistryEntry.pf
+    test_FieldRegistry.pf
+    test_FieldBundleEntry.pf
+    test_FieldBundle.pf
+    # test_MAPL_HistoryConfig.pf
 )
 
 add_library (history_tng_extras

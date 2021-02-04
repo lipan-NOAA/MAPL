@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_AbstractFieldEntry
+module AbstractFieldEntryMod
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
@@ -320,4 +320,4 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
-end module MAPL_AbstractFieldEntry
+end module AbstractFieldEntryMod

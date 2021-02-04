@@ -1,7 +1,7 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldBundle
+module FieldBundleMod
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
@@ -9,11 +9,11 @@ module MAPL_FieldBundle
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldBundleEntry
-   use MAPL_FieldBundleEntryMap
+   use FieldBundleEntryMod
+   use FieldBundleEntryMapMod
 
-   use MAPL_FieldRegistryEntry
-   use MAPL_FieldRegistry
+   use FieldRegistryEntryMod
+   use FieldRegistryMod
 
    implicit none
    private
@@ -208,4 +208,4 @@ contains
       call this%insert(field_entry)
       _RETURN(_SUCCESS)
    end subroutine import_field
-end module MAPL_FieldBundle
+end module FieldBundleMod

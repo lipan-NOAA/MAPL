@@ -1,5 +1,5 @@
-module MAPL_FieldBundleEntryMap
-   use MAPL_FieldBundleEntry
+module FieldBundleEntryMapMod
+   use FieldBundleEntryMod
 
 #include "types/key_deferredLengthString.inc"
 #define _value class(FieldBundleEntry)
@@ -10,4 +10,4 @@ module MAPL_FieldBundleEntryMap
 #define _pair FieldBundleEntryPair
 #define _alt
 #include "templates/map.inc"
-end module MAPL_FieldBundleEntryMap
+end module FieldBundleEntryMapMod

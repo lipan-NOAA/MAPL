@@ -1,12 +1,13 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldRegistryEntry
+module FieldRegistryEntryMod
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
-   use MAPL_AbstractFieldEntry
    use MAPL_KeywordEnforcerMod
+
+   use AbstractFieldEntryMod
 
    implicit none
    private
@@ -39,4 +40,4 @@ contains
 
       field_name = this%standard_name()
    end function name
-end module MAPL_FieldRegistryEntry
+end module FieldRegistryEntryMod

@@ -1,15 +1,15 @@
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
 
-module MAPL_FieldRegistry
+module FieldRegistryMod
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use MAPL_FieldRegistryEntry
-   use MAPL_FieldRegistryEntryMap
+   use FieldRegistryEntryMod
+   use FieldRegistryEntryMapMod
 
    implicit none
    private
@@ -89,4 +89,4 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
-end module MAPL_FieldRegistry
+end module FieldRegistryMod
