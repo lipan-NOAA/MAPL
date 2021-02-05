@@ -7,6 +7,7 @@ set (TEST_SRCS
     test_FieldGroupEntry.pf
     test_FieldGroup.pf
     test_Group.pf
+    test_GroupRegistry.pf
     # test_MAPL_HistoryConfig.pf
 )
 

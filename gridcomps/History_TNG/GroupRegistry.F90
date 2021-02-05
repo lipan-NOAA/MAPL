@@ -54,7 +54,7 @@ contains
    subroutine insert(this, key, group_entry, unusable, rc)
       class(GroupRegistry),             intent(inout) :: this
       character(*),                     intent(in   ) :: key
-      type(Group),                      intent(inout) :: group_entry
+      class(Group),                     intent(inout) :: group_entry
       class(KeywordEnforcer), optional, intent(  out) :: unusable
       integer,                optional, intent(  out) :: rc
 
