@@ -49,6 +49,28 @@ Group_tests:
     DYN:
       U: {}
 
+Group_Registry_tests:
+  group_1:
+    fields:
+      component_1:
+        field_1: {}
+        field_2: {}
+      component_2:
+        field_3: {}
+    aux:
+      component_3:
+        field_4: {}
+  group_2:
+    fields:
+      component_4:
+        field_5: {}
+        field_6: {}
+      component_5:
+        field_7: {}
+    aux:
+      component_6:
+        field_8: {}
+
 Collections_test:
   test_collection1:
     template:   '%y4%m2%d2_%h2%n2z.nc4'
