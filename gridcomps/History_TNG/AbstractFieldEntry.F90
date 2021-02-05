@@ -33,6 +33,8 @@ module AbstractFieldEntryMod
       procedure :: equivalent
       procedure :: equal_to_entry
       generic   :: operator(==) => equal_to_entry
+      procedure :: not_equal_to_entry
+      generic   :: operator(/=) => not_equal_to_entry
 
       procedure :: standard_name
       procedure(i_name), deferred :: name
@@ -132,6 +134,13 @@ contains
 
       equal_to_entry = a%equivalent(b)
    end function equal_to_entry
+
+   logical function not_equal_to_entry(a, b)
+      class(AbstractFieldEntry), intent(in) :: a
+      class(AbstractFieldEntry), intent(in) :: b
+
+      not_equal_to_entry = .not. (a == b)
+   end function not_equal_to_entry
 
    subroutine set_units(this, units, unusable, rc)
       class(AbstractFieldEntry),        intent(inout) :: this

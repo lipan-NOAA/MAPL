@@ -53,9 +53,7 @@ contains
       class(FieldRegistry),      intent(inout) :: this
       class(FieldRegistryEntry), intent(inout) :: field_entry
 
-      character(:), allocatable :: name
-
-      call this%map%insert(field_entry%name(), field_entry)
+      call this%map%insert(field_entry%standard_name(), field_entry)
    end subroutine insert
 
    subroutine advertise(this, state, unusable,&

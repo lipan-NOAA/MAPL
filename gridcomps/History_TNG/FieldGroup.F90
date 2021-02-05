@@ -32,6 +32,8 @@ module FieldGroupMod
       procedure :: at
       procedure :: insert
 
+      procedure :: union
+
       procedure :: advertise
       procedure :: register
 
@@ -61,13 +63,29 @@ contains
       field_entry => this%map%at(key)
    end function at
 
-   subroutine insert(this, field_entry)
-      class(FieldGroup),      intent(inout) :: this
-      class(FieldGroupEntry), intent(inout) :: field_entry
+   subroutine insert(this, field_entry, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroupEntry),           intent(inout) :: field_entry
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
-      character(:), allocatable :: name
+      character(:), allocatable       :: standard_name
+      class(FieldGroupEntry), pointer :: current_entry
+      integer                         :: status
 
-      call this%map%insert(field_entry%name(), field_entry)
+      _UNUSED_DUMMY(unusable)
+
+      standard_name = field_entry%standard_name()
+
+      status = 0
+      if (this%count(standard_name) > 0) then
+         current_entry => this%at(standard_name)
+         if (current_entry /= field_entry) status = 1
+      else
+         call this%map%insert(field_entry%standard_name(), field_entry)
+      end if
+
+      if (present(rc)) rc = status
    end subroutine insert
 
    subroutine advertise(this, state, unusable,&
@@ -107,7 +125,7 @@ contains
       type(FieldRegistry), intent(inout) :: field_registry
 
       class(FieldGroupEntry), pointer  :: field_entry
-      type(FieldRegistryEntry)          :: registry_entry
+      type(FieldRegistryEntry)         :: registry_entry
       type(FieldGroupEntryMapIterator) :: iter
 
       iter = this%map%begin()
@@ -119,6 +137,14 @@ contains
          call iter%next()
       end do
    end subroutine register
+
+   subroutine union(this, field_group)
+      class(FieldGroup), intent(inout) :: this
+      class(FieldGroup), intent(inout) :: field_group
+
+      class(FieldGroupEntry), pointer  :: field_entry
+      type(FieldGroupEntryMapIterator) :: iter
+   end subroutine union
 
    subroutine import_group(this, config, rc)
       class(FieldGroup),   intent(inout) :: this

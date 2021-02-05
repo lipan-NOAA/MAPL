@@ -23,8 +23,14 @@ module test_FieldGroup
    character(*), parameter :: component_name = 'component_name'
    character(*), parameter :: units          = 'units'
    character(*), parameter :: alias_name     = 'alias_name'
-   character(*), parameter :: entry_name     = 'alias_name.short_name.component_name'
    character(*), parameter :: standard_name  = 'short_name.component_name'
+
+   character(*), parameter :: short_name_1     = 'short_name_1'
+   character(*), parameter :: short_name_2     = 'short_name_2'
+   character(*), parameter :: component_name_1 = 'component_name_1'
+   character(*), parameter :: component_name_2 = 'component_name_2'
+   character(*), parameter :: standard_name_1  = 'short_name_1.component_name_1'
+   character(*), parameter :: standard_name_2  = 'short_name_2.component_name_2'
 
    type, extends(FieldGroupEntry) :: mock_FieldGroupEntry
       integer :: call_advertise = 0
@@ -63,17 +69,77 @@ contains
 
       call field_entry%initialize(short_name, component_name, units=units, alias_name=alias_name)
 
-      @assert_that(field_group%size(),            is(equal_to(0_INT64)))
-      @assert_that(field_group%count(entry_name), is(equal_to(0_INT64)))
+      @assert_that(field_group%size(),               is(equal_to(0_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(0_INT64)))
       call field_group%insert(field_entry)
-      @assert_that(field_group%size(),            is(equal_to(1_INT64)))
-      @assert_that(field_group%count(entry_name), is(equal_to(1_INT64)))
+      @assert_that(field_group%size(),               is(equal_to(1_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
 
-      field_group_entry => field_group%at(entry_name)
+      field_group_entry => field_group%at(standard_name)
       @assert_that(field_group_entry%get_short_name()     == short_name,     is(true()))
       @assert_that(field_group_entry%get_component_name() == component_name, is(true()))
       @assert_that(field_group_entry%get_alias_name()     == alias_name,     is(true()))
    end subroutine test_map
+
+   @test
+   subroutine test_insert()
+      type(FieldGroup)      :: field_group
+      type(FieldGroupEntry) :: field_entry1
+      type(FieldGroupEntry) :: field_entry2
+      type(FieldGroupEntry) :: field_entry3
+      type(FieldGroupEntry) :: field_entry4
+      type(FieldGroupEntry) :: field_entry_new_name
+
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_new_name%initialize(short_name_1, component_name_1)
+
+      call field_entry1%initialize(short_name, component_name)
+      call field_entry2%initialize(short_name, component_name, units=units)
+      call field_entry3%initialize(short_name, component_name,              alias_name=alias_name)
+      call field_entry4%initialize(short_name, component_name, units=units, alias_name=alias_name)
+
+      call field_group%insert(field_entry1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group%size(),               is(equal_to(1_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name)
+      @assert_that(field_entry1 == field_entry_ptr, is(true()))
+
+      call field_group%insert(field_entry2, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(),               is(equal_to(1_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name)
+      @assert_that(field_entry1 == field_entry_ptr, is(true()))
+      @assert_that(field_entry2 == field_entry_ptr, is(false()))
+
+      call field_group%insert(field_entry3, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(),               is(equal_to(1_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name)
+      @assert_that(field_entry1 == field_entry_ptr, is(true()))
+      @assert_that(field_entry3 == field_entry_ptr, is(false()))
+
+      call field_group%insert(field_entry4, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(),               is(equal_to(1_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name)
+      @assert_that(field_entry1 == field_entry_ptr, is(true()))
+      @assert_that(field_entry4 == field_entry_ptr, is(false()))
+
+      call field_group%insert(field_entry_new_name, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group%count(standard_name_1), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name_1)
+      @assert_that(field_entry_new_name == field_entry_ptr, is(true()))
+      @assert_that(field_entry1         == field_entry_ptr, is(false()))
+   end subroutine test_insert
 
    @test
    subroutine test_advertise()
@@ -87,8 +153,8 @@ contains
 
       integer :: status
 
-      call field_entry_1%initialize(short_name, component_name, units=units)
-      call field_entry_2%initialize(short_name, component_name, units=units, alias_name=alias_name)
+      call field_entry_1%initialize(short_name_1, component_name_1)
+      call field_entry_2%initialize(short_name_2, component_name_2)
       call field_group%insert(field_entry_1)
       call field_group%insert(field_entry_2)
       @assert_that(field_group%size(), is(equal_to(2_INT64)))
@@ -96,13 +162,13 @@ contains
       call field_group%advertise(state, rc=status)
       @assert_that(status, is(equal_to(0)))
 
-      field_entry_ptr1 => field_group%at(entry_name)
+      field_entry_ptr1 => field_group%at(standard_name_1)
       select type (field_entry_ptr1)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       end select
 
-      field_entry_ptr2 => field_group%at(standard_name)
+      field_entry_ptr2 => field_group%at(standard_name_2)
       select type (field_entry_ptr2)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
@@ -116,13 +182,6 @@ contains
       type(FieldGroupEntry)             :: field_entry_2
       type(FieldRegistry)               :: field_registry
       type(FieldRegistryEntry), pointer :: field_registry_entry
-
-      character(*), parameter :: short_name_1     = 'short_name_1'
-      character(*), parameter :: short_name_2     = 'short_name_2'
-      character(*), parameter :: component_name_1 = 'component_name_1'
-      character(*), parameter :: component_name_2 = 'component_name_2'
-      character(*), parameter :: standard_name_1  = 'short_name_1.component_name_1'
-      character(*), parameter :: standard_name_2  = 'short_name_2.component_name_2'
 
       call field_entry_1%initialize(short_name_1, component_name_1, units=units)
       call field_entry_2%initialize(short_name_2, component_name_2)
@@ -192,14 +251,14 @@ contains
       @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
       @assert_that(field_entry%get_units()          == default_units, is(true()))
 
-      @assert_that(field_group%count('QI.QITOT.AGCM'), is(equal_to(1_INT64)))
-      field_entry => field_group%at( 'QI.QITOT.AGCM')
+      @assert_that(field_group%count('QITOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'QITOT.AGCM')
       @assert_that(field_entry%get_short_name()     == 'QITOT', is(true()))
       @assert_that(field_entry%get_component_name() == 'AGCM',  is(true()))
       @assert_that(field_entry%get_alias_name()     == 'QI',    is(true()))
       @assert_that(field_entry%get_units()          == 'unit1', is(true()))
-      @assert_that(field_group%count('QL.QLTOT.AGCM'), is(equal_to(1_INT64)))
-      field_entry => field_group%at( 'QL.QLTOT.AGCM')
+      @assert_that(field_group%count('QLTOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'QLTOT.AGCM')
       @assert_that(field_entry%get_short_name()     == 'QLTOT',       is(true()))
       @assert_that(field_entry%get_component_name() == 'AGCM',        is(true()))
       @assert_that(field_entry%get_alias_name()     == 'QL',          is(true()))
@@ -223,8 +282,8 @@ contains
       @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
       @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
       @assert_that(field_entry%get_units()          == default_units, is(true()))
-      @assert_that(field_group%count('H.ZLE.DYN'), is(equal_to(1_INT64)))
-      field_entry => field_group%at( 'H.ZLE.DYN')
+      @assert_that(field_group%count('ZLE.DYN'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'ZLE.DYN')
       @assert_that(field_entry%get_short_name()     == 'ZLE',         is(true()))
       @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
       @assert_that(field_entry%get_alias_name()     == 'H',           is(true()))
@@ -242,8 +301,8 @@ contains
       @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
       @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
       @assert_that(field_entry%get_units()          == default_units, is(true()))
-      @assert_that(field_group%count('RH.RH2.MOIST'), is(equal_to(1_INT64)))
-      field_entry => field_group%at( 'RH.RH2.MOIST')
+      @assert_that(field_group%count('RH2.MOIST'), is(equal_to(1_INT64)))
+      field_entry => field_group%at( 'RH2.MOIST')
       @assert_that(field_entry%get_short_name()     == 'RH2',         is(true()))
       @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
       @assert_that(field_entry%get_alias_name()     == 'RH',          is(true()))
