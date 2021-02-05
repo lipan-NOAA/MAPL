@@ -10,15 +10,21 @@ module test_Group
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
+   use AbstractFieldEntryMod
    use FieldRegistryMod
+   use FieldGroupEntryMod
    use FieldGroupMod
    use GroupMod
 
+   character(*), parameter :: test_yaml_file = 'test_History.yaml'
+   character(*), parameter :: test_group_key = 'Group_tests'
+
    type, extends(FieldGroup) :: mock_FieldGroup
-      integer :: call_union      = 0
-      integer :: call_difference = 0
-      integer :: call_advertise  = 0
-      integer :: call_register   = 0
+      integer :: call_union        = 0
+      integer :: call_difference   = 0
+      integer :: call_advertise    = 0
+      integer :: call_register     = 0
+      integer :: call_import_group = 0
 
       class(FieldGroup), allocatable :: union_field_group
       class(FieldGroup), allocatable :: difference_field_group
@@ -34,6 +40,7 @@ module test_Group
       procedure :: difference
       procedure :: advertise
       procedure :: register
+      procedure :: import_group
    end type mock_FieldGroup
 contains
    subroutine init(this, id)
@@ -111,6 +118,18 @@ contains
 
       this%call_register = this%call_register + 1
    end subroutine register
+
+   subroutine import_group(this, config, rc)
+      class(mock_FieldGroup), intent(inout) :: this
+      type(Configuration),    intent(inout) :: config
+      integer, optional,      intent(  out) :: rc
+
+      _UNUSED_DUMMY(config)
+
+      this%call_import_group = this%call_import_group + 1
+
+      _RETURN(_SUCCESS)
+   end subroutine import_group
 
    @test
    subroutine test_union()
@@ -290,4 +309,216 @@ contains
          @assert_that(aux_inside%call_register, is(equal_to(1)))
       end select
    end subroutine test_register
+
+   @test
+   subroutine test_import_groups()
+      type(Group) :: field_group
+
+      type(mock_FieldGroup) :: fields
+      type(mock_FieldGroup) :: aux
+      type(FieldRegistry)   :: field_registry
+
+      class(FieldGroup), allocatable :: fields_inside
+      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: difference_field_group
+
+      type(Parser)     :: P
+      type(FileStream) :: file_stream
+
+      character(:), pointer       :: key
+      type(Configuration)         :: main_config, config
+      type(ConfigurationIterator) :: iter
+
+      integer :: status
+
+      call fields%init(1)
+      call aux%init(2)
+
+      @assert_that(fields == aux, is(false()))
+
+      call field_group%initialize(fields, aux)
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_import_group, is(equal_to(0)))
+         @assert_that(fields_inside%call_difference,   is(equal_to(0)))
+         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_import_group, is(equal_to(0)))
+         @assert_that(aux_inside%call_difference,   is(equal_to(0)))
+         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+      end select
+
+      P           = Parser('core')
+      file_stream = FileStream(test_yaml_file)
+      main_config = P%load(file_stream)
+
+      iter = main_config%begin()
+      do while(iter /= main_config%end())
+         key => iter%key()
+
+         select case (key)
+         case (test_group_key)
+            config = iter%value()
+            exit
+         end select
+
+         call iter%next()
+      end do
+
+      call file_stream%close()
+
+      call field_group%import_group(config, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_import_group, is(equal_to(1)))
+         @assert_that(fields_inside%call_difference,   is(equal_to(0)))
+         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_import_group, is(equal_to(1)))
+         @assert_that(aux_inside%call_difference,   is(equal_to(1)))
+
+         @assert_that(allocated(aux_inside%difference_field_group), is(true()))
+         difference_field_group = aux_inside%difference_field_group
+         select type (difference_field_group)
+         type is (mock_FieldGroup)
+            @assert_that(difference_field_group == fields, is(true()))
+         end select
+      end select
+   end subroutine test_import_groups
+
+   @test
+   subroutine test_import_yaml()
+      type(Group) :: field_group
+
+      type(Parser)     :: P
+      type(FileStream) :: file_stream
+
+      character(:), pointer       :: key
+      type(Configuration)         :: main_config, config
+      type(ConfigurationIterator) :: iter
+
+      type(FieldGroupEntry), pointer :: field_entry
+      class(FieldGroup), allocatable :: fields
+      class(FieldGroup), allocatable :: aux
+
+      integer :: status
+
+      P           = Parser('core')
+      file_stream = FileStream(test_yaml_file)
+      main_config = P%load(file_stream)
+
+      iter = main_config%begin()
+      do while(iter /= main_config%end())
+         key => iter%key()
+
+         select case (key)
+         case (test_group_key)
+            config = iter%value()
+            exit
+         end select
+
+         call iter%next()
+      end do
+
+      call file_stream%close()
+
+      call field_group%import_group(config, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      fields = field_group%get_fields()
+      aux    = field_group%get_aux()
+
+      ! Test fields read correctly
+      @assert_that(fields%size(), is(equal_to(11_INT64)))
+
+      @assert_that(fields%count('PHIS.AGCM'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'PHIS.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'PHIS',        is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',        is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(fields%count('QITOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'QITOT.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'QITOT', is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',  is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'QI',    is(true()))
+      @assert_that(field_entry%get_units()          == 'unit1', is(true()))
+      @assert_that(fields%count('QLTOT.AGCM'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'QLTOT.AGCM')
+      @assert_that(field_entry%get_short_name()     == 'QLTOT',       is(true()))
+      @assert_that(field_entry%get_component_name() == 'AGCM',        is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'QL',          is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(fields%count('SLP.DYN'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'SLP.DYN')
+      @assert_that(field_entry%get_short_name()     == 'SLP',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == 'unit2',       is(true()))
+      @assert_that(fields%count('T.DYN'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'T.DYN')
+      @assert_that(field_entry%get_short_name()     == 'T',           is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(fields%count('PS.DYN'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'PS.DYN')
+      @assert_that(field_entry%get_short_name()     == 'PS',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(fields%count('ZLE.DYN'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'ZLE.DYN')
+      @assert_that(field_entry%get_short_name()     == 'ZLE',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'H',           is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(fields%count('OMEGA.DYN'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'OMEGA.DYN')
+      @assert_that(field_entry%get_short_name()     == 'OMEGA',       is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(fields%count('QV.MOIST'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'QV.MOIST')
+      @assert_that(field_entry%get_short_name()     == 'QV',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+      @assert_that(fields%count('RH2.MOIST'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'RH2.MOIST')
+      @assert_that(field_entry%get_short_name()     == 'RH2',         is(true()))
+      @assert_that(field_entry%get_component_name() == 'MOIST',       is(true()))
+      @assert_that(field_entry%get_alias_name()     == 'RH',          is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      @assert_that(fields%count('O3.CHEMISTRY'), is(equal_to(1_INT64)))
+      field_entry => fields%at( 'O3.CHEMISTRY')
+      @assert_that(field_entry%get_short_name()     == 'O3',          is(true()))
+      @assert_that(field_entry%get_component_name() == 'CHEMISTRY',   is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+
+      ! Test aux is read correctly
+      @assert_that(aux%size(), is(equal_to(1_INT64)))
+
+      @assert_that(aux%count('U.DYN'), is(equal_to(1_INT64)))
+      field_entry => aux%at( 'U.DYN')
+      @assert_that(field_entry%get_short_name()     == 'U',           is(true()))
+      @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
+      @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
+      @assert_that(field_entry%get_units()          == default_units, is(true()))
+   end subroutine test_import_yaml
 end module test_Group

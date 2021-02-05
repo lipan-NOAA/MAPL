@@ -134,6 +134,9 @@ contains
 
       integer :: status
 
+      if (.not. allocated(this%fields)) allocate(this%fields)
+      if (.not. allocated(this%aux))    allocate(this%aux)
+
       iter = config%begin()
       do while(iter /= config%end())
          key        => iter%key()
@@ -148,6 +151,8 @@ contains
 
          call iter%next()
       end do
+
+      call this%aux%difference(this%fields, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine import_group
