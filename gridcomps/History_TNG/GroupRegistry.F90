@@ -25,6 +25,9 @@ module GroupRegistryMod
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: import_groups
+      procedure :: import_group
    end type GroupRegistry
 contains
    integer(kind=INT64) function size(this)
@@ -68,4 +71,42 @@ contains
 
       if (present(rc)) rc = status
    end subroutine insert
+
+   subroutine import_groups(this, config, rc)
+      class(GroupRegistry), intent(inout) :: this
+      type(Configuration),  intent(inout) :: config
+      integer, optional,    intent(  out) :: rc
+
+      character(:), pointer       :: key
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      iter = config%begin()
+      do while(iter /= config%end())
+         key        => iter%key()
+         sub_config =  iter%value()
+
+         call this%import_group(key, sub_config, __RC__)
+         call iter%next()
+      end do
+
+      _RETURN(status)
+   end subroutine import_groups
+
+   subroutine import_group(this, key, config, rc)
+      class(GroupRegistry), intent(inout) :: this
+      character(*),         intent(in   ) :: key
+      type(Configuration),  intent(inout) :: config
+      integer, optional,    intent(  out) :: rc
+
+      type(Group) :: group_entry
+      integer     :: status
+
+      call group_entry%import_group(config, __RC__)
+      call this%insert(key, group_entry, __RC__)
+
+      _RETURN(status)
+   end subroutine import_group
 end module GroupRegistryMod
