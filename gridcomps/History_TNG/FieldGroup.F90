@@ -32,6 +32,7 @@ module FieldGroupMod
       procedure :: at
       procedure :: insert
 
+      procedure :: merge_into
       procedure :: union
 
       procedure :: advertise
@@ -138,12 +139,41 @@ contains
       end do
    end subroutine register
 
-   subroutine union(this, field_group)
-      class(FieldGroup), intent(inout) :: this
-      class(FieldGroup), intent(inout) :: field_group
+   subroutine merge_into(this, field_group, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
-      class(FieldGroupEntry), pointer  :: field_entry
+      type(FieldGroupEntry), pointer   :: field_entry
       type(FieldGroupEntryMapIterator) :: iter
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry => iter%value()
+         call field_group%insert(field_entry, __RC__)
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine merge_into
+
+   subroutine union(this, field_group, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      call field_group%merge_into(this, __RC__)
+
+      _RETURN(_SUCCESS)
    end subroutine union
 
    subroutine import_group(this, config, rc)

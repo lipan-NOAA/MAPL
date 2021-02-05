@@ -27,10 +27,13 @@ module test_FieldGroup
 
    character(*), parameter :: short_name_1     = 'short_name_1'
    character(*), parameter :: short_name_2     = 'short_name_2'
+   character(*), parameter :: short_name_3     = 'short_name_3'
    character(*), parameter :: component_name_1 = 'component_name_1'
    character(*), parameter :: component_name_2 = 'component_name_2'
+   character(*), parameter :: component_name_3 = 'component_name_3'
    character(*), parameter :: standard_name_1  = 'short_name_1.component_name_1'
    character(*), parameter :: standard_name_2  = 'short_name_2.component_name_2'
+   character(*), parameter :: standard_name_3  = 'short_name_3.component_name_3'
 
    type, extends(FieldGroupEntry) :: mock_FieldGroupEntry
       integer :: call_advertise = 0
@@ -205,6 +208,104 @@ contains
       @assert_that(field_registry_entry%get_component_name() == component_name_2, is(true()))
       @assert_that(field_registry_entry%get_units()          == default_units,    is(true()))
    end subroutine test_register
+
+   @test
+   subroutine test_merge_into()
+      type(FieldGroup)               :: field_group_1
+      type(FieldGroup)               :: field_group_2
+      type(FieldGroupEntry)          :: field_entry_1
+      type(FieldGroupEntry)          :: field_entry_2
+      type(FieldGroupEntry)          :: field_entry_3
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_1%initialize(short_name_1, component_name_1)
+      call field_entry_2%initialize(short_name_2, component_name_2)
+      call field_entry_3%initialize(short_name_3, component_name_3)
+
+      call field_group_1%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1%size(),                 is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2%merge_into(field_group_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+
+      field_entry_ptr => field_group_1%at(standard_name_1)
+      @assert_that(field_entry_ptr == field_entry_1, is(true()))
+      field_entry_ptr => field_group_1%at(standard_name_2)
+      @assert_that(field_entry_ptr == field_entry_2, is(true()))
+      field_entry_ptr => field_group_1%at(standard_name_3)
+      @assert_that(field_entry_ptr == field_entry_3, is(true()))
+   end subroutine test_merge_into
+
+   @test
+   subroutine test_union()
+      type(FieldGroup)               :: field_group_1
+      type(FieldGroup)               :: field_group_2
+      type(FieldGroupEntry)          :: field_entry_1
+      type(FieldGroupEntry)          :: field_entry_2
+      type(FieldGroupEntry)          :: field_entry_3
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_1%initialize(short_name_1, component_name_1)
+      call field_entry_2%initialize(short_name_2, component_name_2)
+      call field_entry_3%initialize(short_name_3, component_name_3)
+
+      call field_group_1%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1%size(),                 is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1%union(field_group_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+
+      field_entry_ptr => field_group_1%at(standard_name_1)
+      @assert_that(field_entry_ptr == field_entry_1, is(true()))
+      field_entry_ptr => field_group_1%at(standard_name_2)
+      @assert_that(field_entry_ptr == field_entry_2, is(true()))
+      field_entry_ptr => field_group_1%at(standard_name_3)
+      @assert_that(field_entry_ptr == field_entry_3, is(true()))
+   end subroutine test_union
 
    @test
    subroutine test_import_yaml()
