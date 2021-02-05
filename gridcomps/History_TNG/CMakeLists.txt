@@ -8,6 +8,7 @@ set (srcs
     FieldGroupEntry.F90
     FieldGroupEntryMap.F90
     FieldGroup.F90
+    Group.F90
     Collection.F90
     # MAPL_HistoryConfig.F90
     # MAPL_HistoryWriter.F90
