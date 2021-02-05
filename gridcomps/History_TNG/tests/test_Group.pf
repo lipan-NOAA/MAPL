@@ -1,0 +1,293 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+
+module test_Group
+   use, intrinsic :: iso_fortran_env, only: INT64
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use yaFyaml
+   use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
+
+   use FieldRegistryMod
+   use FieldGroupMod
+   use GroupMod
+
+   type, extends(FieldGroup) :: mock_FieldGroup
+      integer :: call_union      = 0
+      integer :: call_difference = 0
+      integer :: call_advertise  = 0
+      integer :: call_register   = 0
+
+      class(FieldGroup), allocatable :: union_field_group
+      class(FieldGroup), allocatable :: difference_field_group
+
+      integer, private :: id
+   contains
+      procedure :: init
+      procedure :: get_id
+      procedure :: is_equal_to
+      generic   :: operator(==) => is_equal_to
+
+      procedure :: union
+      procedure :: difference
+      procedure :: advertise
+      procedure :: register
+   end type mock_FieldGroup
+contains
+   subroutine init(this, id)
+      class(mock_FieldGroup), intent(inout) :: this
+      integer,                intent(in   ) :: id
+
+      this%id = id
+   end subroutine init
+
+   integer function get_id(this)
+      class(mock_FieldGroup), intent(in) :: this
+
+      get_id = this%id
+   end function get_id
+
+   logical function is_equal_to(a, b)
+      class(mock_FieldGroup), intent(in) :: a
+      class(mock_FieldGroup), intent(in) :: b
+
+      is_equal_to = (a%id == b%get_id())
+   end function is_equal_to
+
+   subroutine union(this, field_group, unusable, rc)
+      class(mock_FieldGroup),           intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      this%call_union = this%call_union + 1
+      this%union_field_group = field_group
+
+      _RETURN(_SUCCESS)
+   end subroutine union
+
+   subroutine difference(this, field_group, unusable, rc)
+      class(mock_FieldGroup),           intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      _UNUSED_DUMMY(field_group)
+
+      this%call_difference = this%call_difference + 1
+      this%difference_field_group = field_group
+
+      _RETURN(_SUCCESS)
+   end subroutine difference
+
+   subroutine advertise(this, state, unusable,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(mock_FieldGroup),           intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
+
+      _UNUSED_DUMMY(unusable)
+      _UNUSED_DUMMY(state)
+      _UNUSED_DUMMY(TransferOfferGeomObject)
+      _UNUSED_DUMMY(SharePolicyField)
+      _UNUSED_DUMMY(SharePolicyGeomObject)
+
+      this%call_advertise = this%call_advertise + 1
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
+
+   subroutine register(this, field_registry)
+      class(mock_FieldGroup), intent(inout) :: this
+      type(FieldRegistry),    intent(inout) :: field_registry
+
+      _UNUSED_DUMMY(field_registry)
+
+      this%call_register = this%call_register + 1
+   end subroutine register
+
+   @test
+   subroutine test_union()
+      type(Group)           :: field_group_1
+      type(Group)           :: field_group_2
+      type(mock_FieldGroup) :: fields_1
+      type(mock_FieldGroup) :: fields_2
+      type(mock_FieldGroup) :: aux_1
+      type(mock_FieldGroup) :: aux_2
+
+      class(FieldGroup), allocatable :: fields_inside
+      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: union_field_group
+      class(FieldGroup), allocatable :: difference_field_group
+
+      integer :: status
+
+      call fields_1%init(1)
+      call fields_2%init(2)
+      call aux_1%init(3)
+      call aux_2%init(4)
+
+      @assert_that(fields_1 == fields_2, is(false()))
+      @assert_that(fields_1 == aux_1,    is(false()))
+      @assert_that(fields_1 == aux_2,    is(false()))
+      @assert_that(fields_2 == aux_1,    is(false()))
+      @assert_that(fields_2 == aux_2,    is(false()))
+      @assert_that(aux_1    == aux_2,    is(false()))
+
+      call field_group_1%initialize(fields_1, aux_1)
+      fields_inside = field_group_1%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_union,      is(equal_to(0)))
+         @assert_that(fields_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%union_field_group),      is(false()))
+         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+      end select
+      aux_inside = field_group_1%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_union,      is(equal_to(0)))
+         @assert_that(aux_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_inside%union_field_group),      is(false()))
+         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+      end select
+
+      call field_group_2%initialize(fields_2, aux_2)
+      fields_inside = field_group_2%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_union,      is(equal_to(0)))
+         @assert_that(fields_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%union_field_group),      is(false()))
+         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+      end select
+      aux_inside = field_group_2%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_union,      is(equal_to(0)))
+         @assert_that(aux_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_inside%union_field_group),      is(false()))
+         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+      end select
+
+      call field_group_1%union(field_group_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      fields_inside = field_group_1%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_union,      is(equal_to(1)))
+         @assert_that(fields_inside%call_difference, is(equal_to(0)))
+
+         @assert_that(allocated(fields_inside%union_field_group), is(true()))
+         union_field_group = fields_inside%union_field_group
+         select type (union_field_group)
+         type is (mock_FieldGroup)
+            @assert_that(union_field_group == fields_2, is(true()))
+         end select
+
+         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+      end select
+      aux_inside = field_group_1%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_union,      is(equal_to(1)))
+         @assert_that(aux_inside%call_difference, is(equal_to(1)))
+
+         @assert_that(allocated(aux_inside%union_field_group),      is(true()))
+         union_field_group = aux_inside%union_field_group
+         select type (union_field_group)
+         type is (mock_FieldGroup)
+            @assert_that(union_field_group == aux_2, is(true()))
+         end select
+
+         @assert_that(allocated(aux_inside%difference_field_group), is(true()))
+         difference_field_group = aux_inside%difference_field_group
+         select type (difference_field_group)
+         type is (mock_FieldGroup)
+            @assert_that(difference_field_group == fields_1, is(true()))
+         end select
+      end select
+   end subroutine test_union
+
+   @test
+   subroutine test_advertise()
+      type(Group)           :: field_group
+      type(mock_FieldGroup) :: fields
+      type(mock_FieldGroup) :: aux
+      type(ESMF_State)      :: state
+
+      class(FieldGroup), allocatable :: fields_inside
+      class(FieldGroup), allocatable :: aux_inside
+
+      integer :: status
+
+      call field_group%initialize(fields, aux)
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_advertise, is(equal_to(0)))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_advertise, is(equal_to(0)))
+      end select
+
+      call field_group%advertise(state, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_advertise, is(equal_to(1)))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_advertise, is(equal_to(1)))
+      end select
+   end subroutine test_advertise
+
+   @test
+   subroutine test_register()
+      type(Group)           :: field_group
+      type(mock_FieldGroup) :: fields
+      type(mock_FieldGroup) :: aux
+      type(FieldRegistry)   :: field_registry
+
+      class(FieldGroup), allocatable :: fields_inside
+      class(FieldGroup), allocatable :: aux_inside
+
+      call field_group%initialize(fields, aux)
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_register, is(equal_to(0)))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_register, is(equal_to(0)))
+      end select
+
+      call field_group%register(field_registry)
+
+      fields_inside = field_group%get_fields()
+      select type (fields_inside)
+      type is (mock_FieldGroup)
+         @assert_that(fields_inside%call_register, is(equal_to(1)))
+      end select
+      aux_inside = field_group%get_aux()
+      select type (aux_inside)
+      type is (mock_FieldGroup)
+         @assert_that(aux_inside%call_register, is(equal_to(1)))
+      end select
+   end subroutine test_register
+end module test_Group

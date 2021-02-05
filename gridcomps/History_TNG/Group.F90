@@ -22,11 +22,12 @@ module GroupMod
 
    type :: Group
       private
-      type(FieldGroup) :: fields
-      type(FieldGroup) :: aux
+      class(FieldGroup), allocatable :: fields
+      class(FieldGroup), allocatable :: aux
 
       ! TODO: later will add regex and exper to this
    contains
+      procedure :: initialize
       procedure :: get_fields
       procedure :: get_aux
 
@@ -38,15 +39,24 @@ module GroupMod
       procedure :: import_group
    end type Group
 contains
+   subroutine initialize(this, fields, aux)
+      class(Group),      intent(inout) :: this
+      class(FieldGroup), intent(in   ) :: fields
+      class(FieldGroup), intent(in   ) :: aux
+
+      this%fields = fields
+      this%aux    = aux
+   end subroutine initialize
+
    function get_fields(this) result(fields)
-      type(FieldGroup) :: fields
+      class(FieldGroup), allocatable :: fields
       class(Group), intent(in) :: this
 
       fields = this%fields
    end function get_fields
 
    function get_aux(this) result(aux)
-      type(FieldGroup) :: aux
+      class(FieldGroup), allocatable :: aux
       class(Group), intent(in) :: this
 
       aux = this%aux
@@ -58,8 +68,8 @@ contains
       class(KeywordEnforcer), optional, intent(  out) :: unusable
       integer,                optional, intent(  out) :: rc
 
-      type(FieldGroup) :: fields
-      type(FieldGroup) :: aux
+      class(FieldGroup), allocatable :: fields
+      class(FieldGroup), allocatable :: aux
 
       integer :: status
 
