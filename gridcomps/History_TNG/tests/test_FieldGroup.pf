@@ -145,6 +145,59 @@ contains
    end subroutine test_insert
 
    @test
+   subroutine test_erase()
+      type(FieldGroup)      :: field_group
+      type(FieldGroupEntry) :: field_entry1
+      type(FieldGroupEntry) :: field_entry2
+      type(FieldGroupEntry) :: field_entry3
+      type(FieldGroupEntry) :: field_entry4
+      type(FieldGroupEntry) :: field_entry_new_name
+
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_new_name%initialize(short_name_1, component_name_1)
+
+      call field_entry1%initialize(short_name, component_name)
+      call field_entry2%initialize(short_name, component_name, units=units)
+      call field_entry3%initialize(short_name, component_name,              alias_name=alias_name)
+      call field_entry4%initialize(short_name, component_name, units=units, alias_name=alias_name)
+
+      call field_group%insert(field_entry1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group%size(), is(equal_to(1_INT64)))
+
+      ! Erase non-existent
+      call field_group%erase(field_entry_new_name, rc=status)
+      @assert_that(status, is(equal_to(2)))
+      @assert_that(field_group%size(), is(equal_to(1_INT64)))
+
+      ! Erase same-name different entry
+      call field_group%erase(field_entry2, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(), is(equal_to(1_INT64)))
+
+      call field_group%erase(field_entry3, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(), is(equal_to(1_INT64)))
+
+      call field_group%erase(field_entry4, rc=status)
+      @assert_that(status, is(equal_to(1)))
+      @assert_that(field_group%size(), is(equal_to(1_INT64)))
+
+      ! Erase valid
+      @assert_that(field_group%count(standard_name), is(equal_to(1_INT64)))
+      field_entry_ptr => field_group%at(standard_name)
+      @assert_that(field_entry_ptr == field_entry1, is(true()))
+
+      call field_group%erase(field_entry1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group%size(),               is(equal_to(0_INT64)))
+      @assert_that(field_group%count(standard_name), is(equal_to(0_INT64)))
+   end subroutine test_erase
+
+   @test
    subroutine test_advertise()
       type(FieldGroup)           :: field_group
       type(mock_FieldGroupEntry) :: field_entry_1
@@ -211,8 +264,12 @@ contains
 
    @test
    subroutine test_merge_into()
-      type(FieldGroup)               :: field_group_1
-      type(FieldGroup)               :: field_group_2
+      type(FieldGroup)               :: field_group_1a
+      type(FieldGroup)               :: field_group_2a
+      type(FieldGroup)               :: field_group_1b
+      type(FieldGroup)               :: field_group_2b
+      type(FieldGroup)               :: field_group_1c
+      type(FieldGroup)               :: field_group_2c
       type(FieldGroupEntry)          :: field_entry_1
       type(FieldGroupEntry)          :: field_entry_2
       type(FieldGroupEntry)          :: field_entry_3
@@ -224,44 +281,110 @@ contains
       call field_entry_2%initialize(short_name_2, component_name_2)
       call field_entry_3%initialize(short_name_3, component_name_3)
 
-      call field_group_1%insert(field_entry_1, rc=status)
+      ! field_group_2 == field_group_1
+      call field_group_1a%insert(field_entry_1, rc=status)
       @assert_that(status, is(equal_to(0)))
-      call field_group_2%insert(field_entry_2, rc=status)
+      call field_group_1a%insert(field_entry_2, rc=status)
       @assert_that(status, is(equal_to(0)))
-      call field_group_2%insert(field_entry_3, rc=status)
+      call field_group_1a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_3, rc=status)
       @assert_that(status, is(equal_to(0)))
 
-      @assert_that(field_group_1%size(),                 is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_2), is(equal_to(0_INT64)))
-      @assert_that(field_group_1%count(standard_name_3), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
-      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
-      call field_group_2%merge_into(field_group_1, rc=status)
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2a%merge_into(field_group_1a, rc=status)
       @assert_that(status, is(equal_to(0)))
-      @assert_that(field_group_1%size(),                 is(equal_to(3_INT64)))
-      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_3), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
-      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
 
-      field_entry_ptr => field_group_1%at(standard_name_1)
-      @assert_that(field_entry_ptr == field_entry_1, is(true()))
-      field_entry_ptr => field_group_1%at(standard_name_2)
-      @assert_that(field_entry_ptr == field_entry_2, is(true()))
-      field_entry_ptr => field_group_1%at(standard_name_3)
-      @assert_that(field_entry_ptr == field_entry_3, is(true()))
+      ! field_group_2 proper subset field_group_1
+      call field_group_1b%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2b%merge_into(field_group_1b, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_1 proper subset field_group_2
+      call field_group_1c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1c%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2c%merge_into(field_group_1c, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
    end subroutine test_merge_into
 
    @test
    subroutine test_union()
-      type(FieldGroup)               :: field_group_1
-      type(FieldGroup)               :: field_group_2
+      type(FieldGroup)               :: field_group_1a
+      type(FieldGroup)               :: field_group_2a
+      type(FieldGroup)               :: field_group_1b
+      type(FieldGroup)               :: field_group_2b
+      type(FieldGroup)               :: field_group_1c
+      type(FieldGroup)               :: field_group_2c
       type(FieldGroupEntry)          :: field_entry_1
       type(FieldGroupEntry)          :: field_entry_2
       type(FieldGroupEntry)          :: field_entry_3
@@ -273,39 +396,331 @@ contains
       call field_entry_2%initialize(short_name_2, component_name_2)
       call field_entry_3%initialize(short_name_3, component_name_3)
 
-      call field_group_1%insert(field_entry_1, rc=status)
+      ! field_group_2 == field_group_1
+      call field_group_1a%insert(field_entry_1, rc=status)
       @assert_that(status, is(equal_to(0)))
-      call field_group_2%insert(field_entry_2, rc=status)
+      call field_group_1a%insert(field_entry_2, rc=status)
       @assert_that(status, is(equal_to(0)))
-      call field_group_2%insert(field_entry_3, rc=status)
+      call field_group_1a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_3, rc=status)
       @assert_that(status, is(equal_to(0)))
 
-      @assert_that(field_group_1%size(),                 is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_2), is(equal_to(0_INT64)))
-      @assert_that(field_group_1%count(standard_name_3), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
-      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
-      call field_group_1%union(field_group_2, rc=status)
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1a%union(field_group_2a, rc=status)
       @assert_that(status, is(equal_to(0)))
-      @assert_that(field_group_1%size(),                 is(equal_to(3_INT64)))
-      @assert_that(field_group_1%count(standard_name_1), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_1%count(standard_name_3), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%size(),                 is(equal_to(2_INT64)))
-      @assert_that(field_group_2%count(standard_name_1), is(equal_to(0_INT64)))
-      @assert_that(field_group_2%count(standard_name_2), is(equal_to(1_INT64)))
-      @assert_that(field_group_2%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
 
-      field_entry_ptr => field_group_1%at(standard_name_1)
-      @assert_that(field_entry_ptr == field_entry_1, is(true()))
-      field_entry_ptr => field_group_1%at(standard_name_2)
-      @assert_that(field_entry_ptr == field_entry_2, is(true()))
-      field_entry_ptr => field_group_1%at(standard_name_3)
-      @assert_that(field_entry_ptr == field_entry_3, is(true()))
+      ! field_group_2 proper subset field_group_1
+      call field_group_1b%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1b%union(field_group_2b, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_1 proper subset field_group_2
+      call field_group_1c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1c%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1c%union(field_group_2c, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
    end subroutine test_union
+
+   @test
+   subroutine test_remove_from()
+      type(FieldGroup)               :: field_group_1a
+      type(FieldGroup)               :: field_group_2a
+      type(FieldGroup)               :: field_group_1b
+      type(FieldGroup)               :: field_group_2b
+      type(FieldGroup)               :: field_group_1c
+      type(FieldGroup)               :: field_group_2c
+      type(FieldGroupEntry)          :: field_entry_1
+      type(FieldGroupEntry)          :: field_entry_2
+      type(FieldGroupEntry)          :: field_entry_3
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_1%initialize(short_name_1, component_name_1)
+      call field_entry_2%initialize(short_name_2, component_name_2)
+      call field_entry_3%initialize(short_name_3, component_name_3)
+
+      ! field_group_2 == field_group_1
+      call field_group_1a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2a%remove_from(field_group_1a, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1a%size(),                 is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_2 proper subset field_group_1
+      call field_group_1b%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2b%remove_from(field_group_1b, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1b%size(),                 is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_1 proper subset field_group_2
+      call field_group_1c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1c%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_2c%remove_from(field_group_1c, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1c%size(),                 is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+   end subroutine test_remove_from
+
+   @test
+   subroutine test_difference()
+      type(FieldGroup)               :: field_group_1a
+      type(FieldGroup)               :: field_group_2a
+      type(FieldGroup)               :: field_group_1b
+      type(FieldGroup)               :: field_group_2b
+      type(FieldGroup)               :: field_group_1c
+      type(FieldGroup)               :: field_group_2c
+      type(FieldGroupEntry)          :: field_entry_1
+      type(FieldGroupEntry)          :: field_entry_2
+      type(FieldGroupEntry)          :: field_entry_3
+      type(FieldGroupEntry), pointer :: field_entry_ptr
+
+      integer :: status
+
+      call field_entry_1%initialize(short_name_1, component_name_1)
+      call field_entry_2%initialize(short_name_2, component_name_2)
+      call field_entry_3%initialize(short_name_3, component_name_3)
+
+      ! field_group_2 == field_group_1
+      call field_group_1a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2a%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1a%difference(field_group_2a, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1a%size(),                 is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1a%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2a%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_2 proper subset field_group_1
+      call field_group_1b%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2b%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1b%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1b%difference(field_group_2b, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1b%size(),                 is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1b%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1b%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
+
+      ! field_group_1 proper subset field_group_2
+      call field_group_1c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_1c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_1, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_2, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      call field_group_2c%insert(field_entry_3, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      @assert_that(field_group_1c%size(),                 is(equal_to(2_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+      call field_group_1c%difference(field_group_2c, rc=status)
+      @assert_that(status, is(equal_to(0)))
+      @assert_that(field_group_1c%size(),                 is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_1), is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_2), is(equal_to(0_INT64)))
+      @assert_that(field_group_1c%count(standard_name_3), is(equal_to(0_INT64)))
+      @assert_that(field_group_2c%size(),                 is(equal_to(3_INT64)))
+      @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
+      @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
+   end subroutine test_difference
 
    @test
    subroutine test_import_yaml()

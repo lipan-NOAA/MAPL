@@ -31,9 +31,13 @@ module FieldGroupMod
       procedure :: count
       procedure :: at
       procedure :: insert
+      procedure :: erase
 
       procedure :: merge_into
       procedure :: union
+
+      procedure :: remove_from
+      procedure :: difference
 
       procedure :: advertise
       procedure :: register
@@ -83,11 +87,42 @@ contains
          current_entry => this%at(standard_name)
          if (current_entry /= field_entry) status = 1
       else
-         call this%map%insert(field_entry%standard_name(), field_entry)
+         call this%map%insert(standard_name, field_entry)
       end if
 
       if (present(rc)) rc = status
    end subroutine insert
+
+   subroutine erase(this, field_entry, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroupEntry),           intent(inout) :: field_entry
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      character(:), allocatable        :: standard_name
+      class(FieldGroupEntry), pointer  :: current_entry
+      type(FieldGroupEntryMapIterator) :: iter
+      integer                          :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      standard_name = field_entry%standard_name()
+
+      status = 0
+      if (this%count(standard_name) > 0) then
+         current_entry => this%at(standard_name)
+         if (current_entry /= field_entry) then
+            status = 1
+         else
+            iter = this%map%find(standard_name)
+            call this%map%erase(iter)
+         end if
+      else
+         status = 2
+      end if
+
+      if (present(rc)) rc = status
+   end subroutine erase
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
@@ -175,6 +210,48 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine union
+
+   subroutine remove_from(this, field_group, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      character(:),          pointer   :: standard_name
+      type(FieldGroupEntry), pointer   :: field_entry
+      type(FieldGroupEntryMapIterator) :: iter
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         standard_name => iter%key()
+         field_entry   => iter%value()
+
+         if (field_group%count(standard_name) > 0) then
+            call field_group%erase(field_entry, __RC__)
+         end if
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine remove_from
+
+   subroutine difference(this, field_group, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      class(FieldGroup),                intent(inout) :: field_group
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      call field_group%remove_from(this, __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine difference
 
    subroutine import_group(this, config, rc)
       class(FieldGroup),   intent(inout) :: this
