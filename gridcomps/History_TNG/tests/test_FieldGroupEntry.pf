@@ -87,6 +87,55 @@ contains
    end subroutine test_set_alias_name
 
    @test
+   subroutine test_equals()
+      type(FieldGroupEntry) :: field_entry0
+      type(FieldGroupEntry) :: field_entry1
+      type(FieldGroupEntry) :: field_entry2
+      type(FieldGroupEntry) :: field_entry3
+      type(FieldGroupEntry) :: field_entry4
+
+      type(FieldRegistryEntry) :: field_registry_entry
+
+      character(*), parameter :: new_short_name = 'new_short_name'
+      character(*), parameter :: new_alias_name = 'new_alias_name'
+
+      call field_registry_entry%initialize(short_name, component_name)
+
+      call field_entry0%initialize(    short_name, component_name, alias_name=    alias_name)
+      call field_entry1%initialize(    short_name, component_name, alias_name=    alias_name)
+      call field_entry2%initialize(new_short_name, component_name, alias_name=    alias_name)
+      call field_entry3%initialize(    short_name, component_name, alias_name=new_alias_name)
+      call field_entry4%initialize(new_short_name, component_name, alias_name=new_alias_name)
+
+      ! Type mismatch
+      @assert_that(field_entry0         == field_registry_entry, is(false()))
+      @assert_that(field_registry_entry == field_entry0,         is(false()))
+
+      ! True
+      @assert_that(field_entry0 == field_entry0, is(true()))
+      @assert_that(field_entry1 == field_entry0, is(true()))
+      @assert_that(field_entry0 == field_entry1, is(true()))
+      @assert_that(field_entry1 == field_entry1, is(true()))
+
+      ! False
+      @assert_that(field_entry1 == field_entry2, is(false()))
+      @assert_that(field_entry1 == field_entry3, is(false()))
+      @assert_that(field_entry1 == field_entry4, is(false()))
+
+      @assert_that(field_entry2 == field_entry1, is(false()))
+      @assert_that(field_entry2 == field_entry3, is(false()))
+      @assert_that(field_entry2 == field_entry4, is(false()))
+
+      @assert_that(field_entry3 == field_entry1, is(false()))
+      @assert_that(field_entry3 == field_entry2, is(false()))
+      @assert_that(field_entry3 == field_entry4, is(false()))
+
+      @assert_that(field_entry4 == field_entry1, is(false()))
+      @assert_that(field_entry4 == field_entry2, is(false()))
+      @assert_that(field_entry4 == field_entry3, is(false()))
+   end subroutine test_equals
+
+   @test
    subroutine test_name()
       type(mock_FieldGroupEntry) :: field_entry_no_alias
       type(mock_FieldGroupEntry) :: field_entry_alias

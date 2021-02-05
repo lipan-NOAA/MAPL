@@ -30,6 +30,10 @@ module AbstractFieldEntryMod
 
       procedure :: set_units
 
+      procedure :: equivalent
+      procedure :: equal_to_entry
+      generic   :: operator(==) => equal_to_entry
+
       procedure :: standard_name
       procedure(i_name), deferred :: name
 
@@ -106,6 +110,28 @@ contains
 
       units = this%units
    end function get_units
+
+   logical function equivalent(this, field_entry)
+      class(AbstractFieldEntry), intent(in) :: this
+      class(AbstractFieldEntry), intent(in) :: field_entry
+
+      logical :: equiv
+
+      equiv = same_type_as(this, field_entry)
+
+      if (this%short_name     /= field_entry%get_short_name())     equiv = .false.
+      if (this%component_name /= field_entry%get_component_name()) equiv = .false.
+      if (this%units          /= field_entry%get_units())          equiv = .false.
+
+      equivalent = equiv
+   end function equivalent
+
+   logical function equal_to_entry(a, b)
+      class(AbstractFieldEntry), intent(in) :: a
+      class(AbstractFieldEntry), intent(in) :: b
+
+      equal_to_entry = a%equivalent(b)
+   end function equal_to_entry
 
    subroutine set_units(this, units, unusable, rc)
       class(AbstractFieldEntry),        intent(inout) :: this

@@ -325,6 +325,112 @@ contains
    end subroutine test_set_units
 
    @test
+   subroutine test_equivalent()
+      type(mock_AbstractFieldEntry) :: field_entry0
+      type(mock_AbstractFieldEntry) :: field_entry1
+      type(mock_AbstractFieldEntry) :: field_entry2
+      type(mock_AbstractFieldEntry) :: field_entry3
+      type(mock_AbstractFieldEntry) :: field_entry4
+      type(mock_AbstractFieldEntry) :: field_entry5
+      type(mock_AbstractFieldEntry) :: field_entry6
+      type(mock_AbstractFieldEntry) :: field_entry7
+      type(mock_AbstractFieldEntry) :: field_entry8
+
+      type(mock_AbstractFieldEntry_NUOPC) :: field_entry_diff_type
+
+      character(*), parameter :: new_short_name     = 'new_short_name'
+      character(*), parameter :: new_component_name = 'new_component_name'
+      character(*), parameter :: new_field_units    = 'new_field_units'
+
+      call field_entry_diff_type%initialize(short_name, component_name, units=field_units)
+
+      call field_entry0%initialize(    short_name,     component_name, units=    field_units)
+      call field_entry1%initialize(    short_name,     component_name, units=    field_units)
+      call field_entry2%initialize(new_short_name,     component_name, units=    field_units)
+      call field_entry3%initialize(    short_name, new_component_name, units=    field_units)
+      call field_entry4%initialize(    short_name,     component_name, units=new_field_units)
+      call field_entry5%initialize(new_short_name, new_component_name, units=    field_units)
+      call field_entry6%initialize(new_short_name,     component_name, units=new_field_units)
+      call field_entry7%initialize(    short_name, new_component_name, units=new_field_units)
+      call field_entry7%initialize(new_short_name, new_component_name, units=new_field_units)
+
+      ! Test different types
+      @assert_that(field_entry0%equivalent(field_entry_diff_type), is(false()))
+      @assert_that(field_entry_diff_type%equivalent(field_entry0), is(false()))
+
+      ! Test true
+      @assert_that(field_entry0%equivalent(field_entry0), is(true()))
+      @assert_that(field_entry0%equivalent(field_entry1), is(true()))
+      @assert_that(field_entry1%equivalent(field_entry0), is(true()))
+      @assert_that(field_entry1%equivalent(field_entry1), is(true()))
+
+      ! Test False
+      @assert_that(field_entry1%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry1%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry2%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry2%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry3%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry3%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry4%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry4%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry5%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry5%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry6%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry7), is(false()))
+      @assert_that(field_entry6%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry7%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry7%equivalent(field_entry8), is(false()))
+
+      @assert_that(field_entry8%equivalent(field_entry1), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry2), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry3), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry4), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry5), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry6), is(false()))
+      @assert_that(field_entry8%equivalent(field_entry7), is(false()))
+   end subroutine test_equivalent
+
+   @test
    subroutine test_standard_name()
       type(mock_AbstractFieldEntry) :: field_entry
 

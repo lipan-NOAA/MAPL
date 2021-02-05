@@ -27,6 +27,8 @@ module FieldGroupEntryMod
 
       procedure :: set_alias_name
 
+      procedure :: equal_to_entry
+
       procedure :: name
 
       procedure :: registry_entry
@@ -75,6 +77,22 @@ contains
 
       if (present(rc)) rc = status
    end subroutine set_alias_name
+
+   logical function equal_to_entry(a, b)
+      class(FieldGroupEntry),    intent(in) :: a
+      class(AbstractFieldEntry), intent(in) :: b
+
+      logical :: equiv
+
+      equiv = (a%equivalent(b))
+
+      select type (b)
+      type is (FieldGroupEntry)
+         if (a%alias_name /= b%get_alias_name()) equiv = .false.
+      end select
+
+      equal_to_entry = equiv
+   end function equal_to_entry
 
    function name(this) result(field_name)
       character(:), allocatable :: field_name
