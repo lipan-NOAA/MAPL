@@ -352,7 +352,7 @@ contains
       call field_entry5%initialize(new_short_name, new_component_name, units=    field_units)
       call field_entry6%initialize(new_short_name,     component_name, units=new_field_units)
       call field_entry7%initialize(    short_name, new_component_name, units=new_field_units)
-      call field_entry7%initialize(new_short_name, new_component_name, units=new_field_units)
+      call field_entry8%initialize(new_short_name, new_component_name, units=new_field_units)
 
       ! Test different types
       @assert_that(field_entry0%equivalent(field_entry_diff_type), is(false()))
