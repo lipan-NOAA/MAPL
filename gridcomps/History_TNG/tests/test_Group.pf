@@ -311,7 +311,7 @@ contains
    end subroutine test_register
 
    @test
-   subroutine test_import_groups()
+   subroutine test_import_group()
       type(Group) :: field_group
 
       type(mock_FieldGroup) :: fields
@@ -394,7 +394,7 @@ contains
             @assert_that(difference_field_group == fields, is(true()))
          end select
       end select
-   end subroutine test_import_groups
+   end subroutine test_import_group
 
    @test
    subroutine test_import_yaml()
