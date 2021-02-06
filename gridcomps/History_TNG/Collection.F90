@@ -11,6 +11,8 @@ module CollectionMod
    use MAPL_KeywordEnforcerMod
 
    use GroupMod
+   use TemplateMod
+   use FrequencyMod
 
    implicit none
    private
@@ -25,9 +27,9 @@ module CollectionMod
       private
       character(:), allocatable :: name
 
+      type(Template)  :: template
+      type(Frequency) :: frequency
       ! TODO: these should be their own types
-      character(:), allocatable :: template
-      character(:), allocatable :: frequency
 
       type(StringVector) :: groups
       type(Group)        :: fields
@@ -42,6 +44,7 @@ contains
       type(Configuration), intent(inout) :: config
       integer, optional,   intent(  out) :: rc
 
+      character(:), allocatable   :: config_value
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
@@ -60,9 +63,11 @@ contains
 
          select case (key)
          case (template_key)
-            this%template = iter%value()
+            config_value = iter%value()
+            call this%template%initialize(config_value)
          case (frequency_key)
-            this%frequency = iter%value()
+            config_value = iter%value()
+            call this%frequency%initialize(config_value)
          case (groups_key)
             sub_config = iter%value()
             call this%import_groups(sub_config)

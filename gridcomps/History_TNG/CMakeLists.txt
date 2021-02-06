@@ -11,7 +11,11 @@ set (srcs
     Group.F90
     GroupMap.F90
     GroupRegistry.F90
+    Template.F90
+    Frequency.F90
     Collection.F90
+    CollectionMap.F90
+    CollectionRegistry.F90
     # MAPL_HistoryConfig.F90
     # MAPL_HistoryWriter.F90
     )
