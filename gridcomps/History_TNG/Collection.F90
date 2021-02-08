@@ -10,7 +10,9 @@ module CollectionMod
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
+   use FieldRegistryMod
    use GroupMod
+   use GroupRegistryMod
    use TemplateMod
    use FrequencyMod
 
@@ -34,10 +36,43 @@ module CollectionMod
       type(StringVector) :: groups
       type(Group)        :: fields
    contains
+      procedure :: advertise
+
       procedure :: import_collection
       procedure :: import_groups
+      procedure :: get_groups
    end type Collection
 contains
+   subroutine advertise(this, state, unusable,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(Collection),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      call this%fields%advertise(state, &
+         TransferOfferGeomObject=TransferOfferGeomObject, &
+         SharePolicyField=SharePolicyField, &
+         SharePolicyGeomObject=SharePolicyGeomObject, &
+         __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
+
+   subroutine register(this, field_registry)
+      class(Collection),   intent(inout) :: this
+      type(FieldRegistry), intent(inout) :: field_registry
+
+      call this%fields%register(field_registry)
+   end subroutine register
+
    subroutine import_collection(this, name, config, rc)
       class(Collection),   intent(inout) :: this
       character(*),        intent(in   ) :: name
@@ -105,4 +140,30 @@ contains
 
       _RETURN(status)
    end subroutine import_groups
+
+   subroutine get_groups(this, group_registry, rc)
+      class(Collection),   intent(inout) :: this
+      type(GroupRegistry), intent(in   ) :: group_registry
+      integer, optional,   intent(  out) :: rc
+
+      character(:), pointer      :: group_name
+      type(Group),  pointer      :: group_entry
+      type(StringVectorIterator) :: iter
+
+      integer :: status
+
+      iter = this%groups%begin()
+      do while(iter /= this%groups%end())
+         group_name => iter%get()
+
+         if (group_registry%count(group_name) > 0) then
+            group_entry => group_registry%at(group_name)
+
+            call this%fields%union(group_entry, __RC__)
+         end if
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine get_groups
 end module CollectionMod
