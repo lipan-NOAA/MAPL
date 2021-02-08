@@ -36,6 +36,8 @@ module CollectionMod
       type(StringVector) :: groups
       type(Group)        :: fields
    contains
+      procedure :: get_name
+
       procedure :: advertise
 
       procedure :: import_collection
@@ -43,6 +45,13 @@ module CollectionMod
       procedure :: get_groups
    end type Collection
 contains
+   function get_name(this) result(collection_name)
+      character(:), allocatable :: collection_name
+      class(Collection), intent(in) :: this
+
+      collection_name = this%name
+   end function get_name
+
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
       class(Collection),                intent(inout) :: this

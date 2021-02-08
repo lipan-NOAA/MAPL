@@ -25,6 +25,9 @@ module CollectionRegistryMod
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: import_collections
+      procedure :: import_collection
    end type CollectionRegistry
 contains
    integer(kind=INT64) function size(this)
@@ -48,24 +51,65 @@ contains
       collection_entry => this%map%at(key)
    end function at
 
-   subroutine insert(this, key, collection_entry, unusable, rc)
+   subroutine insert(this, collection_entry, unusable, rc)
       class(CollectionRegistry),        intent(inout) :: this
-      character(*),                     intent(in   ) :: key
       class(Collection),                intent(inout) :: collection_entry
       class(KeywordEnforcer), optional, intent(  out) :: unusable
       integer,                optional, intent(  out) :: rc
 
+      character(:), allocatable :: name
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
+      name = collection_entry%get_name()
+
       status = 0
-      if (this%count(key) > 0) then
+      if (this%count(name) > 0) then
          status = 1
       else
-         call this%map%insert(key, collection_entry)
+         call this%map%insert(name, collection_entry)
       end if
 
       if (present(rc)) rc = status
    end subroutine insert
+
+   subroutine import_collections(this, config, rc)
+      class(CollectionRegistry), intent(inout) :: this
+      type(Configuration),       intent(inout) :: config
+      integer, optional,         intent(  out) :: rc
+
+      character(:), pointer       :: key
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
+
+      iter = config%begin()
+      do while(iter /= config%end())
+         key        => iter%key()
+         sub_config =  iter%value()
+
+         call this%import_collection(key, sub_config, __RC__)
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine import_collections
+
+   subroutine import_collection(this, name, config, rc)
+      class(CollectionRegistry), intent(inout) :: this
+      character(*),              intent(in   ) :: name
+      type(Configuration),       intent(inout) :: config
+      integer, optional,         intent(  out) :: rc
+
+      type(Collection) :: collection_entry
+
+      integer :: status
+
+      call collection_entry%import_collection(name, config, __RC__)
+      call this%insert(collection_entry, __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine import_collection
 end module CollectionRegistryMod
