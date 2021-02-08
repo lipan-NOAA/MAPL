@@ -31,12 +31,14 @@ module CollectionMod
 
       type(Template)  :: template
       type(Frequency) :: frequency
-      ! TODO: these should be their own types
 
       type(StringVector) :: groups
-      type(Group)        :: fields
+
+      class(Group), allocatable :: fields
    contains
       procedure :: get_name
+      procedure :: get_fields
+      procedure :: set_fields
 
       procedure :: advertise
       procedure :: register
@@ -52,6 +54,30 @@ contains
 
       collection_name = this%name
    end function get_name
+
+   function get_fields(this) result(fields)
+      class(Group), allocatable :: fields
+      class(Collection), intent(in) :: this
+
+      fields = this%fields
+   end function get_fields
+
+   subroutine set_fields(this, fields, rc)
+      class(Collection), intent(inout) :: this
+      class(Group),      intent(in   ) :: fields
+      integer, optional, intent(  out) :: rc
+
+      integer :: status
+
+      status = 0
+      if (allocated(this%fields)) then
+         status = 1
+      else
+         this%fields = fields
+      end if
+
+      if(present(rc)) rc = status
+   end subroutine set_fields
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)

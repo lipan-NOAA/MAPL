@@ -1,0 +1,144 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+
+module test_Collection
+   use, intrinsic :: iso_fortran_env, only: INT64
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use yaFyaml
+   use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
+
+   use FieldRegistryMod
+   use GroupMod
+   use GroupRegistryMod
+   use TemplateMod
+   use FrequencyMod
+   use CollectionMod
+
+   type, extends(Group) :: mock_Group
+      integer :: call_advertise = 0
+      integer :: call_register  = 0
+   contains
+      procedure :: advertise
+      procedure :: register
+   end type mock_Group
+contains
+
+   subroutine advertise(this, state, unusable,&
+         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+      class(mock_Group),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
+      integer,                optional, intent(  out) :: rc
+
+      _UNUSED_DUMMY(state)
+      _UNUSED_DUMMY(unusable)
+      _UNUSED_DUMMY(TransferOfferGeomObject)
+      _UNUSED_DUMMY(SharePolicyField)
+      _UNUSED_DUMMY(SharePolicyGeomObject)
+
+      this%call_advertise = this%call_advertise + 1
+
+      _RETURN(_SUCCESS)
+   end subroutine advertise
+
+   subroutine register(this, field_registry)
+      class(mock_Group),   intent(inout) :: this
+      type(FieldRegistry), intent(inout) :: field_registry
+
+      _UNUSED_DUMMY(field_registry)
+
+      this%call_register = this%call_register + 1
+   end subroutine register
+
+   @test
+   subroutine test_set_fields()
+      type(Collection) :: collect1
+      type(Collection) :: collect2
+      type(Group)      :: fields
+
+      integer :: status
+
+      call collect1%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      call collect1%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(1)))
+
+      call collect2%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      call collect2%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(1)))
+   end subroutine test_set_fields
+
+   @test
+   subroutine test_advertise()
+      type(Collection) :: collect
+      type(mock_Group) :: fields
+      type(ESMF_State) :: state
+
+      class(Group), allocatable :: collect_fields
+
+      integer :: status
+
+      call collect%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      collect_fields = collect%get_fields()
+      select type (collect_fields)
+      type is (mock_Group)
+         @assert_that(collect_fields%call_advertise, is(equal_to(0)))
+      class default
+         @assertFail('not a mock')
+      end select
+
+      call collect%advertise(state, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      collect_fields = collect%get_fields()
+      select type (collect_fields)
+      type is (mock_Group)
+         @assert_that(collect_fields%call_advertise, is(equal_to(1)))
+      class default
+         @assertFail('not a mock')
+      end select
+   end subroutine test_advertise
+
+   @test
+   subroutine test_register()
+      type(Collection)    :: collect
+      type(mock_Group)    :: fields
+      type(FieldRegistry) :: registry
+
+      class(Group), allocatable :: collect_fields
+
+      integer :: status
+
+      call collect%set_fields(fields, rc=status)
+      @assert_that(status, is(equal_to(0)))
+
+      collect_fields = collect%get_fields()
+      select type (collect_fields)
+      type is (mock_Group)
+         @assert_that(collect_fields%call_register, is(equal_to(0)))
+      class default
+         @assertFail('not a mock')
+      end select
+
+      call collect%register(registry)
+
+      collect_fields = collect%get_fields()
+      select type (collect_fields)
+      type is (mock_Group)
+         @assert_that(collect_fields%call_register, is(equal_to(1)))
+      class default
+         @assertFail('not a mock')
+      end select
+   end subroutine test_register
+end module test_Collection
