@@ -73,6 +73,8 @@ contains
       select type (group_entry_ptr)
       type is (mock_Group)
          @assert_that(group_entry_ptr == group_entry, is(true()))
+      class default
+         @assertFail('not a mock')
       end select
    end subroutine test_map
 
@@ -114,6 +116,8 @@ contains
       type is (mock_Group)
          @assert_that(group_entry_ptr == group_entry_1, is(true()))
          @assert_that(group_entry_ptr == group_entry_2, is(false()))
+      class default
+         @assertFail('not a mock')
       end select
 
       group_entry_ptr => group_registry%at(group_name_2)
@@ -121,6 +125,8 @@ contains
       type is (mock_Group)
          @assert_that(group_entry_ptr == group_entry_1, is(false()))
          @assert_that(group_entry_ptr == group_entry_2, is(true()))
+      class default
+         @assertFail('not a mock')
       end select
    end subroutine test_insert
 

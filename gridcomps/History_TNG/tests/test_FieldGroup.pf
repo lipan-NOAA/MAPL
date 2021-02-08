@@ -222,12 +222,16 @@ contains
       select type (field_entry_ptr1)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
+      class default
+         @assertFail('not a mock')
       end select
 
       field_entry_ptr2 => field_group%at(standard_name_2)
       select type (field_entry_ptr2)
       type is (mock_FieldGroupEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
+      class default
+         @assertFail('not a mock')
       end select
    end subroutine test_advertise
 
