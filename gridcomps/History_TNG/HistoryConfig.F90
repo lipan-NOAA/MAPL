@@ -1,234 +1,174 @@
-module StringAltSetMod
-#include "types/deferredLengthString.inc"
-#define _set StringAltSet
-#define _iterator StringAltSetIterator
-
-#include "templates/altSet.inc"
-
-#undef _iterator
-#undef _set
-#undef _type
-end module StringAltSetMod
-
-module MAPL_HistoryFieldConfigMod
 #include "MAPL_Generic.h"
 #include "NUOPC_ErrLog.h"
-#include "unused_dummy.H"
 
+module HistoryConfigMod
+   use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
-   use MAPL_ExceptionHandling
-
-   use StringAltSetMod
    use yaFyaml
+   use gFTL_StringVector
+   use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
 
-   implicit None
+   Use FieldRegistryMod
+   use GroupRegistryMod
+   use CollectionMod
+   use CollectionRegistryMod
+
+   implicit none
    private
 
-   public HistoryFieldConfig
+   public HistoryConfig
 
-   character(*), parameter :: field_key = 'field'
-   character(*), parameter :: component_key = 'component'
-   character(*), parameter :: name_key = 'name'
+   character(*), parameter :: enabled_key     = 'Enabled'
+   character(*), parameter :: groups_key      = 'Groups'
+   character(*), parameter :: collections_key = 'Collections'
 
-   type :: HistoryFieldConfig
+   type :: HistoryConfig
       private
-      character(:), allocatable :: short_name
-      character(:), allocatable :: component_name
-      type(StringAltSet)        :: alternate_names
+      type(StringVector) :: enabled
 
+      type(FieldRegistry)      :: fields
+      type(GroupRegistry)      :: groups
+      type(CollectionRegistry) :: collections
    contains
-      procedure :: standard_name
+      procedure :: import_yaml
+      procedure :: import_enabled
+      procedure :: finish_import
 
-      procedure :: has_alternate_name
-      procedure :: add_alternate_name
-      procedure :: create_alternate_name
-      procedure :: alternate_name
-
-      procedure :: name
-
-      procedure :: register
-   end type HistoryFieldConfig
-
+      procedure :: fill_collection_groups
+      procedure :: fill_field_registry
+   end type HistoryConfig
 contains
-   function standard_name(this) result(std_name)
-      character(:), allocatable :: std_name
-      class(HistoryFieldConfig), intent(in) :: this
+   subroutine import_yaml(this, config, rc)
+      class(HistoryConfig), intent(inout) :: this
+      type(Configuration),  intent(inout) :: config
+      integer, optional,    intent(  out) :: rc
 
-      std_name = this%short_name // '.' // this%component_name
-   end function standard_name
-
-   logical function has_alternate_name(this)
-      class(HistoryFieldConfig), intent(in) :: this
-
-      has_alternate_name = (this%alternate_names%size() == 1)
-   end function has_alternate_name
-
-   subroutine add_alternate_name(this, name)
-      class(HistoryFieldConfig), intent(inout) :: this
-      character(*),              intent(in   ) :: name
-
-      call this%alternate_names%insert(name)
-   end subroutine add_alternate_name
-
-   function create_alternate_name(this, name, rc) result(alt_name)
-      character(:), allocatable :: alt_name
-      class(HistoryFieldConfig), intent(in   ) :: this
-      character(*),              intent(in   ) :: name
-      integer, optional,         intent(  out) :: rc
-
-      character(:), allocatable :: std_name
-      integer :: status
-
-      if (this%alternate_names%count(name) > 0) then
-         std_name = this%standard_name()
-
-         alt_name = name // '.' // std_name
-         _RETURN(_SUCCESS)
-      else
-         _RETURN(_FAILURE)
-      end if
-
-   end function create_alternate_name
-
-   function alternate_name(this, rc) result(alt_name)
-      character(:), allocatable :: alt_name
-      class(HistoryFieldConfig), intent(in   ) :: this
-      integer, optional,         intent(  out) :: rc
-
-      type(StringAltSetIterator) :: iter
-      character(:), allocatable  :: name
-      integer :: status
-
-      iter = this%alternate_names%begin()
-      name = iter%value()
-
-      alt_name = this%create_alternate_name(name, __RC__)
-
-      _RETURN(_SUCCESS)
-   end function alternate_name
-
-   function name(this, rc) result(field_name)
-      character(:), allocatable :: field_name
-      class(HistoryFieldConfig), intent(in   ) :: this
-      integer, optional,         intent(  out) :: rc
-
-      integer :: status
-
-      if (this%has_alternate_name()) then
-         field_name = this%alternate_name(__RC__)
-      else
-         field_name = this%standard_name()
-      end if
-
-      _RETURN(_SUCCESS)
-   end function name
-
-   subroutine register_name(name, rc)
-      character(*),      intent(in   ) :: name
-      integer, optional, intent(  out) :: rc
-
-      logical :: has_entry
-      integer :: status
-
-      has_entry = NUOPC_FieldDictionaryHasEntry(name, rc=status)
-      VERIFY_NUOPC_(status)
-
-      if (.not. has_entry) then
-         call NUOPC_FieldDictionaryAddEntry(name, "1", rc=status)
-         VERIFY_NUOPC_(status)
-      end if
-
-      _RETURN(_SUCCESS)
-   end subroutine register_name
-
-   subroutine register_syno(name1, name2, rc)
-      character(*),      intent(in   ) :: name1
-      character(*),      intent(in   ) :: name2
-      integer, optional, intent(  out) :: rc
-
-      logical :: are_syno
-      integer :: status
-
-      are_syno = NUOPC_FieldDictionaryMatchSyno(name1, name2, rc=status)
-      VERIFY_NUOPC_(status)
-
-      if (.not. are_syno) then
-         call NUOPC_FieldDictionarySetSyno([name1, name2], rc=status)
-         VERIFY_NUOPC_(status)
-      end if
-
-      _RETURN(_SUCCESS)
-   end subroutine register_syno
-
-   subroutine register(this, rc)
-      class(HistoryFieldConfig), intent(in   ) :: this
-      integer, optional,         intent(  out) :: rc
-
-      character(:), allocatable  :: std_name
-      character(:), allocatable  :: alt_name
-      type(StringAltSetIterator) :: iter
-      integer :: status
-
-      std_name = this%standard_name()
-      call register_name(std_name, __RC__)
-
-      iter = this%alternate_names%begin()
-
-      do while (iter /= this%alternate_names%end())
-         alt_name = this%create_alternate_name(iter%value(), __RC__)
-
-         call register_name(alt_name, __RC__)
-         call register_syno(std_name, alt_name, __RC__)
-
-         call iter%next()
-      end do
-
-      _RETURN(_SUCCESS)
-   end subroutine register
-
-   subroutine read_config(this, config)
-      class(HistoryFieldConfig), intent(inout) :: this
-      type(Configuration),       intent(in   ) :: config
-
-      type(ConfigurationIterator) :: iter
       character(:), pointer       :: key
-      character(:), allocatable   :: name
+      type(ConfigurationIterator) :: iter
+      type(Configuration)         :: sub_config
+
+      integer :: status
 
       iter = config%begin()
       do while(iter /= config%end())
          key => iter%key()
 
          select case (key)
-         case (field_key)
-            this%short_name = iter%value()
-         case (component_key)
-            this%component_name = iter%value()
-         case (name_key)
-            name = iter%value()
-            call this%add_alternate_name(name)
+         case (enabled_key)
+            sub_config = iter%value()
+            call this%import_enabled(sub_config, __RC__)
+         case (groups_key)
+            sub_config = iter%value()
+            call this%groups%import_groups(sub_config, __RC__)
+         case (collections_key)
+            sub_config = iter%value()
+            call this%collections%import_collections(sub_config, __RC__)
          end select
 
          call iter%next()
       end do
-   end subroutine read_config
-end module MAPL_HistoryFieldConfigMod
 
-module MAPL_HistoryFieldConfigMap
-   use MAPL_HistoryFieldConfigMod
+      _RETURN(_SUCCESS)
+   end subroutine import_yaml
 
-#include "types/key_deferredLengthString.inc"
-#define _value type(HistoryFieldConfig)
+   subroutine import_enabled(this, config, rc)
+      class(HistoryConfig), intent(inout) :: this
+      type(Configuration),  intent(inout) :: config
+      integer, optional,    intent(  out) :: rc
 
-#define _map HistoryFieldConfigMap
-#define _iterator HistoryFieldConfigMapIterator
-#include "templates/map.inc"
-end module MAPL_HistoryFieldConfigMap
+      character(:), allocatable   :: collection_name
+      type(ConfigurationIterator) :: iter
 
-module MAPL_HistoryConfigMod
-   use ESMF
-   use NUOPC
+      integer :: status
 
-   implicit None
-   private
-end module MAPL_HistoryConfigMod
+      if (config%is_sequence()) then
+         iter = config%begin()
+         do while(iter /= config%end())
+            collection_name = iter%value()
+            call this%enabled%push_back(collection_name)
+
+            call iter%next()
+         end do
+
+         status = 0
+      else
+         status = 1
+      end if
+
+      _RETURN(status)
+   end subroutine import_enabled
+
+   subroutine finish_import(this, rc)
+      class(HistoryConfig), intent(inout) :: this
+      integer, optional,    intent(  out) :: rc
+
+      integer :: status
+
+      call this%fill_collection_groups(__RC__)
+      call this%fill_field_registry(__RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine finish_import
+
+   subroutine fill_collection_groups(this, rc)
+      class(HistoryConfig), intent(inout) :: this
+      integer, optional,    intent(  out) :: rc
+
+      character(:), pointer      :: collection_name
+      type(StringVectorIterator) :: iter
+      type(Collection), pointer  :: collection_entry
+
+      integer :: status
+
+      status = 0
+      iter = this%enabled%begin()
+      do while(iter /= this%enabled%end())
+         collection_name => iter%get()
+
+         if (this%collections%count(collection_name) > 0) then
+            collection_entry => this%collections%at(collection_name)
+
+            call collection_entry%get_groups(this%groups, __RC__)
+         else
+            status = 1
+            exit
+         end if
+
+         call iter%next()
+      end do
+
+      _RETURN(status)
+   end subroutine fill_collection_groups
+
+   subroutine fill_field_registry(this, rc)
+      class(HistoryConfig), intent(inout) :: this
+      integer, optional,    intent(  out) :: rc
+
+      character(:), pointer      :: collection_name
+      type(StringVectorIterator) :: iter
+      type(Collection), pointer  :: collection_entry
+
+      integer :: status
+
+      status = 0
+      iter = this%enabled%begin()
+      do while(iter /= this%enabled%end())
+         collection_name => iter%get()
+
+         if (this%collections%count(collection_name) > 0) then
+            collection_entry => this%collections%at(collection_name)
+
+            call collection_entry%register(this%fields)
+         else
+            status = 1
+            exit
+         end if
+
+         call iter%next()
+      end do
+
+      _RETURN(status)
+   end subroutine fill_field_registry
+end module HistoryConfigMod

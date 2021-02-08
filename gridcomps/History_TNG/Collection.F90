@@ -39,6 +39,7 @@ module CollectionMod
       procedure :: get_name
 
       procedure :: advertise
+      procedure :: register
 
       procedure :: import_collection
       procedure :: import_groups
@@ -161,6 +162,7 @@ contains
 
       integer :: status
 
+      status = 0
       iter = this%groups%begin()
       do while(iter /= this%groups%end())
          group_name => iter%get()
@@ -169,10 +171,13 @@ contains
             group_entry => group_registry%at(group_name)
 
             call this%fields%union(group_entry, __RC__)
+         else
+            status = 1
+            exit
          end if
          call iter%next()
       end do
 
-      _RETURN(_SUCCESS)
+      _RETURN(status)
    end subroutine get_groups
 end module CollectionMod
