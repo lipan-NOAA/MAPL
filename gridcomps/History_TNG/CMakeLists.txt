@@ -16,7 +16,7 @@ set (srcs
     Collection.F90
     CollectionMap.F90
     CollectionRegistry.F90
-    # MAPL_HistoryConfig.F90
+    HistoryConfig.F90
     # MAPL_HistoryWriter.F90
     )
 
