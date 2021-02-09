@@ -130,7 +130,7 @@ contains
          if (this%collections%count(collection_name) > 0) then
             collection_entry => this%collections%at(collection_name)
 
-            call collection_entry%get_groups(this%groups, __RC__)
+            call collection_entry%fill_groups(this%groups, __RC__)
          else
             status = 1
             exit

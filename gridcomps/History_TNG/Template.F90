@@ -18,6 +18,7 @@ module TemplateMod
       character(:), allocatable :: template
    contains
       procedure :: initialize
+      procedure :: get_template
    end type Template
 contains
    subroutine initialize(this, tmplt)
@@ -26,4 +27,11 @@ contains
 
       this%template = tmplt
    end subroutine initialize
+
+   function get_template(this) result(tmplt)
+      character(:), allocatable :: tmplt
+      class(Template), intent(inout) :: this
+
+      tmplt = this%template
+   end function get_template
 end module TemplateMod

@@ -37,6 +37,10 @@ module CollectionMod
       class(Group), allocatable :: fields
    contains
       procedure :: get_name
+      procedure :: get_template
+      procedure :: get_frequency
+      procedure :: get_groups
+      procedure :: set_groups
       procedure :: get_fields
       procedure :: set_fields
 
@@ -45,7 +49,7 @@ module CollectionMod
 
       procedure :: import_collection
       procedure :: import_groups
-      procedure :: get_groups
+      procedure :: fill_groups
    end type Collection
 contains
    function get_name(this) result(collection_name)
@@ -54,6 +58,43 @@ contains
 
       collection_name = this%name
    end function get_name
+
+   function get_template(this) result(tmplt)
+      type(Template) :: tmplt
+      class(Collection), intent(in) :: this
+
+      tmplt = this%template
+   end function get_template
+
+   function get_frequency(this) result(freq)
+      type(Frequency) :: freq
+      class(Collection), intent(in) :: this
+
+      freq = this%frequency
+   end function get_frequency
+
+   function get_groups(this) result(gps)
+      type(StringVector) :: gps
+      class(Collection), intent(in) :: this
+
+      gps = this%groups
+   end function get_groups
+
+   subroutine set_groups(this, groups)
+      class(Collection),  intent(inout) :: this
+      type(StringVector), intent(in   ) :: groups
+
+      character(:), allocatable  :: group_name
+      type(StringVectorIterator) :: iter
+
+      iter = groups%begin()
+      do while(iter /= groups%end())
+         group_name = iter%get()
+
+         call this%groups%push_back(group_name)
+         call iter%next()
+      end do
+   end subroutine set_groups
 
    function get_fields(this) result(fields)
       class(Group), allocatable :: fields
@@ -124,6 +165,8 @@ contains
 
       this%name = name
 
+      if (.not. allocated(this%fields)) allocate(this%fields)
+
       ! Import the fields
       call this%fields%import_group(config, __RC__)
 
@@ -163,7 +206,7 @@ contains
       if (config%is_sequence()) then
          iter = config%begin()
          do while(iter /= config%end())
-            group_name = iter%value()
+            group_name = iter%get()
             call this%groups%push_back(group_name)
 
             call iter%next()
@@ -177,13 +220,13 @@ contains
       _RETURN(status)
    end subroutine import_groups
 
-   subroutine get_groups(this, group_registry, rc)
+   subroutine fill_groups(this, group_registry, rc)
       class(Collection),   intent(inout) :: this
       type(GroupRegistry), intent(in   ) :: group_registry
       integer, optional,   intent(  out) :: rc
 
       character(:), pointer      :: group_name
-      type(Group),  pointer      :: group_entry
+      class(Group), pointer      :: group_entry
       type(StringVectorIterator) :: iter
 
       integer :: status
@@ -204,6 +247,6 @@ contains
          call iter%next()
       end do
 
-      _RETURN(status)
-   end subroutine get_groups
+      if (present(rc)) rc = status
+   end subroutine fill_groups
 end module CollectionMod

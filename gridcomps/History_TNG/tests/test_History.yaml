@@ -71,33 +71,19 @@ Group_Registry_tests:
       component_6:
         field_8: {}
 
-Collections_test:
-  test_collection1:
-    template:   '%y4%m2%d2_%h2%n2z.nc4'
-    frequency:  060000
-    sets:
-      - set1
-      - set2
-    fields:
-      AGCM:
-        PHIS: {}
-        QITOT:
-          units: unit1
-          alias: QI
-        QLTOT:
-          alias: QL
-      DYN:
-        SLP:
-          units: unit2
-        T: {}
-        PS: {}
-        ZLE:
-          alias: H
-        OMEGA: {}
-      MOIST:
-        QV: {}
-        RH2:
-          alias: RH
-      CHEMISTRY:
-        O3: {}
+Collection_test:
+  template:   '%y4%m2%d2_%h2%n2z.nc4'
+  frequency:  06:00:00
+  groups:
+    - group_1
+    - group_2
+  fields:
+    component_1:
+      field_1: {}
+      field_2: {}
+    component_2:
+      field_3: {}
+  aux:
+    component_3:
+      field_4: {}
 

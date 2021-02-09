@@ -18,6 +18,7 @@ module FrequencyMod
       character(:), allocatable :: frequency
    contains
       procedure :: initialize
+      procedure :: get_frequency
    end type Frequency
 contains
    subroutine initialize(this, freq)
@@ -26,4 +27,11 @@ contains
 
       this%frequency = freq
    end subroutine initialize
+
+   function get_frequency(this) result(freq)
+      character(:), allocatable :: freq
+      class(Frequency), intent(inout) :: this
+
+      freq = this%frequency
+   end function get_frequency
 end module FrequencyMod
