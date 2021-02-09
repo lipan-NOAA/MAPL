@@ -37,3 +37,5 @@ if (PFUNIT_FOUND)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif ()
 
+add_subdirectory(testing_app)
+
