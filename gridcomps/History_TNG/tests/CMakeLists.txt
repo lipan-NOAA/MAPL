@@ -9,6 +9,7 @@ set (TEST_SRCS
     test_Group.pf
     test_GroupRegistry.pf
     test_Collection.pf
+    test_CollectionRegistry.pf
 
     test_NUOPCmap.pf
 )

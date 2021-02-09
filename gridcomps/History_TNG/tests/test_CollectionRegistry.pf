@@ -1,0 +1,19 @@
+#include "MAPL_Generic.h"
+#include "NUOPC_ErrLog.h"
+
+module test_CollectionRegistry
+   use, intrinsic :: iso_fortran_env, only: INT64
+   use pFUnit
+   use ESMF
+   use NUOPC
+   use gFTL_StringVector
+   use MAPL_ExceptionHandling
+   use MAPL_KeywordEnforcerMod
+
+   use CollectionRegistryMod
+contains
+   @test
+   subroutine test_test()
+      @assert_that(.true., is(true()))
+   end subroutine test_test
+end module test_CollectionRegistry
