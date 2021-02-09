@@ -55,21 +55,18 @@ contains
       call NUOPC_CompSpecialize(model, specLabel=model_Advance, &
          specRoutine=advance, rc=rc)
       VERIFY_NUOPC_(rc)
-      ! call ESMF_MethodRemove(model, label=model_CheckImport, rc=rc)
-      ! VERIFY_NUOPC_(rc)
-      ! call NUOPC_CompSpecialize(model, specLabel=model_CheckImport, &
-      !    specRoutine=check_import, rc=rc)
-      ! VERIFY_NUOPC_(rc)
+      call ESMF_MethodRemove(model, label=model_CheckImport, rc=rc)
+      VERIFY_NUOPC_(rc)
+      call NUOPC_CompSpecialize(model, specLabel=model_CheckImport, &
+         specRoutine=check_import, rc=rc)
+      VERIFY_NUOPC_(rc)
 
-      ! call ESMF_LogWrite("NUOPC_MAPLcap attache set_clock", ESMF_LOGMSG_INFO, rc=rc)
-      ! VERIFY_ESMF_(rc)
-
-      ! call NUOPC_CompSpecialize(model, specLabel=model_SetClock, &
-      !    specRoutine=set_clock, rc=rc)
-      ! VERIFY_NUOPC_(rc)
-      ! call NUOPC_CompSpecialize(model, specLabel=model_Finalize, &
-      !    specRoutine=finalize, rc=rc)
-      ! VERIFY_NUOPC_(rc)
+      call NUOPC_CompSpecialize(model, specLabel=model_SetClock, &
+         specRoutine=set_clock, rc=rc)
+      VERIFY_NUOPC_(rc)
+      call NUOPC_CompSpecialize(model, specLabel=model_Finalize, &
+         specRoutine=finalize, rc=rc)
+      VERIFY_NUOPC_(rc)
    end subroutine SetServices
 
    subroutine initialize_p0(model, import_state, export_state, clock, rc)
@@ -90,9 +87,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%init_p0(model, import_state, export_state, clock, rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%init_p0(model, import_state, export_state, clock, rc)
+      VERIFY_NUOPC_(rc)
    end subroutine initialize_p0
 
    subroutine generic_initialize(model, import_state, export_state, clock, rc)
@@ -109,9 +105,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%generic_init(model, import_state, export_state, clock, rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%generic_init(model, import_state, export_state, clock, rc)
+      VERIFY_NUOPC_(rc)
    end subroutine generic_initialize
 
    subroutine initialize_data(model, rc)
@@ -125,9 +120,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%data_init(model, rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%data_init(model, rc)
+      VERIFY_NUOPC_(rc)
    end subroutine initialize_data
 
    subroutine advance(model, rc)
@@ -141,8 +135,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! call cap%advance(rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%advance(rc)
+      VERIFY_NUOPC_(rc)
    end subroutine advance
 
    subroutine check_import(model, rc)
@@ -156,9 +150,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%check_import(rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%check_import(rc)
+      VERIFY_NUOPC_(rc)
    end subroutine check_import
 
    subroutine set_clock(model, rc)
@@ -172,9 +165,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%set_clock(model, rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%set_clock(model, rc)
+      VERIFY_NUOPC_(rc)
    end subroutine set_clock
 
    subroutine finalize(model, rc)
@@ -188,9 +180,8 @@ contains
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement this
-      ! call cap%finalize(rc)
-      ! VERIFY_NUOPC_(rc)
+      call cap%finalize(rc)
+      VERIFY_NUOPC_(rc)
    end subroutine finalize
 
    function get_HistoryCap(gc, rc) result(cap)
