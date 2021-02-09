@@ -19,6 +19,7 @@ set (srcs
     HistoryConfig.F90
 
     HistoryCap.F90
+    NUOPCmap.F90
     NUOPC_HistoryCap.F90
 
     HistoryWriter.F90
