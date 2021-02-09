@@ -17,7 +17,8 @@ set (srcs
     CollectionMap.F90
     CollectionRegistry.F90
     HistoryConfig.F90
-    # MAPL_HistoryWriter.F90
+    HistoryCap.F90
+    HistoryWriter.F90
     )
 
 esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.profiler TYPE SHARED)
