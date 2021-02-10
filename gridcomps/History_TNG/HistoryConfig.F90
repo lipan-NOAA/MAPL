@@ -33,9 +33,11 @@ module HistoryConfigMod
       class(CollectionRegistry), allocatable :: collections
    contains
       procedure :: get_enabled
+      procedure :: set_enabled
       procedure :: get_fields
       procedure :: get_groups
       procedure :: get_collections
+      procedure :: set_collections
 
       procedure :: import_yaml
       procedure :: import_enabled
@@ -51,6 +53,22 @@ contains
 
       enabled = this%enabled
    end function get_enabled
+
+   subroutine set_enabled(this, enabled)
+      class(HistoryConfig), intent(inout) :: this
+      type(StringVector),   intent(in   ) :: enabled
+
+      character(:), allocatable  :: group_name
+      type(StringVectorIterator) :: iter
+
+      iter = enabled%begin()
+      do while(iter /= enabled%end())
+         group_name = iter%get()
+
+         call this%enabled%push_back(group_name)
+         call iter%next()
+      end do
+   end subroutine set_enabled
 
    function get_fields(this) result(fields)
       class(FieldRegistry), allocatable :: fields
@@ -72,6 +90,23 @@ contains
 
       collections = this%collections
    end function get_collections
+
+   subroutine set_collections(this, collections, rc)
+      class(HistoryConfig),      intent(inout) :: this
+      class(CollectionRegistry), intent(in   ) :: collections
+      integer, optional,         intent(  out) :: rc
+
+      integer :: status
+
+      status = 0
+      if (allocated(this%collections)) then
+         status = 1
+      else
+         this%collections = collections
+      end if
+
+      if (present(rc)) rc = status
+   end subroutine set_collections
 
    subroutine import_yaml(this, config, rc)
       class(HistoryConfig), intent(inout) :: this
@@ -154,9 +189,11 @@ contains
 
       character(:), pointer      :: collection_name
       type(StringVectorIterator) :: iter
-      type(Collection), pointer  :: collection_entry
+      class(Collection), pointer :: collection_entry
 
       integer :: status
+
+      if (.not. allocated(this%groups)) allocate(this%groups)
 
       status = 0
       iter = this%enabled%begin()
@@ -175,7 +212,7 @@ contains
          call iter%next()
       end do
 
-      _RETURN(status)
+      if (present(rc)) rc = status
    end subroutine fill_collection_groups
 
    subroutine fill_field_registry(this, rc)
@@ -184,9 +221,11 @@ contains
 
       character(:), pointer      :: collection_name
       type(StringVectorIterator) :: iter
-      type(Collection), pointer  :: collection_entry
+      class(Collection), pointer :: collection_entry
 
       integer :: status
+
+      if (.not. allocated(this%fields)) allocate(this%fields)
 
       status = 0
       iter = this%enabled%begin()
@@ -205,6 +244,6 @@ contains
          call iter%next()
       end do
 
-      _RETURN(status)
+      if (present(rc)) rc = status
    end subroutine fill_field_registry
 end module HistoryConfigMod

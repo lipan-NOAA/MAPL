@@ -50,6 +50,7 @@ module CollectionMod
 
       procedure :: import_collection
       procedure :: import_groups
+
       procedure :: fill_groups
    end type Collection
 contains
