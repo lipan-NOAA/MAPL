@@ -37,6 +37,7 @@ module CollectionMod
       class(Group), allocatable :: fields
    contains
       procedure :: get_name
+      procedure :: set_name
       procedure :: get_template
       procedure :: get_frequency
       procedure :: get_groups
@@ -58,6 +59,23 @@ contains
 
       collection_name = this%name
    end function get_name
+
+   subroutine set_name(this, name, rc)
+      class(Collection), intent(inout) :: this
+      character(*),      intent(in   ) :: name
+      integer, optional, intent(  out) :: rc
+
+      integer :: status
+
+      status = 0
+      if (allocated(this%name)) then
+         status = 1
+      else
+         this%name = name
+      end if
+
+      if (present(rc)) rc = status
+   end subroutine set_name
 
    function get_template(this) result(tmplt)
       type(Template) :: tmplt

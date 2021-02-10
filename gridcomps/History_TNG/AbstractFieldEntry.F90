@@ -71,7 +71,6 @@ module AbstractFieldEntryMod
             character(*),           optional, intent(in   ) :: alias_name
       end subroutine i_initialize
    end interface
-
 contains
    subroutine base_initialize(this, short_name, component_name, unusable, units)
       class(AbstractFieldEntry),        intent(  out) :: this

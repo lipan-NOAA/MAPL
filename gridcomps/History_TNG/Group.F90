@@ -25,6 +25,9 @@ module GroupMod
       class(FieldGroup), allocatable :: fields
       class(FieldGroup), allocatable :: aux
 
+      ! TODO: fix
+      ! class(FieldGroup), allocatable :: aux_fields
+
       ! TODO: later will add regex and exper to this
    contains
       procedure :: initialize
