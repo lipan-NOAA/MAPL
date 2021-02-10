@@ -33,10 +33,7 @@ module FieldGroupMod
       procedure :: insert
       procedure :: erase
 
-      procedure :: merge_into
       procedure :: union
-
-      procedure :: remove_from
       procedure :: difference
 
       procedure :: advertise
@@ -174,7 +171,7 @@ contains
       end do
    end subroutine register
 
-   subroutine merge_into(this, field_group, unusable, rc)
+   subroutine union(this, field_group, unusable, rc)
       class(FieldGroup),                intent(inout) :: this
       class(FieldGroup),                intent(inout) :: field_group
       class(KeywordEnforcer), optional, intent(  out) :: unusable
@@ -187,31 +184,18 @@ contains
 
       _UNUSED_DUMMY(unusable)
 
-      iter = this%map%begin()
-      do while(iter /= this%map%end())
+      iter = field_group%map%begin()
+      do while(iter /= field_group%map%end())
          field_entry => iter%value()
-         call field_group%insert(field_entry, __RC__)
+         call this%insert(field_entry, __RC__)
 
          call iter%next()
       end do
 
       _RETURN(_SUCCESS)
-   end subroutine merge_into
-
-   subroutine union(this, field_group, unusable, rc)
-      class(FieldGroup),                intent(inout) :: this
-      class(FieldGroup),                intent(inout) :: field_group
-      class(KeywordEnforcer), optional, intent(  out) :: unusable
-      integer,                optional, intent(  out) :: rc
-
-      integer :: status
-
-      call field_group%merge_into(this, __RC__)
-
-      _RETURN(_SUCCESS)
    end subroutine union
 
-   subroutine remove_from(this, field_group, unusable, rc)
+   subroutine difference(this, field_group, unusable, rc)
       class(FieldGroup),                intent(inout) :: this
       class(FieldGroup),                intent(inout) :: field_group
       class(KeywordEnforcer), optional, intent(  out) :: unusable
@@ -225,30 +209,17 @@ contains
 
       _UNUSED_DUMMY(unusable)
 
-      iter = this%map%begin()
-      do while(iter /= this%map%end())
+      iter = field_group%map%begin()
+      do while(iter /= field_group%map%end())
          standard_name => iter%key()
          field_entry   => iter%value()
 
-         if (field_group%count(standard_name) > 0) then
-            call field_group%erase(field_entry, __RC__)
+         if (this%count(standard_name) > 0) then
+            call this%erase(field_entry, __RC__)
          end if
 
          call iter%next()
       end do
-
-      _RETURN(_SUCCESS)
-   end subroutine remove_from
-
-   subroutine difference(this, field_group, unusable, rc)
-      class(FieldGroup),                intent(inout) :: this
-      class(FieldGroup),                intent(inout) :: field_group
-      class(KeywordEnforcer), optional, intent(  out) :: unusable
-      integer,                optional, intent(  out) :: rc
-
-      integer :: status
-
-      call field_group%remove_from(this, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine difference
