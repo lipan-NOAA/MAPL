@@ -382,7 +382,7 @@ contains
    end subroutine test_union
 
    @test
-   subroutine test_difference()
+   subroutine test_set_difference()
       type(FieldGroup)               :: field_group_1a
       type(FieldGroup)               :: field_group_2a
       type(FieldGroup)               :: field_group_1b
@@ -422,7 +422,7 @@ contains
       @assert_that(field_group_2a%count(standard_name_1), is(equal_to(1_INT64)))
       @assert_that(field_group_2a%count(standard_name_2), is(equal_to(1_INT64)))
       @assert_that(field_group_2a%count(standard_name_3), is(equal_to(1_INT64)))
-      call field_group_1a%difference(field_group_2a, rc=status)
+      call field_group_1a%set_difference(field_group_2a, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_group_1a%size(),                 is(equal_to(0_INT64)))
       @assert_that(field_group_1a%count(standard_name_1), is(equal_to(0_INT64)))
@@ -453,7 +453,7 @@ contains
       @assert_that(field_group_2b%count(standard_name_1), is(equal_to(0_INT64)))
       @assert_that(field_group_2b%count(standard_name_2), is(equal_to(1_INT64)))
       @assert_that(field_group_2b%count(standard_name_3), is(equal_to(1_INT64)))
-      call field_group_1b%difference(field_group_2b, rc=status)
+      call field_group_1b%set_difference(field_group_2b, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_group_1b%size(),                 is(equal_to(1_INT64)))
       @assert_that(field_group_1b%count(standard_name_1), is(equal_to(1_INT64)))
@@ -484,7 +484,7 @@ contains
       @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
       @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
       @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
-      call field_group_1c%difference(field_group_2c, rc=status)
+      call field_group_1c%set_difference(field_group_2c, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_group_1c%size(),                 is(equal_to(0_INT64)))
       @assert_that(field_group_1c%count(standard_name_1), is(equal_to(0_INT64)))
@@ -494,7 +494,7 @@ contains
       @assert_that(field_group_2c%count(standard_name_1), is(equal_to(1_INT64)))
       @assert_that(field_group_2c%count(standard_name_2), is(equal_to(1_INT64)))
       @assert_that(field_group_2c%count(standard_name_3), is(equal_to(1_INT64)))
-   end subroutine test_difference
+   end subroutine test_set_difference
 
    @test
    subroutine test_import_yaml()

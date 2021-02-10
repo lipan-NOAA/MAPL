@@ -20,14 +20,14 @@ module test_Group
    character(*), parameter :: test_group_key = 'Group_tests'
 
    type, extends(FieldGroup) :: mock_FieldGroup
-      integer :: call_union        = 0
-      integer :: call_difference   = 0
-      integer :: call_advertise    = 0
-      integer :: call_register     = 0
-      integer :: call_import_group = 0
+      integer :: call_union          = 0
+      integer :: call_set_difference = 0
+      integer :: call_advertise      = 0
+      integer :: call_register       = 0
+      integer :: call_import_group   = 0
 
       class(FieldGroup), allocatable :: union_field_group
-      class(FieldGroup), allocatable :: difference_field_group
+      class(FieldGroup), allocatable :: set_difference_field_group
 
       integer, private :: id
    contains
@@ -37,7 +37,7 @@ module test_Group
       generic   :: operator(==) => is_equal_to
 
       procedure :: union
-      procedure :: difference
+      procedure :: set_difference
       procedure :: advertise
       procedure :: register
       procedure :: import_group
@@ -75,7 +75,7 @@ contains
       _RETURN(_SUCCESS)
    end subroutine union
 
-   subroutine difference(this, field_group, unusable, rc)
+   subroutine set_difference(this, field_group, unusable, rc)
       class(mock_FieldGroup),           intent(inout) :: this
       class(FieldGroup),                intent(inout) :: field_group
       class(KeywordEnforcer), optional, intent(  out) :: unusable
@@ -83,11 +83,11 @@ contains
 
       _UNUSED_DUMMY(field_group)
 
-      this%call_difference = this%call_difference + 1
-      this%difference_field_group = field_group
+      this%call_set_difference = this%call_set_difference + 1
+      this%set_difference_field_group = field_group
 
       _RETURN(_SUCCESS)
-   end subroutine difference
+   end subroutine set_difference
 
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
@@ -143,7 +143,7 @@ contains
       class(FieldGroup), allocatable :: fields_inside
       class(FieldGroup), allocatable :: aux_fields_inside
       class(FieldGroup), allocatable :: union_field_group
-      class(FieldGroup), allocatable :: difference_field_group
+      class(FieldGroup), allocatable :: set_difference_field_group
 
       integer :: status
 
@@ -163,20 +163,20 @@ contains
       fields_inside = field_group_1%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(fields_inside%call_union,      is(equal_to(0)))
-         @assert_that(fields_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(fields_inside%union_field_group),      is(false()))
-         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+         @assert_that(fields_inside%call_union,          is(equal_to(0)))
+         @assert_that(fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%union_field_group),          is(false()))
+         @assert_that(allocated(fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
       aux_fields_inside = field_group_1%get_aux_fields()
       select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_fields_inside%call_union,      is(equal_to(0)))
-         @assert_that(aux_fields_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(aux_fields_inside%union_field_group),      is(false()))
-         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_union,          is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%union_field_group),          is(false()))
+         @assert_that(allocated(aux_fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
@@ -185,20 +185,20 @@ contains
       fields_inside = field_group_2%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(fields_inside%call_union,      is(equal_to(0)))
-         @assert_that(fields_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(fields_inside%union_field_group),      is(false()))
-         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+         @assert_that(fields_inside%call_union,          is(equal_to(0)))
+         @assert_that(fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%union_field_group),          is(false()))
+         @assert_that(allocated(fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
       aux_fields_inside = field_group_2%get_aux_fields()
       select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_fields_inside%call_union,      is(equal_to(0)))
-         @assert_that(aux_fields_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(aux_fields_inside%union_field_group),      is(false()))
-         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_union,          is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%union_field_group),          is(false()))
+         @assert_that(allocated(aux_fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
@@ -209,8 +209,8 @@ contains
       fields_inside = field_group_1%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(fields_inside%call_union,      is(equal_to(1)))
-         @assert_that(fields_inside%call_difference, is(equal_to(0)))
+         @assert_that(fields_inside%call_union,          is(equal_to(1)))
+         @assert_that(fields_inside%call_set_difference, is(equal_to(0)))
 
          @assert_that(allocated(fields_inside%union_field_group), is(true()))
          union_field_group = fields_inside%union_field_group
@@ -221,17 +221,17 @@ contains
             @assertFail('not a mock')
          end select
 
-         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+         @assert_that(allocated(fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
       aux_fields_inside = field_group_1%get_aux_fields()
       select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_fields_inside%call_union,      is(equal_to(1)))
-         @assert_that(aux_fields_inside%call_difference, is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_union,          is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_set_difference, is(equal_to(1)))
 
-         @assert_that(allocated(aux_fields_inside%union_field_group),      is(true()))
+         @assert_that(allocated(aux_fields_inside%union_field_group), is(true()))
          union_field_group = aux_fields_inside%union_field_group
          select type (union_field_group)
          type is (mock_FieldGroup)
@@ -240,11 +240,11 @@ contains
             @assertFail('not a mock')
          end select
 
-         @assert_that(allocated(aux_fields_inside%difference_field_group), is(true()))
-         difference_field_group = aux_fields_inside%difference_field_group
-         select type (difference_field_group)
+         @assert_that(allocated(aux_fields_inside%set_difference_field_group), is(true()))
+         set_difference_field_group = aux_fields_inside%set_difference_field_group
+         select type (set_difference_field_group)
          type is (mock_FieldGroup)
-            @assert_that(difference_field_group == fields_1, is(true()))
+            @assert_that(set_difference_field_group == fields_1, is(true()))
          class default
             @assertFail('not a mock')
          end select
@@ -354,7 +354,7 @@ contains
 
       class(FieldGroup), allocatable :: fields_inside
       class(FieldGroup), allocatable :: aux_fields_inside
-      class(FieldGroup), allocatable :: difference_field_group
+      class(FieldGroup), allocatable :: set_difference_field_group
 
       type(Parser)     :: P
       type(FileStream) :: file_stream
@@ -374,18 +374,18 @@ contains
       fields_inside = field_group%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(fields_inside%call_import_group, is(equal_to(0)))
-         @assert_that(fields_inside%call_difference,   is(equal_to(0)))
-         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+         @assert_that(fields_inside%call_import_group,   is(equal_to(0)))
+         @assert_that(fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
       aux_fields_inside = field_group%get_aux_fields()
       select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_fields_inside%call_import_group, is(equal_to(0)))
-         @assert_that(aux_fields_inside%call_difference,   is(equal_to(0)))
-         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_import_group,   is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
@@ -415,23 +415,23 @@ contains
       fields_inside = field_group%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(fields_inside%call_import_group, is(equal_to(1)))
-         @assert_that(fields_inside%call_difference,   is(equal_to(0)))
-         @assert_that(allocated(fields_inside%difference_field_group), is(false()))
+         @assert_that(fields_inside%call_import_group,   is(equal_to(1)))
+         @assert_that(fields_inside%call_set_difference, is(equal_to(0)))
+         @assert_that(allocated(fields_inside%set_difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
       aux_fields_inside = field_group%get_aux_fields()
       select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_fields_inside%call_import_group, is(equal_to(1)))
-         @assert_that(aux_fields_inside%call_difference,   is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_import_group,   is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_set_difference, is(equal_to(1)))
 
-         @assert_that(allocated(aux_fields_inside%difference_field_group), is(true()))
-         difference_field_group = aux_fields_inside%difference_field_group
-         select type (difference_field_group)
+         @assert_that(allocated(aux_fields_inside%set_difference_field_group), is(true()))
+         set_difference_field_group = aux_fields_inside%set_difference_field_group
+         select type (set_difference_field_group)
          type is (mock_FieldGroup)
-            @assert_that(difference_field_group == fields, is(true()))
+            @assert_that(set_difference_field_group == fields, is(true()))
          class default
             @assertFail('not a mock')
          end select

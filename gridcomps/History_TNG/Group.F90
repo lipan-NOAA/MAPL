@@ -81,7 +81,7 @@ contains
       call this%fields%union(    fields,     __RC__)
       call this%aux_fields%union(aux_fields, __RC__)
 
-      call this%aux_fields%difference(this%fields, __RC__)
+      call this%aux_fields%set_difference(this%fields, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine union
@@ -152,7 +152,7 @@ contains
          call iter%next()
       end do
 
-      call this%aux_fields%difference(this%fields, __RC__)
+      call this%aux_fields%set_difference(this%fields, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine import_group

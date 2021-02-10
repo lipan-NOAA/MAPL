@@ -34,7 +34,7 @@ module FieldGroupMod
       procedure :: erase
 
       procedure :: union
-      procedure :: difference
+      procedure :: set_difference
 
       procedure :: advertise
       procedure :: register
@@ -195,7 +195,7 @@ contains
       _RETURN(_SUCCESS)
    end subroutine union
 
-   subroutine difference(this, field_group, unusable, rc)
+   subroutine set_difference(this, field_group, unusable, rc)
       class(FieldGroup),                intent(inout) :: this
       class(FieldGroup),                intent(inout) :: field_group
       class(KeywordEnforcer), optional, intent(  out) :: unusable
@@ -222,7 +222,7 @@ contains
       end do
 
       _RETURN(_SUCCESS)
-   end subroutine difference
+   end subroutine set_difference
 
    subroutine import_group(this, config, rc)
       class(FieldGroup),   intent(inout) :: this
