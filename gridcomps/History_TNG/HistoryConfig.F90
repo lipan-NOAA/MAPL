@@ -28,10 +28,15 @@ module HistoryConfigMod
       private
       type(StringVector) :: enabled
 
-      type(FieldRegistry)      :: fields
-      type(GroupRegistry)      :: groups
-      type(CollectionRegistry) :: collections
+      class(FieldRegistry),      allocatable :: fields
+      class(GroupRegistry),      allocatable :: groups
+      class(CollectionRegistry), allocatable :: collections
    contains
+      procedure :: get_enabled
+      procedure :: get_fields
+      procedure :: get_groups
+      procedure :: get_collections
+
       procedure :: import_yaml
       procedure :: import_enabled
       procedure :: finish_import
@@ -40,6 +45,34 @@ module HistoryConfigMod
       procedure :: fill_field_registry
    end type HistoryConfig
 contains
+   function get_enabled(this) result(enabled)
+      type(StringVector) :: enabled
+      class(HistoryConfig), intent(in) :: this
+
+      enabled = this%enabled
+   end function get_enabled
+
+   function get_fields(this) result(fields)
+      class(FieldRegistry), allocatable :: fields
+      class(HistoryConfig), intent(in) :: this
+
+      fields = this%fields
+   end function get_fields
+
+   function get_groups(this) result(groups)
+      class(GroupRegistry), allocatable :: groups
+      class(HistoryConfig), intent(in) :: this
+
+      groups = this%groups
+   end function get_groups
+
+   function get_collections(this) result(collections)
+      class(CollectionRegistry), allocatable :: collections
+      class(HistoryConfig), intent(in) :: this
+
+      collections = this%collections
+   end function get_collections
+
    subroutine import_yaml(this, config, rc)
       class(HistoryConfig), intent(inout) :: this
       type(Configuration),  intent(inout) :: config
@@ -50,6 +83,9 @@ contains
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      if (.not. allocated(this%groups))      allocate(this%groups)
+      if (.not. allocated(this%collections)) allocate(this%collections)
 
       iter = config%begin()
       do while(iter /= config%end())
@@ -86,7 +122,7 @@ contains
       if (config%is_sequence()) then
          iter = config%begin()
          do while(iter /= config%end())
-            collection_name = iter%value()
+            collection_name = iter%get()
             call this%enabled%push_back(collection_name)
 
             call iter%next()
