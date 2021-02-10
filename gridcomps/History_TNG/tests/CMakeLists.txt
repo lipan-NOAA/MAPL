@@ -1,8 +1,7 @@
 add_definitions(-DUSE_MPI)
 
 set (TEST_SRCS
-    test_AbstractFieldEntry.pf
-    test_FieldRegistryEntry.pf
+    test_FieldEntry.pf
     test_FieldRegistry.pf
     test_FieldGroupEntry.pf
     test_FieldGroup.pf

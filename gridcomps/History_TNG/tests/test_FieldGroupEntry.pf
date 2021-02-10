@@ -8,7 +8,7 @@ module test_FieldGroupEntry
    use NUOPC
    use MAPL_ExceptionHandling
 
-   use FieldRegistryEntryMod
+   use FieldEntryMod
    use FieldGroupEntryMod
 
    character(*), parameter :: short_name     = 'short_name'
@@ -20,34 +20,28 @@ module test_FieldGroupEntry
    character(*), parameter :: alias_out_name = 'alias_name.std_out_name'
 
    type, extends(FieldGroupEntry) :: mock_FieldGroupEntry
-      integer :: call_standard_name = 0
-   contains
-      procedure :: standard_name
    end type mock_FieldGroupEntry
 contains
-   function standard_name(this) result(std_name)
-      character(:), allocatable :: std_name
-      class(mock_FieldGroupEntry), intent(inout) :: this
-
-      this%call_standard_name = this%call_standard_name + 1
-
-      std_name = std_out_name
-   end function standard_name
-
    @test
    subroutine test_initialize()
       type(FieldGroupEntry) :: field_entry_no_alias
       type(FieldGroupEntry) :: field_entry_alias
 
+      class(FieldEntry), allocatable :: field_entry
+
       call field_entry_no_alias%initialize(short_name, component_name)
-      @assert_that(field_entry_no_alias%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_entry_no_alias%get_component_name() == component_name, is(true()))
-      @assert_that(field_entry_no_alias%get_alias_name()     == default_alias,  is(true()))
+      @assert_that(field_entry_no_alias%get_alias_name() == default_alias, is(true()))
+      field_entry = field_entry_no_alias%get_field_entry()
+      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry%get_units()          == default_units,  is(true()))
 
       call field_entry_alias%initialize(short_name, component_name, units=units, alias_name=alias_name)
-      @assert_that(field_entry_alias%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_entry_alias%get_component_name() == component_name, is(true()))
-      @assert_that(field_entry_alias%get_alias_name()     == alias_name,     is(true()))
+      @assert_that(field_entry_alias%get_alias_name() == alias_name, is(true()))
+      field_entry = field_entry_alias%get_field_entry()
+      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
+      @assert_that(field_entry%get_component_name() == component_name, is(true()))
+      @assert_that(field_entry%get_units()          == units,          is(true()))
    end subroutine test_initialize
 
    @test
@@ -94,12 +88,12 @@ contains
       type(FieldGroupEntry) :: field_entry3
       type(FieldGroupEntry) :: field_entry4
 
-      type(FieldRegistryEntry) :: field_registry_entry
+      type(mock_FieldGroupEntry) :: mock_entry
 
       character(*), parameter :: new_short_name = 'new_short_name'
       character(*), parameter :: new_alias_name = 'new_alias_name'
 
-      call field_registry_entry%initialize(short_name, component_name)
+      call mock_entry%initialize(short_name, component_name, alias_name=alias_name)
 
       call field_entry0%initialize(    short_name, component_name, alias_name=    alias_name)
       call field_entry1%initialize(    short_name, component_name, alias_name=    alias_name)
@@ -107,9 +101,9 @@ contains
       call field_entry3%initialize(    short_name, component_name, alias_name=new_alias_name)
       call field_entry4%initialize(new_short_name, component_name, alias_name=new_alias_name)
 
-      ! Type mismatch
-      @assert_that(field_entry0         == field_registry_entry, is(false()))
-      @assert_that(field_registry_entry == field_entry0,         is(false()))
+      ! Type missmatch
+      @assert_that(field_entry0 == mock_entry,   is(false()))
+      @assert_that(mock_entry   == field_entry0, is(false()))
 
       ! True
       @assert_that(field_entry0 == field_entry0, is(true()))
@@ -134,32 +128,4 @@ contains
       @assert_that(field_entry4 == field_entry2, is(false()))
       @assert_that(field_entry4 == field_entry3, is(false()))
    end subroutine test_equals
-
-   @test
-   subroutine test_name()
-      type(mock_FieldGroupEntry) :: field_entry_no_alias
-      type(mock_FieldGroupEntry) :: field_entry_alias
-
-      @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(0)))
-      call field_entry_no_alias%initialize(short_name, component_name)
-      @assert_that(field_entry_no_alias%name() == std_out_name, is(true()))
-      @assert_that(field_entry_no_alias%call_standard_name, is(equal_to(1)))
-
-      @assert_that(field_entry_alias%call_standard_name, is(equal_to(0)))
-      call field_entry_alias%initialize(short_name, component_name, units=units, alias_name=alias_name)
-      @assert_that(field_entry_alias%name() == alias_out_name, is(true()))
-      @assert_that(field_entry_alias%call_standard_name, is(equal_to(1)))
-   end subroutine test_name
-
-   @test
-   subroutine test_registry_entry()
-      type(FieldGroupEntry)    :: field
-      type(FieldRegistryEntry) :: field_entry
-
-      call field%initialize(short_name, component_name, units=units, alias_name=alias_name)
-      field_entry = field%registry_entry()
-      @assert_that(field_entry%get_short_name()     == short_name,     is(true()))
-      @assert_that(field_entry%get_component_name() == component_name, is(true()))
-      @assert_that(field_entry%get_units()          == units,          is(true()))
-   end subroutine test_registry_entry
 end module test_FieldGroupEntry

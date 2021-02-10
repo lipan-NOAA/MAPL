@@ -12,7 +12,7 @@ module FieldGroupMod
    use FieldGroupEntryMod
    use FieldGroupEntryMapMod
 
-   use FieldRegistryEntryMod
+   use FieldEntryMod
    use FieldRegistryMod
 
    implicit none
@@ -158,13 +158,13 @@ contains
       type(FieldRegistry), intent(inout) :: field_registry
 
       class(FieldGroupEntry), pointer  :: field_entry
-      type(FieldRegistryEntry)         :: registry_entry
+      class(FieldEntry), allocatable   :: registry_entry
       type(FieldGroupEntryMapIterator) :: iter
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
          field_entry    => iter%value()
-         registry_entry =  field_entry%registry_entry()
+         registry_entry =  field_entry%get_field_entry()
          call field_registry%insert(registry_entry)
 
          call iter%next()

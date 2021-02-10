@@ -1,9 +1,8 @@
 esma_set_this (OVERRIDE MAPL.history_tng)
 
 set (srcs
-    AbstractFieldEntry.F90
-    FieldRegistryEntry.F90
-    FieldRegistryEntryMap.F90
+    FieldEntry.F90
+    FieldEntryMap.F90
     FieldRegistry.F90
     FieldGroupEntry.F90
     FieldGroupEntryMap.F90

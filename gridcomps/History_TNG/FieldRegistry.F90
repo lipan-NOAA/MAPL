@@ -8,8 +8,8 @@ module FieldRegistryMod
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use FieldRegistryEntryMod
-   use FieldRegistryEntryMapMod
+   use FieldEntryMod
+   use FieldEntryMapMod
 
    implicit none
    private
@@ -18,7 +18,7 @@ module FieldRegistryMod
 
    type :: FieldRegistry
       private
-      type(FieldRegistryEntryMap) :: map
+      type(FieldEntryMap) :: map
    contains
       procedure :: size
       procedure :: count
@@ -42,7 +42,7 @@ contains
    end function count
 
    function at(this, key) result(field_entry)
-      class(FieldRegistryEntry), pointer :: field_entry
+      class(FieldEntry), pointer :: field_entry
       class(FieldRegistry), intent(in) :: this
       character(*),         intent(in) :: key
 
@@ -50,8 +50,8 @@ contains
    end function at
 
    subroutine insert(this, field_entry)
-      class(FieldRegistry),      intent(inout) :: this
-      class(FieldRegistryEntry), intent(inout) :: field_entry
+      class(FieldRegistry), intent(inout) :: this
+      class(FieldEntry),    intent(inout) :: field_entry
 
       call this%map%insert(field_entry%standard_name(), field_entry)
    end subroutine insert
@@ -66,8 +66,8 @@ contains
       character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
-      class(FieldRegistryEntry), pointer  :: field_entry
-      type(FieldRegistryEntryMapIterator) :: iter
+      class(FieldEntry), pointer  :: field_entry
+      type(FieldEntryMapIterator) :: iter
 
       integer :: status
 

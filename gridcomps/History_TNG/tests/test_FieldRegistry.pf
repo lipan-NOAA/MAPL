@@ -9,7 +9,7 @@ module test_FieldRegistry
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
-   use FieldRegistryEntryMod
+   use FieldEntryMod
    use FieldRegistryMod
 
    character(*), parameter :: short_name       = 'short_name'
@@ -18,15 +18,15 @@ module test_FieldRegistry
    character(*), parameter :: entry_name       = 'short_name.component_name'
    character(*), parameter :: other_entry_name = 'other_name.component_name'
 
-   type, extends(FieldRegistryEntry) :: mock_FieldRegistryEntry
+   type, extends(FieldEntry) :: mock_FieldEntry
       integer :: call_advertise = 0
    contains
       procedure :: advertise
-   end type mock_FieldRegistryEntry
+   end type mock_FieldEntry
 contains
    subroutine advertise(this, state, unusable,&
          TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
-      class(mock_FieldRegistryEntry),   intent(inout) :: this
+      class(mock_FieldEntry),           intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: TransferOfferGeomObject
@@ -46,11 +46,12 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
    @test
    subroutine test_map()
-      type(FieldRegistry)               :: field_registry
-      type(FieldRegistryEntry)          :: field_entry
-      type(FieldRegistryEntry), pointer :: field_registry_entry
+      type(FieldRegistry)       :: field_registry
+      type(FieldEntry)          :: field_entry
+      type(FieldEntry), pointer :: field_registry_entry
 
       call field_entry%initialize(short_name, component_name)
 
@@ -67,13 +68,13 @@ contains
 
    @test
    subroutine test_advertise()
-      type(FieldRegistry)           :: field_registry
-      type(mock_FieldRegistryEntry) :: field_entry_1
-      type(mock_FieldRegistryEntry) :: field_entry_2
-      type(ESMF_State)              :: state
+      type(FieldRegistry)   :: field_registry
+      type(mock_FieldEntry) :: field_entry_1
+      type(mock_FieldEntry) :: field_entry_2
+      type(ESMF_State)      :: state
 
-      class(FieldRegistryEntry), pointer :: field_entry_ptr1
-      class(FieldRegistryEntry), pointer :: field_entry_ptr2
+      class(FieldEntry), pointer :: field_entry_ptr1
+      class(FieldEntry), pointer :: field_entry_ptr2
 
       integer :: status
 
@@ -88,7 +89,7 @@ contains
 
       field_entry_ptr1 => field_registry%at(entry_name)
       select type (field_entry_ptr1)
-      type is (mock_FieldRegistryEntry)
+      type is (mock_FieldEntry)
          @assert_that(field_entry_ptr1%call_advertise, is(equal_to(1)))
       class default
          @assertFail('not a mock')
@@ -96,7 +97,7 @@ contains
 
       field_entry_ptr2 => field_registry%at(other_entry_name)
       select type (field_entry_ptr2)
-      type is (mock_FieldRegistryEntry)
+      type is (mock_FieldEntry)
          @assert_that(field_entry_ptr2%call_advertise, is(equal_to(1)))
       class default
          @assertFail('not a mock')
