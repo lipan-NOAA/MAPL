@@ -17,22 +17,19 @@ module GroupMod
 
    public Group
 
-   character(*), parameter :: fields_key = 'fields'
-   character(*), parameter :: aux_key    = 'aux'
+   character(*), parameter :: fields_key     = 'fields'
+   character(*), parameter :: aux_fields_key = 'aux'
 
    type :: Group
       private
       class(FieldGroup), allocatable :: fields
-      class(FieldGroup), allocatable :: aux
-
-      ! TODO: fix
-      ! class(FieldGroup), allocatable :: aux_fields
+      class(FieldGroup), allocatable :: aux_fields
 
       ! TODO: later will add regex and exper to this
    contains
       procedure :: initialize
       procedure :: get_fields
-      procedure :: get_aux
+      procedure :: get_aux_fields
 
       procedure :: union
 
@@ -42,13 +39,13 @@ module GroupMod
       procedure :: import_group
    end type Group
 contains
-   subroutine initialize(this, fields, aux)
+   subroutine initialize(this, fields, aux_fields)
       class(Group),      intent(inout) :: this
       class(FieldGroup), intent(in   ) :: fields
-      class(FieldGroup), intent(in   ) :: aux
+      class(FieldGroup), intent(in   ) :: aux_fields
 
       this%fields = fields
-      this%aux    = aux
+      this%aux_fields    = aux_fields
    end subroutine initialize
 
    function get_fields(this) result(fields)
@@ -58,12 +55,12 @@ contains
       fields = this%fields
    end function get_fields
 
-   function get_aux(this) result(aux)
-      class(FieldGroup), allocatable :: aux
+   function get_aux_fields(this) result(aux_fields)
+      class(FieldGroup), allocatable :: aux_fields
       class(Group), intent(in) :: this
 
-      aux = this%aux
-   end function get_aux
+      aux_fields = this%aux_fields
+   end function get_aux_fields
 
    subroutine union(this, other, unusable, rc)
       class(Group),                     intent(inout) :: this
@@ -72,19 +69,19 @@ contains
       integer,                optional, intent(  out) :: rc
 
       class(FieldGroup), allocatable :: fields
-      class(FieldGroup), allocatable :: aux
+      class(FieldGroup), allocatable :: aux_fields
 
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
-      fields = other%get_fields()
-      aux    = other%get_aux()
+      fields     = other%get_fields()
+      aux_fields = other%get_aux_fields()
 
-      call this%fields%union(fields, __RC__)
-      call this%aux%union(   aux,    __RC__)
+      call this%fields%union(    fields,     __RC__)
+      call this%aux_fields%union(aux_fields, __RC__)
 
-      call this%aux%difference(this%fields, __RC__)
+      call this%aux_fields%difference(this%fields, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine union
@@ -109,7 +106,7 @@ contains
          SharePolicyGeomObject=SharePolicyGeomObject, &
          __RC__)
 
-      call this%aux%advertise(state, &
+      call this%aux_fields%advertise(state, &
          TransferOfferGeomObject=TransferOfferGeomObject, &
          SharePolicyField=SharePolicyField, &
          SharePolicyGeomObject=SharePolicyGeomObject, &
@@ -122,8 +119,8 @@ contains
       class(Group),        intent(inout) :: this
       type(FieldRegistry), intent(inout) :: field_registry
 
-      call this%fields%register(field_registry)
-      call this%aux%register(field_registry)
+      call this%fields%    register(field_registry)
+      call this%aux_fields%register(field_registry)
    end subroutine register
 
    subroutine import_group(this, config, rc)
@@ -137,8 +134,8 @@ contains
 
       integer :: status
 
-      if (.not. allocated(this%fields)) allocate(this%fields)
-      if (.not. allocated(this%aux))    allocate(this%aux)
+      if (.not. allocated(this%fields))     allocate(this%fields)
+      if (.not. allocated(this%aux_fields)) allocate(this%aux_fields)
 
       iter = config%begin()
       do while(iter /= config%end())
@@ -147,15 +144,15 @@ contains
 
          select case (key)
          case (fields_key)
-            call this%fields%import_group(sub_config, __RC__)
-         case (aux_key)
-            call this%aux%import_group(sub_config, __RC__)
+            call this%fields%    import_group(sub_config, __RC__)
+         case (aux_fields_key)
+            call this%aux_fields%import_group(sub_config, __RC__)
          end select
 
          call iter%next()
       end do
 
-      call this%aux%difference(this%fields, __RC__)
+      call this%aux_fields%difference(this%fields, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine import_group

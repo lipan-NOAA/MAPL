@@ -137,11 +137,11 @@ contains
       type(Group)           :: field_group_2
       type(mock_FieldGroup) :: fields_1
       type(mock_FieldGroup) :: fields_2
-      type(mock_FieldGroup) :: aux_1
-      type(mock_FieldGroup) :: aux_2
+      type(mock_FieldGroup) :: aux_fields_1
+      type(mock_FieldGroup) :: aux_fields_2
 
       class(FieldGroup), allocatable :: fields_inside
-      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: aux_fields_inside
       class(FieldGroup), allocatable :: union_field_group
       class(FieldGroup), allocatable :: difference_field_group
 
@@ -149,17 +149,17 @@ contains
 
       call fields_1%init(1)
       call fields_2%init(2)
-      call aux_1%init(3)
-      call aux_2%init(4)
+      call aux_fields_1%init(3)
+      call aux_fields_2%init(4)
 
-      @assert_that(fields_1 == fields_2, is(false()))
-      @assert_that(fields_1 == aux_1,    is(false()))
-      @assert_that(fields_1 == aux_2,    is(false()))
-      @assert_that(fields_2 == aux_1,    is(false()))
-      @assert_that(fields_2 == aux_2,    is(false()))
-      @assert_that(aux_1    == aux_2,    is(false()))
+      @assert_that(fields_1     == fields_2,     is(false()))
+      @assert_that(fields_1     == aux_fields_1, is(false()))
+      @assert_that(fields_1     == aux_fields_2, is(false()))
+      @assert_that(fields_2     == aux_fields_1, is(false()))
+      @assert_that(fields_2     == aux_fields_2, is(false()))
+      @assert_that(aux_fields_1 == aux_fields_2, is(false()))
 
-      call field_group_1%initialize(fields_1, aux_1)
+      call field_group_1%initialize(fields_1, aux_fields_1)
       fields_inside = field_group_1%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
@@ -170,18 +170,18 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group_1%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group_1%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_union,      is(equal_to(0)))
-         @assert_that(aux_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(aux_inside%union_field_group),      is(false()))
-         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_union,      is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%union_field_group),      is(false()))
+         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
 
-      call field_group_2%initialize(fields_2, aux_2)
+      call field_group_2%initialize(fields_2, aux_fields_2)
       fields_inside = field_group_2%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
@@ -192,13 +192,13 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group_2%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group_2%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_union,      is(equal_to(0)))
-         @assert_that(aux_inside%call_difference, is(equal_to(0)))
-         @assert_that(allocated(aux_inside%union_field_group),      is(false()))
-         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_union,      is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_difference, is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%union_field_group),      is(false()))
+         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
@@ -225,23 +225,23 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group_1%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group_1%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_union,      is(equal_to(1)))
-         @assert_that(aux_inside%call_difference, is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_union,      is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_difference, is(equal_to(1)))
 
-         @assert_that(allocated(aux_inside%union_field_group),      is(true()))
-         union_field_group = aux_inside%union_field_group
+         @assert_that(allocated(aux_fields_inside%union_field_group),      is(true()))
+         union_field_group = aux_fields_inside%union_field_group
          select type (union_field_group)
          type is (mock_FieldGroup)
-            @assert_that(union_field_group == aux_2, is(true()))
+            @assert_that(union_field_group == aux_fields_2, is(true()))
          class default
             @assertFail('not a mock')
          end select
 
-         @assert_that(allocated(aux_inside%difference_field_group), is(true()))
-         difference_field_group = aux_inside%difference_field_group
+         @assert_that(allocated(aux_fields_inside%difference_field_group), is(true()))
+         difference_field_group = aux_fields_inside%difference_field_group
          select type (difference_field_group)
          type is (mock_FieldGroup)
             @assert_that(difference_field_group == fields_1, is(true()))
@@ -257,15 +257,15 @@ contains
    subroutine test_advertise()
       type(Group)           :: field_group
       type(mock_FieldGroup) :: fields
-      type(mock_FieldGroup) :: aux
+      type(mock_FieldGroup) :: aux_fields
       type(ESMF_State)      :: state
 
       class(FieldGroup), allocatable :: fields_inside
-      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: aux_fields_inside
 
       integer :: status
 
-      call field_group%initialize(fields, aux)
+      call field_group%initialize(fields, aux_fields)
       fields_inside = field_group%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
@@ -273,10 +273,10 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_advertise, is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_advertise, is(equal_to(0)))
       class default
          @assertFail('not a mock')
       end select
@@ -291,10 +291,10 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_advertise, is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_advertise, is(equal_to(1)))
       class default
          @assertFail('not a mock')
       end select
@@ -304,13 +304,13 @@ contains
    subroutine test_register()
       type(Group)           :: field_group
       type(mock_FieldGroup) :: fields
-      type(mock_FieldGroup) :: aux
+      type(mock_FieldGroup) :: aux_fields
       type(FieldRegistry)   :: field_registry
 
       class(FieldGroup), allocatable :: fields_inside
-      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: aux_fields_inside
 
-      call field_group%initialize(fields, aux)
+      call field_group%initialize(fields, aux_fields)
       fields_inside = field_group%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
@@ -318,10 +318,10 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_register, is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_register, is(equal_to(0)))
       class default
          @assertFail('not a mock')
       end select
@@ -335,10 +335,10 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_register, is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_register, is(equal_to(1)))
       class default
          @assertFail('not a mock')
       end select
@@ -349,11 +349,11 @@ contains
       type(Group) :: field_group
 
       type(mock_FieldGroup) :: fields
-      type(mock_FieldGroup) :: aux
+      type(mock_FieldGroup) :: aux_fields
       type(FieldRegistry)   :: field_registry
 
       class(FieldGroup), allocatable :: fields_inside
-      class(FieldGroup), allocatable :: aux_inside
+      class(FieldGroup), allocatable :: aux_fields_inside
       class(FieldGroup), allocatable :: difference_field_group
 
       type(Parser)     :: P
@@ -366,11 +366,11 @@ contains
       integer :: status
 
       call fields%init(1)
-      call aux%init(2)
+      call aux_fields%init(2)
 
-      @assert_that(fields == aux, is(false()))
+      @assert_that(fields == aux_fields, is(false()))
 
-      call field_group%initialize(fields, aux)
+      call field_group%initialize(fields, aux_fields)
       fields_inside = field_group%get_fields()
       select type (fields_inside)
       type is (mock_FieldGroup)
@@ -380,12 +380,12 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_import_group, is(equal_to(0)))
-         @assert_that(aux_inside%call_difference,   is(equal_to(0)))
-         @assert_that(allocated(aux_inside%difference_field_group), is(false()))
+         @assert_that(aux_fields_inside%call_import_group, is(equal_to(0)))
+         @assert_that(aux_fields_inside%call_difference,   is(equal_to(0)))
+         @assert_that(allocated(aux_fields_inside%difference_field_group), is(false()))
       class default
          @assertFail('not a mock')
       end select
@@ -421,14 +421,14 @@ contains
       class default
          @assertFail('not a mock')
       end select
-      aux_inside = field_group%get_aux()
-      select type (aux_inside)
+      aux_fields_inside = field_group%get_aux_fields()
+      select type (aux_fields_inside)
       type is (mock_FieldGroup)
-         @assert_that(aux_inside%call_import_group, is(equal_to(1)))
-         @assert_that(aux_inside%call_difference,   is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_import_group, is(equal_to(1)))
+         @assert_that(aux_fields_inside%call_difference,   is(equal_to(1)))
 
-         @assert_that(allocated(aux_inside%difference_field_group), is(true()))
-         difference_field_group = aux_inside%difference_field_group
+         @assert_that(allocated(aux_fields_inside%difference_field_group), is(true()))
+         difference_field_group = aux_fields_inside%difference_field_group
          select type (difference_field_group)
          type is (mock_FieldGroup)
             @assert_that(difference_field_group == fields, is(true()))
@@ -453,7 +453,7 @@ contains
 
       type(FieldGroupEntry), pointer :: field_entry
       class(FieldGroup), allocatable :: fields
-      class(FieldGroup), allocatable :: aux
+      class(FieldGroup), allocatable :: aux_fields
 
       integer :: status
 
@@ -479,7 +479,7 @@ contains
       call field_group%import_group(config, rc=status)
       @assert_that(status, is(equal_to(0)))
       fields = field_group%get_fields()
-      aux    = field_group%get_aux()
+      aux_fields    = field_group%get_aux_fields()
 
       ! Test fields read correctly
       @assert_that(fields%size(), is(equal_to(11_INT64)))
@@ -555,11 +555,11 @@ contains
       @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
       @assert_that(field_entry%get_units()          == default_units, is(true()))
 
-      ! Test aux is read correctly
-      @assert_that(aux%size(), is(equal_to(1_INT64)))
+      ! Test aux_fields is read correctly
+      @assert_that(aux_fields%size(), is(equal_to(1_INT64)))
 
-      @assert_that(aux%count('U.DYN'), is(equal_to(1_INT64)))
-      field_entry => aux%at( 'U.DYN')
+      @assert_that(aux_fields%count('U.DYN'), is(equal_to(1_INT64)))
+      field_entry => aux_fields%at( 'U.DYN')
       @assert_that(field_entry%get_short_name()     == 'U',           is(true()))
       @assert_that(field_entry%get_component_name() == 'DYN',         is(true()))
       @assert_that(field_entry%get_alias_name()     == default_alias, is(true()))
