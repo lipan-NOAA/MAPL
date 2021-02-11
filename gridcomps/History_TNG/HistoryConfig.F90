@@ -91,12 +91,15 @@ contains
       collections = this%collections
    end function get_collections
 
-   subroutine set_collections(this, collections, rc)
-      class(HistoryConfig),      intent(inout) :: this
-      class(CollectionRegistry), intent(in   ) :: collections
-      integer, optional,         intent(  out) :: rc
+   subroutine set_collections(this, collections, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      class(CollectionRegistry),        intent(in   ) :: collections
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       status = 0
       if (allocated(this%collections)) then
@@ -108,16 +111,19 @@ contains
       if (present(rc)) rc = status
    end subroutine set_collections
 
-   subroutine import_yaml(this, config, rc)
-      class(HistoryConfig), intent(inout) :: this
-      type(Configuration),  intent(inout) :: config
-      integer, optional,    intent(  out) :: rc
+   subroutine import_yaml(this, config, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (.not. allocated(this%groups))      allocate(this%groups)
       if (.not. allocated(this%collections)) allocate(this%collections)
@@ -144,15 +150,18 @@ contains
       _RETURN(_SUCCESS)
    end subroutine import_yaml
 
-   subroutine import_enabled(this, config, rc)
-      class(HistoryConfig), intent(inout) :: this
-      type(Configuration),  intent(inout) :: config
-      integer, optional,    intent(  out) :: rc
+   subroutine import_enabled(this, config, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), allocatable   :: collection_name
       type(ConfigurationIterator) :: iter
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (config%is_sequence()) then
          iter = config%begin()
@@ -171,11 +180,14 @@ contains
       _RETURN(status)
    end subroutine import_enabled
 
-   subroutine finish_import(this, rc)
-      class(HistoryConfig), intent(inout) :: this
-      integer, optional,    intent(  out) :: rc
+   subroutine finish_import(this, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call this%fill_collection_groups(__RC__)
       call this%fill_field_registry(__RC__)
@@ -183,15 +195,18 @@ contains
       _RETURN(_SUCCESS)
    end subroutine finish_import
 
-   subroutine fill_collection_groups(this, rc)
-      class(HistoryConfig), intent(inout) :: this
-      integer, optional,    intent(  out) :: rc
+   subroutine fill_collection_groups(this, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer      :: collection_name
       type(StringVectorIterator) :: iter
       class(Collection), pointer :: collection_entry
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (.not. allocated(this%groups)) allocate(this%groups)
 
@@ -215,15 +230,18 @@ contains
       if (present(rc)) rc = status
    end subroutine fill_collection_groups
 
-   subroutine fill_field_registry(this, rc)
-      class(HistoryConfig), intent(inout) :: this
-      integer, optional,    intent(  out) :: rc
+   subroutine fill_field_registry(this, unusable, rc)
+      class(HistoryConfig),             intent(inout) :: this
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer      :: collection_name
       type(StringVectorIterator) :: iter
       class(Collection), pointer :: collection_entry
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (.not. allocated(this%fields)) allocate(this%fields)
 

@@ -111,16 +111,19 @@ contains
       call this%aux_fields%register(field_registry)
    end subroutine register
 
-   subroutine import_group(this, config, rc)
-      class(Group),        intent(inout) :: this
-      type(Configuration), intent(inout) :: config
-      integer, optional,   intent(  out) :: rc
+   subroutine import_group(this, config, unusable, rc)
+      class(Group),                     intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (.not. allocated(this%fields))     allocate(this%fields)
       if (.not. allocated(this%aux_fields)) allocate(this%aux_fields)

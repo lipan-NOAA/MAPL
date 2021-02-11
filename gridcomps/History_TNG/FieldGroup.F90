@@ -216,16 +216,19 @@ contains
       _RETURN(_SUCCESS)
    end subroutine set_difference
 
-   subroutine import_group(this, config, rc)
-      class(FieldGroup),   intent(inout) :: this
-      type(Configuration), intent(inout) :: config
-      integer, optional,   intent(  out) :: rc
+   subroutine import_group(this, config, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: component_name
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       iter = config%begin()
       do while(iter /= config%end())
@@ -239,17 +242,20 @@ contains
       _RETURN(_SUCCESS)
    end subroutine import_group
 
-   subroutine import_component(this, component_name, config, rc)
-      class(FieldGroup),   intent(inout) :: this
-      character(*),        intent(in   ) :: component_name
-      type(Configuration), intent(inout) :: config
-      integer, optional,   intent(  out) :: rc
+   subroutine import_component(this, component_name, config, unusable, rc)
+      class(FieldGroup),                intent(inout) :: this
+      character(*),                     intent(in   ) :: component_name
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: short_name
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       iter = config%begin()
       do while(iter /= config%end())

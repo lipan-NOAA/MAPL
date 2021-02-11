@@ -34,11 +34,13 @@ module test_HistoryConfig
       procedure :: register
    end type mock_Collection
 contains
-   subroutine fill_groups(this, group_registry, rc)
-      class(mock_Collection), intent(inout) :: this
-      type(GroupRegistry),    intent(in   ) :: group_registry
-      integer, optional,      intent(  out) :: rc
+   subroutine fill_groups(this, group_registry, unusable, rc)
+      class(mock_Collection),           intent(inout) :: this
+      type(GroupRegistry),              intent(in   ) :: group_registry
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
+      _UNUSED_DUMMY(unusable)
       _UNUSED_DUMMY(group_registry)
 
       this%call_fill_groups = this%call_fill_groups + 1

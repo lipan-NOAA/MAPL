@@ -74,16 +74,19 @@ contains
       if (present(rc)) rc = status
    end subroutine insert
 
-   subroutine import_collections(this, config, rc)
-      class(CollectionRegistry), intent(inout) :: this
-      type(Configuration),       intent(inout) :: config
-      integer, optional,         intent(  out) :: rc
+   subroutine import_collections(this, config, unusable, rc)
+      class(CollectionRegistry),        intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       iter = config%begin()
       do while(iter /= config%end())
@@ -97,15 +100,18 @@ contains
       _RETURN(_SUCCESS)
    end subroutine import_collections
 
-   subroutine import_collection(this, name, config, rc)
-      class(CollectionRegistry), intent(inout) :: this
-      character(*),              intent(in   ) :: name
-      type(Configuration),       intent(inout) :: config
-      integer, optional,         intent(  out) :: rc
+   subroutine import_collection(this, name, config, unusable, rc)
+      class(CollectionRegistry),        intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       type(Collection) :: collection_entry
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       call collection_entry%import_collection(name, config, __RC__)
       call this%insert(collection_entry, __RC__)

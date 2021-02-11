@@ -72,12 +72,15 @@ contains
       alias = this%alias_name
    end function get_alias_name
 
-   subroutine set_alias_name(this, alias_name, rc)
-      class(FieldGroupEntry), intent(inout) :: this
-      character(*),           intent(in   ) :: alias_name
-      integer, optional,      intent(  out) :: rc
+   subroutine set_alias_name(this, alias_name, unusable, rc)
+      class(FieldGroupEntry),           intent(inout) :: this
+      character(*),                     intent(in   ) :: alias_name
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       status = 0
 

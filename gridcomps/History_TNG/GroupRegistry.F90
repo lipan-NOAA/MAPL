@@ -72,16 +72,19 @@ contains
       if (present(rc)) rc = status
    end subroutine insert
 
-   subroutine import_groups(this, config, rc)
-      class(GroupRegistry), intent(inout) :: this
-      type(Configuration),  intent(inout) :: config
-      integer, optional,    intent(  out) :: rc
+   subroutine import_groups(this, config, unusable, rc)
+      class(GroupRegistry),             intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer       :: key
       type(ConfigurationIterator) :: iter
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       iter = config%begin()
       do while(iter /= config%end())
@@ -92,21 +95,24 @@ contains
          call iter%next()
       end do
 
-      _RETURN(status)
+      _RETURN(_SUCCESS)
    end subroutine import_groups
 
-   subroutine import_group(this, key, config, rc)
-      class(GroupRegistry), intent(inout) :: this
-      character(*),         intent(in   ) :: key
-      type(Configuration),  intent(inout) :: config
-      integer, optional,    intent(  out) :: rc
+   subroutine import_group(this, key, config, unusable, rc)
+      class(GroupRegistry),             intent(inout) :: this
+      character(*),                     intent(in   ) :: key
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       type(Group) :: group_entry
       integer     :: status
 
+      _UNUSED_DUMMY(unusable)
+
       call group_entry%import_group(config, __RC__)
       call this%insert(key, group_entry, __RC__)
 
-      _RETURN(status)
+      _RETURN(_SUCCESS)
    end subroutine import_group
 end module GroupRegistryMod

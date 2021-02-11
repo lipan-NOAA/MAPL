@@ -112,11 +112,13 @@ contains
       this%call_register = this%call_register + 1
    end subroutine register
 
-   subroutine import_group(this, config, rc)
-      class(mock_FieldGroup), intent(inout) :: this
-      type(Configuration),    intent(inout) :: config
-      integer, optional,      intent(  out) :: rc
+   subroutine import_group(this, config, unusable, rc)
+      class(mock_FieldGroup),           intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
 
+      _UNUSED_DUMMY(unusable)
       _UNUSED_DUMMY(config)
 
       this%call_import_group = this%call_import_group + 1

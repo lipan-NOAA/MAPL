@@ -61,12 +61,15 @@ contains
       collection_name = this%name
    end function get_name
 
-   subroutine set_name(this, name, rc)
-      class(Collection), intent(inout) :: this
-      character(*),      intent(in   ) :: name
-      integer, optional, intent(  out) :: rc
+   subroutine set_name(this, name, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       status = 0
       if (allocated(this%name)) then
@@ -122,12 +125,15 @@ contains
       fields = this%fields
    end function get_fields
 
-   subroutine set_fields(this, fields, rc)
-      class(Collection), intent(inout) :: this
-      class(Group),      intent(in   ) :: fields
-      integer, optional, intent(  out) :: rc
+   subroutine set_fields(this, fields, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      class(Group),                     intent(in   ) :: fields
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       status = 0
       if (allocated(this%fields)) then
@@ -161,11 +167,12 @@ contains
       call this%fields%register(field_registry)
    end subroutine register
 
-   subroutine import_collection(this, name, config, rc)
-      class(Collection),   intent(inout) :: this
-      character(*),        intent(in   ) :: name
-      type(Configuration), intent(inout) :: config
-      integer, optional,   intent(  out) :: rc
+   subroutine import_collection(this, name, config, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      character(*),                     intent(in   ) :: name
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), allocatable   :: config_value
       character(:), pointer       :: key
@@ -173,6 +180,8 @@ contains
       type(Configuration)         :: sub_config
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       this%name = name
 
@@ -204,15 +213,18 @@ contains
       _RETURN(_SUCCESS)
    end subroutine import_collection
 
-   subroutine import_groups(this, config, rc)
-      class(Collection),   intent(inout) :: this
-      type(Configuration), intent(inout) :: config
-      integer, optional,   intent(  out) :: rc
+   subroutine import_groups(this, config, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      type(Configuration),              intent(inout) :: config
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), allocatable   :: group_name
       type(ConfigurationIterator) :: iter
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       if (config%is_sequence()) then
          iter = config%begin()
@@ -228,19 +240,22 @@ contains
          status = 1
       end if
 
-      _RETURN(status)
+      if (present(rc)) rc = status
    end subroutine import_groups
 
-   subroutine fill_groups(this, group_registry, rc)
-      class(Collection),   intent(inout) :: this
-      type(GroupRegistry), intent(in   ) :: group_registry
-      integer, optional,   intent(  out) :: rc
+   subroutine fill_groups(this, group_registry, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      type(GroupRegistry),              intent(in   ) :: group_registry
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
 
       character(:), pointer      :: group_name
       class(Group), pointer      :: group_entry
       type(StringVectorIterator) :: iter
 
       integer :: status
+
+      _UNUSED_DUMMY(unusable)
 
       status = 0
       iter = this%groups%begin()
