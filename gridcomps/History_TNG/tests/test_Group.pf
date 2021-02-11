@@ -89,21 +89,14 @@ contains
       _RETURN(_SUCCESS)
    end subroutine set_difference
 
-   subroutine advertise(this, state, unusable,&
-         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+   subroutine advertise(this, state, unusable, rc)
       class(mock_FieldGroup),           intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
-      character(*),           optional, intent(in   ) :: SharePolicyField
-      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
       _UNUSED_DUMMY(unusable)
       _UNUSED_DUMMY(state)
-      _UNUSED_DUMMY(TransferOfferGeomObject)
-      _UNUSED_DUMMY(SharePolicyField)
-      _UNUSED_DUMMY(SharePolicyGeomObject)
 
       this%call_advertise = this%call_advertise + 1
 

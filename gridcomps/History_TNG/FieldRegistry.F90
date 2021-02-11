@@ -56,14 +56,10 @@ contains
       call this%map%insert(field_entry%standard_name(), field_entry)
    end subroutine insert
 
-   subroutine advertise(this, state, unusable,&
-         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+   subroutine advertise(this, state, unusable, rc)
       class(FieldRegistry),             intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
-      character(*),           optional, intent(in   ) :: SharePolicyField
-      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
       class(FieldEntry), pointer  :: field_entry
@@ -76,11 +72,7 @@ contains
       iter = this%map%begin()
       do while(iter /= this%map%end())
          field_entry => iter%value()
-         call field_entry%advertise(state, &
-            TransferOfferGeomObject=TransferOfferGeomObject, &
-            SharePolicyField=SharePolicyField, &
-            SharePolicyGeomObject=SharePolicyGeomObject, &
-            __RC__)
+         call field_entry%advertise(state, __RC__)
 
          call iter%next()
       end do

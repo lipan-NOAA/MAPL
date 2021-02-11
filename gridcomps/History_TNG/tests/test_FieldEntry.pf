@@ -41,9 +41,9 @@ module test_FieldEntry
       integer :: call_advert   = 0
 
       character(:), allocatable :: advert_name
-      character(:), allocatable :: TransferOfferGeomObject
-      character(:), allocatable :: SharePolicyField
-      character(:), allocatable :: SharePolicyGeomObject
+      character(:), allocatable :: call_TransferOfferGeomObject
+      character(:), allocatable :: call_SharePolicyField
+      character(:), allocatable :: call_SharePolicyGeomObject
    contains
       procedure :: register
       procedure :: NUOPC_advert
@@ -125,9 +125,9 @@ contains
       this%call_advert = this%call_advert + 1
       this%advert_name = standard_name
 
-      if (present(TransferOfferGeomObject)) this%TransferOfferGeomObject = TransferOfferGeomObject
-      if (present(SharePolicyField))        this%SharePolicyField        = SharePolicyField
-      if (present(SharePolicyGeomObject))   this%SharePolicyGeomObject   = SharePolicyGeomObject
+      if (present(TransferOfferGeomObject)) this%call_TransferOfferGeomObject = TransferOfferGeomObject
+      if (present(SharePolicyField))        this%call_SharePolicyField        = SharePolicyField
+      if (present(SharePolicyGeomObject))   this%call_SharePolicyGeomObject   = SharePolicyGeomObject
 
       _RETURN(_SUCCESS)
    end subroutine NUOPC_advert
@@ -348,9 +348,9 @@ contains
       @assert_that(field_entry_no_optional%call_register, is(equal_to(0)))
       @assert_that(field_entry_no_optional%call_advert,   is(equal_to(0)))
       @assert_that(allocated(field_entry_no_optional%advert_name), is(false()))
-      @assert_that(allocated(field_entry_no_optional%TransferOfferGeomObject), is(false()))
-      @assert_that(allocated(field_entry_no_optional%SharePolicyField),        is(false()))
-      @assert_that(allocated(field_entry_no_optional%SharePolicyGeomObject),   is(false()))
+      @assert_that(allocated(field_entry_no_optional%call_TransferOfferGeomObject), is(false()))
+      @assert_that(allocated(field_entry_no_optional%call_SharePolicyField),        is(false()))
+      @assert_that(allocated(field_entry_no_optional%call_SharePolicyGeomObject),   is(false()))
 
       call field_entry_no_optional%advertise(state, rc=status)
       @assert_that(status, is(equal_to(0)))
@@ -358,33 +358,36 @@ contains
       @assert_that(field_entry_no_optional%call_advert,   is(equal_to(1)))
       @assert_that(allocated(field_entry_no_optional%advert_name), is(true()))
       @assert_that(field_entry_no_optional%advert_name == standard_name, is(true()))
-      @assert_that(allocated(field_entry_no_optional%TransferOfferGeomObject), is(false()))
-      @assert_that(allocated(field_entry_no_optional%SharePolicyField),        is(false()))
-      @assert_that(allocated(field_entry_no_optional%SharePolicyGeomObject),   is(false()))
+      @assert_that(allocated(field_entry_no_optional%call_TransferOfferGeomObject), is(true()))
+      @assert_that(allocated(field_entry_no_optional%call_SharePolicyField),        is(true()))
+      @assert_that(allocated(field_entry_no_optional%call_SharePolicyGeomObject),   is(true()))
 
-      call field_entry_optional%initialize(short_name, component_name)
+      @assert_that(field_entry_no_optional%call_TransferOfferGeomObject == default_TransferOfferGeomObject, is(true()))
+      @assert_that(field_entry_no_optional%call_SharePolicyField        == default_SharePolicyField,        is(true()))
+      @assert_that(field_entry_no_optional%call_SharePolicyGeomObject   == default_SharePolicyField,        is(true()))
+
+      call field_entry_optional%initialize(short_name, component_name, &
+         TransferOfferGeomObject='test1', &
+         SharePolicyField='test2',&
+         SharePolicyGeomObject='test3')
       @assert_that(field_entry_optional%call_register, is(equal_to(0)))
       @assert_that(field_entry_optional%call_advert,   is(equal_to(0)))
       @assert_that(allocated(field_entry_optional%advert_name), is(false()))
-      @assert_that(allocated(field_entry_optional%TransferOfferGeomObject), is(false()))
-      @assert_that(allocated(field_entry_optional%SharePolicyField),        is(false()))
-      @assert_that(allocated(field_entry_optional%SharePolicyGeomObject),   is(false()))
+      @assert_that(allocated(field_entry_optional%call_TransferOfferGeomObject), is(false()))
+      @assert_that(allocated(field_entry_optional%call_SharePolicyField),        is(false()))
+      @assert_that(allocated(field_entry_optional%call_SharePolicyGeomObject),   is(false()))
 
-      call field_entry_optional%advertise(state, &
-         TransferOfferGeomObject='test1', &
-         SharePolicyField='test2', &
-         SharePolicyGeomObject='test3',&
-         rc=status)
+      call field_entry_optional%advertise(state, rc=status)
       @assert_that(status, is(equal_to(0)))
       @assert_that(field_entry_optional%call_register, is(equal_to(1)))
       @assert_that(field_entry_optional%call_advert,   is(equal_to(1)))
       @assert_that(allocated(field_entry_optional%advert_name), is(true()))
       @assert_that(field_entry_optional%advert_name == standard_name, is(true()))
-      @assert_that(allocated(field_entry_optional%TransferOfferGeomObject), is(true()))
-      @assert_that(field_entry_optional%TransferOfferGeomObject == 'test1', is(true()))
-      @assert_that(allocated(field_entry_optional%SharePolicyField),        is(true()))
-      @assert_that(field_entry_optional%SharePolicyField == 'test2', is(true()))
-      @assert_that(allocated(field_entry_optional%SharePolicyGeomObject),   is(true()))
-      @assert_that(field_entry_optional%SharePolicyGeomObject == 'test3', is(true()))
+      @assert_that(allocated(field_entry_optional%call_TransferOfferGeomObject), is(true()))
+      @assert_that(allocated(field_entry_optional%call_SharePolicyField),        is(true()))
+      @assert_that(allocated(field_entry_optional%call_SharePolicyGeomObject),   is(true()))
+      @assert_that(field_entry_optional%call_TransferOfferGeomObject == 'test1', is(true()))
+      @assert_that(field_entry_optional%call_SharePolicyField        == 'test2', is(true()))
+      @assert_that(field_entry_optional%call_SharePolicyGeomObject   == 'test3', is(true()))
    end subroutine test_advertise
 end module test_FieldEntry

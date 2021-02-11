@@ -86,31 +86,19 @@ contains
       _RETURN(_SUCCESS)
    end subroutine union
 
-   subroutine advertise(this, state, unusable,&
-         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+   subroutine advertise(this, state, unusable, rc)
       class(Group),                      intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
-      character(*),           optional, intent(in   ) :: SharePolicyField
-      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
-      call this%fields%advertise(state, &
-         TransferOfferGeomObject=TransferOfferGeomObject, &
-         SharePolicyField=SharePolicyField, &
-         SharePolicyGeomObject=SharePolicyGeomObject, &
-         __RC__)
+      call this%fields%advertise(state, __RC__)
 
-      call this%aux_fields%advertise(state, &
-         TransferOfferGeomObject=TransferOfferGeomObject, &
-         SharePolicyField=SharePolicyField, &
-         SharePolicyGeomObject=SharePolicyGeomObject, &
-         __RC__)
+      call this%aux_fields%advertise(state, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine advertise

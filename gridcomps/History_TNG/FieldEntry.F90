@@ -12,14 +12,23 @@ module FieldEntryMod
 
    public :: FieldEntry
    public :: default_units
+   public :: default_TransferOfferGeomObject
+   public :: default_SharePolicyField
 
    character(*), parameter :: default_units = '1'
+
+   character(*), parameter :: default_TransferOfferGeomObject = 'will provide'
+   character(*), parameter :: default_SharePolicyField        = 'not share'
 
    type :: FieldEntry
       private
       character(:), allocatable :: short_name
       character(:), allocatable :: component_name
       character(:), allocatable :: units
+
+      character(:), allocatable :: TransferOfferGeomObject
+      character(:), allocatable :: SharePolicyField
+      character(:), allocatable :: SharePolicyGeomObject
    contains
       procedure :: initialize
 
@@ -44,12 +53,16 @@ module FieldEntryMod
       procedure :: advertise
    end type FieldEntry
 contains
-   subroutine initialize(this, short_name, component_name, unusable, units)
+   subroutine initialize(this, short_name, component_name, unusable, &
+         units, TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject)
       class(FieldEntry),                intent(  out) :: this
       character(*),                     intent(in   ) :: short_name
       character(*),                     intent(in   ) :: component_name
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       character(*),           optional, intent(in   ) :: units
+      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
+      character(*),           optional, intent(in   ) :: SharePolicyField
+      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
 
       _UNUSED_DUMMY(unusable)
 
@@ -60,6 +73,24 @@ contains
          this%units = units
       else
          this%units = default_units
+      end if
+
+      if (present(TransferOfferGeomObject)) then
+         this%TransferOfferGeomObject = TransferOfferGeomObject
+      else
+         this%TransferOfferGeomObject = default_TransferOfferGeomObject
+      end if
+
+      if (present(SharePolicyField)) then
+         this%SharePolicyField = SharePolicyField
+      else
+         this%SharePolicyField = default_SharePolicyField
+      end if
+
+      if (present(SharePolicyGeomObject)) then
+         this%SharePolicyGeomObject = SharePolicyGeomObject
+      else
+         this%SharePolicyGeomObject = this%SharePolicyField
       end if
    end subroutine initialize
 
@@ -214,14 +245,10 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_advert
 
-   subroutine advertise(this, state, unusable,&
-         TransferOfferGeomObject, SharePolicyField, SharePolicyGeomObject, rc)
+   subroutine advertise(this, state, unusable, rc)
       class(FieldEntry),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
-      character(*),           optional, intent(in   ) :: TransferOfferGeomObject
-      character(*),           optional, intent(in   ) :: SharePolicyField
-      character(*),           optional, intent(in   ) :: SharePolicyGeomObject
       integer,                optional, intent(  out) :: rc
 
       integer :: status
@@ -231,9 +258,9 @@ contains
       call this%register(__RC__)
 
       call this%NUOPC_advert(state, this%standard_name(),&
-         TransferOfferGeomObject=TransferOfferGeomObject, &
-         SharePolicyField=SharePolicyField, &
-         SharePolicyGeomObject=SharePolicyGeomObject, &
+         TransferOfferGeomObject=this%TransferOfferGeomObject, &
+         SharePolicyField=this%SharePolicyField, &
+         SharePolicyGeomObject=this%SharePolicyGeomObject, &
          __RC__)
 
       _RETURN(_SUCCESS)
