@@ -17,12 +17,12 @@ set (TEST_SRCS
 add_library (history_tng_extras
   MAPL_Initialize.F90
   )
-target_link_libraries (history_tng_extras MAPL.shared MAPL_pFUnit
+target_link_libraries (history_tng_extras MAPL.shared MAPL.pfunit
                                    esmf NetCDF::NetCDF_Fortran)
 
 add_pfunit_ctest(History_TNG_tests.x
         TEST_SOURCES ${TEST_SRCS}
-        LINK_LIBRARIES MAPL MAPL.pfio history_tng_extras MAPL_pFUnit MAPL.history_tng
+        LINK_LIBRARIES MAPL MAPL.pfio history_tng_extras MAPL.pfunit MAPL.history_tng
         EXTRA_INITIALIZE Initialize
         EXTRA_USE MAPL_pFUnit_Initialize
         MAX_PES 4
