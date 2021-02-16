@@ -22,10 +22,12 @@ set (srcs
     SimpleCommSplitter.F90
     sort.c
     MAPL_ExceptionHandling.F90
-
     String.F90
+    Enumerators.F90
+    MaplShared.F90
+    TimeUtils.F90
   )
-esma_add_library (${this} SRCS ${srcs} DEPENDENCIES gftl-shared MPI::MPI_Fortran pflogger)
+esma_add_library (${this} SRCS ${srcs} DEPENDENCIES gftl-shared MPI::MPI_Fortran pflogger TYPE SHARED)
 target_include_directories (${this} PUBLIC
           $<BUILD_INTERFACE:${MAPL_SOURCE_DIR}/include>)
 
