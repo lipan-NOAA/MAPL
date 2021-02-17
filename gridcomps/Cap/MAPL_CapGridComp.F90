@@ -61,6 +61,8 @@ module MAPL_CapGridCompMod
      procedure :: set_services
      procedure :: initialize
      procedure :: initialize_extdata
+     procedure :: initialize_extdata_exports
+     procedure :: initialize_extdata_imports
      procedure :: initialize_history
      procedure :: run
      procedure :: step
@@ -669,24 +671,44 @@ contains
 
   subroutine initialize_extdata(cap , rc)
     class(MAPL_CapGridComp), intent(inout) :: cap
-    integer, optional, intent(out) :: rc
-    integer :: item_count, status
-    type (ESMF_StateItem_Flag), pointer   :: item_types(:)
-    character(len=ESMF_MAXSTR ), pointer  :: item_names(:)
-    type(ESMF_Field) :: field
-    type(ESMF_FieldBundle) :: bundle
-    type(StringVector) :: cap_imports_vec, cap_exports_vec
-    type(StringVectorIterator) :: iter
-    integer :: i
-    type(ESMF_State) :: state, root_imports, component_state
-    character(len=:), allocatable :: component_name, field_name
+    integer, optional,       intent(  out) :: rc
+
+    integer :: status
 
     ! Prepare EXPORTS for ExtData
     ! ---------------------------
-    cap_imports_vec = get_vec_from_config(cap%config, "CAP_IMPORTS")
+
+    call cap%initialize_extdata_exports(rc=status)
+    _VERIFY(status)
+    call cap%initialize_extdata_imports(rc=status)
+    _VERIFY(status)
+
+    ! Initialize the ExtData
+    !------------------------
+
+    call ESMF_GridCompInitialize (cap%gcs(cap%extdata_id), importState = cap%child_imports(cap%extdata_id), &
+         exportState = cap%child_exports(cap%extdata_id), & 
+         clock = cap%clock, userRc = status)
+    _VERIFY(status)
+
+    _RETURN(ESMF_SUCCESS)
+
+  end subroutine initialize_extdata
+
+  subroutine initialize_extdata_exports(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    type(StringVector)            :: cap_exports_vec
+    type(StringVectorIterator)    :: iter
+    character(len=:), allocatable :: component_name, field_name
+    type(ESMF_Field)              :: field
+    type(ESMF_State)              :: component_state
+
+    integer ::  status
+
     cap_exports_vec = get_vec_from_config(cap%config, "CAP_EXPORTS")
 
-    cap%import_state = ESMF_StateCreate(name = "Cap_Imports", stateintent = ESMF_STATEINTENT_IMPORT)
     cap%export_state = ESMF_StateCreate(name = "Cap_Exports", stateintent = ESMF_STATEINTENT_EXPORT)
 
     if (cap_exports_vec%size() /= 0) then
@@ -712,6 +734,28 @@ contains
        end do
     end if
 
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_exports
+
+  subroutine initialize_extdata_imports(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    type(StringVector) :: cap_imports_vec
+    integer            :: item_count, i
+
+    character(len=ESMF_MAXSTR ), pointer :: item_names(:)
+    type(ESMF_StateItem_Flag),   pointer :: item_types(:)
+
+    type(ESMF_State)       :: state, root_imports
+    type(ESMF_Field)       :: field
+    type(ESMF_FieldBundle) :: bundle
+
+    integer :: status
+
+    cap_imports_vec = get_vec_from_config(cap%config, "CAP_IMPORTS")
+
+    cap%import_state = ESMF_StateCreate(name = "Cap_Imports", stateintent = ESMF_STATEINTENT_IMPORT)
 
     call ESMF_StateGet(cap%child_imports(cap%root_id), itemcount = item_count, rc = status)
     _VERIFY(status)
@@ -748,19 +792,9 @@ contains
     deallocate(item_types)
     deallocate(item_names)
 
-    ! Initialize the ExtData
-    !------------------------
-
-    call ESMF_GridCompInitialize (cap%gcs(cap%extdata_id), importState = cap%child_imports(cap%extdata_id), &
-         exportState = cap%child_exports(cap%extdata_id), & 
-         clock = cap%clock, userRc = status)
-    _VERIFY(status)
-
     _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_imports
 
-  end subroutine initialize_extdata
-  
-  
   subroutine run_gc(gc, import, export, clock, rc)
     !ARGUMENTS:
     type(ESMF_GridComp) :: GC     ! Gridded component 
