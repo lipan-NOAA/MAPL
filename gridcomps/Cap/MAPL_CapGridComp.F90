@@ -61,6 +61,7 @@ module MAPL_CapGridCompMod
      procedure :: set_services
      procedure :: initialize
      procedure :: initialize_extdata
+     procedure :: initialize_nuopc_export
      procedure :: initialize_extdata_exports
      procedure :: initialize_extdata_imports
      procedure :: initialize_history
@@ -695,6 +696,47 @@ contains
 
   end subroutine initialize_extdata
 
+  function get_vec_from_config(config, key) result(vec)
+    type(ESMF_Config), intent(inout) :: config
+    character(len=*), intent(in) :: key
+    logical :: is_present
+    integer :: status, rc
+    character(len=ESMF_MAXSTR) :: cap_import
+    type(StringVector) :: vec
+
+    call ESMF_ConfigFindLabel(config, key//":", isPresent = is_present, rc = status)
+    _VERIFY(status)
+
+    cap_import = ""
+    if (is_present) then
+       do while(trim(cap_import) /= "::")
+          call ESMF_ConfigNextLine(config, rc = status)
+          _VERIFY(status)
+          call ESMF_ConfigGetAttribute(config, cap_import, rc = status)
+          _VERIFY(status)
+          if (trim(cap_import) /= "::") call vec%push_back(trim(cap_import))
+       end do
+    end if
+  end function get_vec_from_config
+
+  subroutine initialize_nuopc_export(cap, component_name, field_name, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    character(*),            intent(in   ) :: component_name
+    character(*),            intent(in   ) :: field_name
+    integer, optional,       intent(  out) :: rc
+
+    type(ESMF_Field) :: field
+    type(ESMF_State) :: state
+
+    integer :: status
+
+    call MAPL_ExportStateGet([cap%child_exports(cap%root_id)], component_name, state, __RC__)
+    call ESMF_StateGet(state, trim(field_name), field, __RC__)
+    call MAPL_StateAdd(cap%export_state, field, __RC__)
+
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_nuopc_export
+
   subroutine initialize_extdata_exports(cap, rc)
     class(MAPL_CapGridComp), intent(inout) :: cap
     integer, optional,       intent(  out) :: rc
@@ -711,31 +753,42 @@ contains
 
     cap%export_state = ESMF_StateCreate(name = "Cap_Exports", stateintent = ESMF_STATEINTENT_EXPORT)
 
-    if (cap_exports_vec%size() /= 0) then
-       iter = cap_exports_vec%begin()
-       do while(iter /= cap_exports_vec%end())
-          component_name = iter%get()
-          component_name = trim(component_name(index(component_name, ",")+1:))
+    iter = cap_exports_vec%begin()
+    do while(iter /= cap_exports_vec%end())
+       component_name = iter%get()
+       component_name = trim(component_name(index(component_name, ",")+1:))
 
-          field_name = iter%get()
-          field_name = trim(field_name(1:index(field_name, ",")-1))
+       field_name = iter%get()
+       field_name = trim(field_name(1:index(field_name, ",")-1))
 
-          call MAPL_ExportStateGet([cap%child_exports(cap%root_id)], component_name, &
-               component_state, status)
-          _VERIFY(status)
+       call cap%initialize_nuopc_export(component_name, field_name, __RC__)
 
-          call ESMF_StateGet(component_state, trim(field_name), field, rc = status)
-          _VERIFY(status)
-
-          call MAPL_StateAdd(cap%export_state, field, rc = status)
-          _VERIFY(status)
-
-          call iter%next()
-       end do
-    end if
+       call iter%next()
+    end do
 
     _RETURN(ESMF_SUCCESS)
   end subroutine initialize_extdata_exports
+
+  logical function vector_contains_str(vector, string)
+    type(StringVector), intent(in) :: vector
+    character(len=*),   intent(in) :: string
+
+    logical                    :: contains_str
+    type(StringVectorIterator) :: iter
+
+    contains_str = .false.
+
+    iter = vector%begin()
+    do while (iter /= vector%end())
+       if (trim(string) == iter%get()) then
+          contains_str = .true.
+          exit
+       end if
+       call iter%next()
+    end do
+
+    vector_contains_str = contains_str
+  end function vector_contains_str
 
   subroutine initialize_extdata_imports(cap, rc)
     class(MAPL_CapGridComp), intent(inout) :: cap
@@ -1022,53 +1075,6 @@ contains
   end function get_CapGridComp_from_gc
 
   
-  
-  function get_vec_from_config(config, key) result(vec)
-    type(ESMF_Config), intent(inout) :: config
-    character(len=*), intent(in) :: key
-    logical :: present
-    integer :: status, rc
-    character(len=ESMF_MAXSTR) :: cap_import
-    type(StringVector) :: vec
-    
-    call ESMF_ConfigFindLabel(config, key//":", isPresent = present, rc = status)
-    _VERIFY(status)
-
-    cap_import = ""
-    if (present) then
-       
-       do while(trim(cap_import) /= "::")
-          call ESMF_ConfigNextLine(config, rc = status)
-          _VERIFY(status)
-          call ESMF_ConfigGetAttribute(config, cap_import, rc = status)
-          _VERIFY(status)
-          if (trim(cap_import) /= "::") call vec%push_back(trim(cap_import))
-       end do
-    end if
-       
-  end function get_vec_from_config
-
-  
-  logical function vector_contains_str(vector, string)
-    type(StringVector), intent(in) :: vector
-    character(len=*), intent(in) :: string
-    type(StringVectorIterator) :: iter
-
-    iter = vector%begin()
-
-    vector_contains_str = .false.
-
-    if (vector%size() /= 0) then
-       do while (iter /= vector%end())
-          if (trim(string) == iter%get()) then
-             vector_contains_str = .true.
-             return
-          end if
-          call iter%next()
-       end do
-    end if
-
-  end function vector_contains_str
 
   
   subroutine run_MAPL_GridComp(gc, rc)
