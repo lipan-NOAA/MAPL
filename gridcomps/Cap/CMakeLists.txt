@@ -4,9 +4,12 @@ set (srcs
      MAPL_Cap.F90
      MAPL_CapGridComp.F90
      MAPL_NUOPCWrapperMod.F90
+
+     HistoryCap.F90
+     NUOPC_HistoryCap.F90
     )
 
-esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.profiler MAPL.history TYPE SHARED)
+esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.profiler MAPL.history MAPL.history_tng TYPE SHARED)
 target_link_libraries (${this} PUBLIC gftl gftl-shared esmf NetCDF::NetCDF_Fortran
                                PRIVATE MPI::MPI_Fortran)
 # CMake has an OpenMP issue with Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280

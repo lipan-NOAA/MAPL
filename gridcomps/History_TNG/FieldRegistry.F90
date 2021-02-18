@@ -5,6 +5,7 @@ module FieldRegistryMod
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
+   use gFTL_StringVector
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
@@ -24,6 +25,8 @@ module FieldRegistryMod
       procedure :: count
       procedure :: at
       procedure :: insert
+
+      procedure :: get_map
 
       procedure :: advertise
    end type FieldRegistry
@@ -55,6 +58,13 @@ contains
 
       call this%map%insert(field_entry%standard_name(), field_entry)
    end subroutine insert
+
+   function get_map(this) result(map)
+      type(FieldEntryMap) :: map
+      class(FieldRegistry), intent(inout) :: this
+
+      map = this%map
+   end function get_map
 
    subroutine advertise(this, state, unusable, rc)
       class(FieldRegistry),             intent(inout) :: this

@@ -29,6 +29,10 @@ module MAPL_CapGridCompMod
   use pflogger, only: logging, Logger
   use MAPL_TimeUtilsMod, only: is_valid_time, is_valid_date
 
+  use FieldEntryMod
+  use FieldEntryMapMod
+  use FieldRegistryMod
+
   use iso_fortran_env
   
   implicit none
@@ -57,11 +61,16 @@ module MAPL_CapGridCompMod
      type(ESMF_Alarm), allocatable :: alarm_list(:)
      type(ESMF_Time),  allocatable :: AlarmRingTime(:)
      logical,          allocatable :: ringingState(:)
+
+     type(FieldRegistry), allocatable :: export_field_registry
+     type(FieldRegistry), allocatable :: import_field_registry
    contains
      procedure :: set_services
      procedure :: initialize
      procedure :: initialize_extdata
      procedure :: initialize_nuopc_export
+     procedure :: initialize_extdata_exports_cap_rc
+     procedure :: initialize_extdata_exports_registry
      procedure :: initialize_extdata_exports
      procedure :: initialize_extdata_imports
      procedure :: initialize_history
@@ -94,23 +103,39 @@ module MAPL_CapGridCompMod
 contains
 
   
-   subroutine MAPL_CapGridCompCreate(cap, root_set_services, cap_rc, name, final_file)
+   subroutine MAPL_CapGridCompCreate(cap, root_set_services, cap_rc, name, final_file, &
+         unusable, import_field_registry, export_field_registry)
       use mapl_StubComponent
     type(MAPL_CapGridComp), intent(out), target :: cap
     procedure() :: root_set_services
     character(*), intent(in) :: cap_rc, name
     character(len=*), optional, intent(in) :: final_file
 
+    class(KeywordEnforcer), optional, intent(in) :: unusable
+    type(FieldRegistry),    optional, intent(in) :: import_field_registry
+    type(FieldRegistry),    optional, intent(in) :: export_field_registry
+
+
     type(MAPL_CapGridComp_Wrapper) :: cap_wrapper
     type(MAPL_MetaComp), pointer :: meta => null()
     integer :: status, rc
     character(*), parameter :: cap_name = "CAP"
     type(StubComponent) :: stub_component
+
+    _UNUSED_DUMMY(unusable)
     
     cap%cap_rc_file = cap_rc
     cap%root_set_services => root_set_services
     if (present(final_file)) then
        allocate(cap%final_file, source=final_file)
+    end if
+
+    if (present(import_field_registry)) then
+       cap%import_field_registry = import_field_registry
+    end if
+
+    if (present(export_field_registry)) then
+       cap%export_field_registry = export_field_registry
     end if
 
     cap%config = ESMF_ConfigCreate(rc=status)
@@ -737,7 +762,7 @@ contains
     _RETURN(ESMF_SUCCESS)
   end subroutine initialize_nuopc_export
 
-  subroutine initialize_extdata_exports(cap, rc)
+  subroutine initialize_extdata_exports_cap_rc(cap, rc)
     class(MAPL_CapGridComp), intent(inout) :: cap
     integer, optional,       intent(  out) :: rc
 
@@ -765,6 +790,48 @@ contains
 
        call iter%next()
     end do
+
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_exports_cap_rc
+
+  subroutine initialize_extdata_exports_registry(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    type(FieldEntryMap)         :: map
+    type(FieldEntryMapIterator) :: iter
+    type(FieldEntry), pointer   :: field_entry
+    character(:), allocatable   :: component_name
+    character(:), allocatable   :: field_name
+
+    integer ::  status
+
+    map = cap%export_field_registry%get_map()
+    iter = map%begin()
+    do while(iter /= map%end())
+      field_entry => iter%value()
+
+      component_name = field_entry%get_component_name()
+      field_name     = field_entry%get_short_name()
+
+      call cap%initialize_nuopc_export(component_name, field_name, __RC__)
+      call iter%next()
+    end do
+
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_exports_registry
+
+  subroutine initialize_extdata_exports(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    integer ::  status
+
+    if (allocated(cap%export_field_registry)) then
+       call cap%initialize_extdata_exports_registry(__RC__)
+    else
+       call cap%initialize_extdata_exports_cap_rc(__RC__)
+    end if
 
     _RETURN(ESMF_SUCCESS)
   end subroutine initialize_extdata_exports
