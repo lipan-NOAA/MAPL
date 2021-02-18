@@ -72,6 +72,8 @@ module MAPL_CapGridCompMod
      procedure :: initialize_extdata_exports_cap_rc
      procedure :: initialize_extdata_exports_registry
      procedure :: initialize_extdata_exports
+     procedure :: initialize_extdata_imports_cap_rc
+     procedure :: initialize_extdata_imports_registry
      procedure :: initialize_extdata_imports
      procedure :: initialize_history
      procedure :: run
@@ -806,6 +808,8 @@ contains
 
     integer ::  status
 
+    cap%export_state = ESMF_StateCreate(name = "Cap_Exports", stateintent = ESMF_STATEINTENT_EXPORT)
+
     map = cap%export_field_registry%get_map()
     iter = map%begin()
     do while(iter /= map%end())
@@ -857,7 +861,7 @@ contains
     vector_contains_str = contains_str
   end function vector_contains_str
 
-  subroutine initialize_extdata_imports(cap, rc)
+  subroutine initialize_extdata_imports_cap_rc(cap, rc)
     class(MAPL_CapGridComp), intent(inout) :: cap
     integer, optional,       intent(  out) :: rc
 
@@ -911,6 +915,77 @@ contains
 
     deallocate(item_types)
     deallocate(item_names)
+
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_imports_cap_rc
+
+  subroutine initialize_extdata_imports_registry(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    type(StringVector) :: cap_imports_vec
+    integer            :: item_count, i
+
+    character(len=ESMF_MAXSTR ), pointer :: item_names(:)
+    type(ESMF_StateItem_Flag),   pointer :: item_types(:)
+
+    type(ESMF_State)       :: state, root_imports
+    type(ESMF_Field)       :: field
+    type(ESMF_FieldBundle) :: bundle
+
+    integer :: status
+
+    cap%import_state = ESMF_StateCreate(name = "Cap_Imports", stateintent = ESMF_STATEINTENT_IMPORT)
+
+    call ESMF_StateGet(cap%child_imports(cap%root_id), itemcount = item_count, rc = status)
+    _VERIFY(status)
+    allocate(item_names(item_count), stat = status)
+    _VERIFY(status)
+    allocate(item_types(item_count), stat = status)
+    _VERIFY(status)
+
+    call ESMF_StateGet(cap%child_imports(cap%root_id), itemnamelist = item_names, &
+         itemtypelist = item_types, rc = status)
+    _VERIFY(status)
+
+    root_imports = cap%child_imports(cap%root_id)
+    do i = 1, item_count
+       if (cap%import_field_registry%contains_short_name(item_names(i))) then
+          state = cap%import_state
+       else
+          state = cap%child_exports(cap%extdata_id)
+       end if
+
+       if (item_types(i) == ESMF_StateItem_Field) then
+          call ESMF_StateGet(root_imports, item_names(i), field, rc = status)
+          _VERIFY(status)
+          call MAPL_StateAdd(state, field, rc = status)
+          _VERIFY(status)
+       else if (item_types(i) == ESMF_StateItem_FieldBundle) then
+          call ESMF_StateGet(root_imports, item_names(i), bundle, rc = status)
+          _VERIFY(status)
+          call MAPL_StateAdd(state, bundle, rc = status)
+          _VERIFY(status)
+       end if
+    end do
+
+    deallocate(item_types)
+    deallocate(item_names)
+
+    _RETURN(ESMF_SUCCESS)
+  end subroutine initialize_extdata_imports_registry
+
+  subroutine initialize_extdata_imports(cap, rc)
+    class(MAPL_CapGridComp), intent(inout) :: cap
+    integer, optional,       intent(  out) :: rc
+
+    integer :: status
+
+    if (allocated(cap%import_field_registry)) then
+       call cap%initialize_extdata_imports_registry(__RC__)
+    else
+       call cap%initialize_extdata_imports_cap_rc(__RC__)
+    end if
 
     _RETURN(ESMF_SUCCESS)
   end subroutine initialize_extdata_imports

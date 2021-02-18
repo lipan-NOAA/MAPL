@@ -29,6 +29,8 @@ module FieldRegistryMod
       procedure :: get_map
 
       procedure :: advertise
+
+      procedure :: contains_short_name
    end type FieldRegistry
 contains
    integer(kind=INT64) function size(this)
@@ -89,4 +91,28 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   logical function contains_short_name(this, short_name)
+      class(FieldRegistry), intent(in) :: this
+      character(*),         intent(in) :: short_name
+
+      logical                     :: found
+      class(FieldEntry), pointer  :: field_entry
+      type(FieldEntryMapIterator) :: iter
+
+      found = .false.
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry => iter%value()
+
+         if (short_name == field_entry%get_short_name()) then
+            found = .true.
+            exit
+         end if
+         call iter%next()
+      end do
+
+      contains_short_name = found
+   end function contains_short_name
 end module FieldRegistryMod
