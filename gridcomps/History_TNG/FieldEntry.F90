@@ -4,6 +4,7 @@
 module FieldEntryMod
    use ESMF
    use NUOPC
+   use MAPL_BaseMod
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
 
@@ -51,6 +52,10 @@ module FieldEntryMod
 
       procedure :: NUOPC_advert
       procedure :: advertise
+
+      procedure :: NUOPC_real
+      procedure :: get_field_from_state
+      procedure :: realize
    end type FieldEntry
 contains
    subroutine initialize(this, short_name, component_name, unusable, &
@@ -235,6 +240,9 @@ contains
 
       integer :: status
 
+      _UNUSED_DUMMY(this)
+      _UNUSED_DUMMY(unusable)
+
       call NUOPC_Advertise(state, standard_name, &
          TransferOfferGeomObject=TransferOfferGeomObject, &
          SharePolicyField=SharePolicyField, &
@@ -265,4 +273,79 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   subroutine NUOPC_real(this, state, field, unusable, rc)
+      class(FieldEntry),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      type(ESMF_Field),                 intent(in   ) :: field
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      _UNUSED_DUMMY(this)
+      _UNUSED_DUMMY(unusable)
+
+      call NUOPC_Realize(state, field, rc=status)
+      VERIFY_NUOPC_(status)
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_real
+
+   subroutine get_field_from_state(this, state, field, unusable, rc)
+      class(FieldEntry),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      type(ESMF_Field),                 intent(  out) :: field
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      type(ESMF_StateItem_Flag) :: item_type
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      call ESMF_StateGet(state, this%short_name, itemType=item_type, __RC__)
+
+      if (item_type == ESMF_STATEITEM_FIELD) then
+         call ESMF_StateGet(state, this%short_name, field, __RC__)
+         call ESMF_FieldValidate(field, __RC__)
+      else
+         ! This field entry is not found
+         _VERIFY(1)
+      end if
+
+      _RETURN(_SUCCESS)
+   end subroutine get_field_from_state
+
+   subroutine realize(this, state, unusable, rc)
+      class(FieldEntry),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      type(ESMF_StateIntent_Flag) :: state_intent
+      type(ESMF_Field)            :: field
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      call ESMF_StateGet(state, stateIntent=state_intent, __RC__)
+
+      if (state_intent == ESMF_STATEINTENT_EXPORT) then
+         call this%get_field_from_state(state, field, __RC__)
+         call MAPL_AllocateCoupling(field, status)
+         _VERIFY(status)
+         call this%NUOPC_real(state, field, __RC__)
+      else if (state_intent == ESMF_STATEINTENT_IMPORT) then
+         call this%get_field_from_state(state, field, __RC__)
+         call this%NUOPC_real(state, field, __RC__)
+      else
+         ! This should only be run on an import or export state
+         _VERIFY(1)
+      end if
+
+      _RETURN(_SUCCESS)
+   end subroutine realize
 end module FieldEntryMod

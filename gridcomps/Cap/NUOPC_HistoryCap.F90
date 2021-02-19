@@ -124,6 +124,21 @@ contains
       VERIFY_NUOPC_(rc)
    end subroutine advertise
 
+   subroutine realize(model, rc)
+      type(ESMF_GridComp)  :: model
+      integer, intent(out) :: rc
+
+      type(HistoryCap), pointer :: cap
+
+      rc = ESMF_SUCCESS
+
+      cap => get_HistoryCap(model, rc)
+      VERIFY_NUOPC_(rc)
+
+      call cap%realize(model, rc)
+      VERIFY_NUOPC_(rc)
+   end subroutine realize
+
    subroutine initialize_data(model, rc)
       type(ESMF_GridComp)  :: model
       integer, intent(out) :: rc

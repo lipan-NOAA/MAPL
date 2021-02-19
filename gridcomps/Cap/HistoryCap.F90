@@ -30,6 +30,7 @@ module HistoryCapMod
       procedure :: init_p0
       procedure :: generic_init
       procedure :: advertise
+      procedure :: realize
       procedure :: data_init
       procedure :: advance
       procedure :: check_import
@@ -62,6 +63,7 @@ contains
       VERIFY_NUOPC_(rc)
 
       ! TODO: Implement rest
+      ! See lines 144-192 in MAPL_NUOPCwrapperMod.F90
    end subroutine init_p0
 
    subroutine generic_init(this, model, import_state, export_state, clock, rc)
@@ -124,9 +126,27 @@ contains
       call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
       VERIFY_NUOPC_(rc)
 
+      ! Advertise the GEOS fields as exports for History to recieve
       call this%registry%advertise(export_state, rc=rc)
       VERIFY_NUOPC_(rc)
    end subroutine advertise
+
+   subroutine realize(this, model, rc)
+      class(HistoryCap),  intent(inout) :: this
+      type(ESMF_GridComp)               :: model
+      integer,            intent(  out) :: rc
+
+      type(ESMF_State) :: import_state
+      type(ESMF_State) :: export_state
+
+      rc = ESMF_SUCCESS
+
+      call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
+      VERIFY_NUOPC_(rc)
+
+      ! call this%registry%realize(export_state, rc=rc)
+      ! VERIFY_NUOPC_(rc)
+   end subroutine realize
 
    subroutine data_init(this, model, rc)
       class(HistoryCap),  intent(inout) :: this
