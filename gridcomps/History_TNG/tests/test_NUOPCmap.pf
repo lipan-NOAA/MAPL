@@ -110,15 +110,7 @@ contains
       case(phase_label_list(1))
          phase_index = 100
       case(phase_label_list(2))
-         phase_index = 200
-      case(phase_label_list(3))
-         phase_index = 300
-      case(phase_label_list(4))
          phase_index = 400
-      case(phase_label_list(5))
-         phase_index = 500
-      case(phase_label_list(6))
-         phase_index = 600
       case default
          status = 1
       end select

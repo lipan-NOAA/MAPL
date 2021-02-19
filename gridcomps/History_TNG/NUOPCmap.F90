@@ -15,15 +15,11 @@ module NUOPCmapMod
 
    public NUOPCmap
 
-   integer, parameter :: num_phases = 6
+   integer, parameter :: num_phases = 2
    character(len=*), dimension(num_phases), parameter :: &
          phase_label_list = [&
                "IPDv05p1", &
-               "IPDv05p2", &
-               "IPDv05p3", &
-               "IPDv05p4", &
-               "IPDv05p5", &
-               "IPDv05p6" &
+               "IPDv05p4"  &
          ]
 
    type :: NUOPCmap

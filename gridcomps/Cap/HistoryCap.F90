@@ -6,6 +6,8 @@ module HistoryCapMod
    use ESMF
    use NUOPC
    use NUOPC_Model
+   use MAPL_ExceptionHandling
+   use MAPL_CapOptionsMod
    use MAPL_CapMod
 
    use FieldRegistryMod
@@ -23,6 +25,8 @@ module HistoryCapMod
       character(len=:), allocatable              :: rc_file
       procedure(i_set_services), nopass, pointer :: set_services
       type(MAPL_Cap), pointer                    :: cap => null()
+
+      ! TODO: eliminate once we can use ESMF 8.1.0 specialize labels
       type(NUOPCmap), pointer                    :: phase_map => null()
 
       type(FieldRegistry) :: registry
@@ -46,6 +50,50 @@ module HistoryCapMod
       end subroutine i_set_services
    end interface
 contains
+   subroutine initialize(this, model, name, root_rc, set_services, registry, rc)
+      class(HistoryCap),                  intent(  out) :: this
+      type(ESMF_GridComp),                intent(inout) :: model
+      character(*),                       intent(in   ) :: name
+      character(*),                       intent(in   ) :: root_rc
+      procedure(i_set_services), pointer, intent(in   ) :: set_services
+      type(FieldRegistry),                intent(in   ) :: registry
+      integer, optional,                  intent(  out) :: rc
+
+      integer                 :: mpi_comm, dup_comm
+      type(ESMF_VM)           :: vm
+      type(MAPL_CapOptions)   :: cap_options
+      type(MAPL_Cap), pointer :: cap
+
+      integer :: status
+
+      this%name         =  name
+      this%rc_file      =  root_rc
+      this%set_services => set_services
+      this%registry     =  registry
+
+      ! Read ESMF VM information
+      call ESMF_GridCompGet(model, vm=vm, __RC__)
+      call ESMF_VMGet(vm, mpiCommunicator=mpi_comm, __RC__)
+      call MPI_Comm_dup(mpi_comm, dup_comm, status)
+      _VERIFY(status)
+
+      cap_options                = MAPL_CapOptions(cap_rc_file=this%rc_file, __RC__)
+      cap_options%use_comm_world = .false.
+      cap_options%comm           = dup_comm
+
+      ! TODO: this may need to be updated
+      cap_options%logging_config = ''
+
+      call MPI_Comm_size(dup_comm, cap_options%npes_model, status)
+      _VERIFY(status)
+
+      allocate(cap)
+      cap = MAPL_Cap(this%name, this%set_services, cap_options=cap_options, __RC__)
+      this%cap => cap
+
+      _RETURN(_SUCCESS)
+   end subroutine initialize
+
    subroutine init_p0(this, model, import_state, export_state, clock, rc)
       class(HistoryCap),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
@@ -66,6 +114,7 @@ contains
       ! See lines 144-192 in MAPL_NUOPCwrapperMod.F90
    end subroutine init_p0
 
+   ! TODO: eliminate generic_init in favor of using ESMF 8.1.0 specialize labels
    subroutine generic_init(this, model, import_state, export_state, clock, rc)
       class(HistoryCap),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
@@ -85,32 +134,15 @@ contains
       call this%phase_map%get_phase(current_phase_index, phase_label, rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement these
-      ! select case(phase_label)
-      ! case (phase_label_list(1))
-      !    call this%init_p1(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
+      select case(phase_label)
+      case (phase_label_list(1))
+         call this%advertise(model, rc)
+         VERIFY_NUOPC_(rc)
 
-      ! case (phase_label_list(2))
-      !    call this%init_p2(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
-
-      ! case (phase_label_list(3))
-      !    call this%init_p3(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
-
-      ! case (phase_label_list(4))
-      !    call this%init_p4(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
-
-      ! case (phase_label_list(5))
-      !    call this%init_p5(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
-
-      ! case (phase_label_list(6))
-      !    call this%init_p6(import_state, export_state, clock, rc)
-      !    VERIFY_NUOPC_(rc)
-      ! end select
+      case (phase_label_list(2))
+         call this%realize(model, rc)
+         VERIFY_NUOPC_(rc)
+      end select
    end subroutine generic_init
 
    subroutine advertise(this, model, rc)

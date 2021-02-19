@@ -41,6 +41,7 @@ contains
          userRoutine=initialize_p0, phase=0, rc=rc)
       VERIFY_NUOPC_(rc)
 
+      ! TODO: eliminate entry point once we can use ESMF 8.1.0 specialize labels
       ! set entry point for methods that require specific implementation
       do i=1, num_phases
          call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
