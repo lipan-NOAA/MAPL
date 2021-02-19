@@ -274,6 +274,8 @@ contains
       _RETURN(_SUCCESS)
    end subroutine advertise
 
+   ! TODO: unit tests for realize
+
    subroutine NUOPC_real(this, state, field, unusable, rc)
       class(FieldEntry),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state

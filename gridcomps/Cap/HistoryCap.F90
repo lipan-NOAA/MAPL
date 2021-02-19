@@ -126,7 +126,7 @@ contains
       call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
       VERIFY_NUOPC_(rc)
 
-      ! Advertise the GEOS fields as exports for History to recieve
+      ! Advertise the GEOS fields as exports for History to receive
       call this%registry%advertise(export_state, rc=rc)
       VERIFY_NUOPC_(rc)
    end subroutine advertise
@@ -144,8 +144,9 @@ contains
       call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
       VERIFY_NUOPC_(rc)
 
-      ! call this%registry%realize(export_state, rc=rc)
-      ! VERIFY_NUOPC_(rc)
+      ! Realize the GEOS fields as exports for History
+      call this%registry%realize(export_state, rc=rc)
+      VERIFY_NUOPC_(rc)
    end subroutine realize
 
    subroutine data_init(this, model, rc)

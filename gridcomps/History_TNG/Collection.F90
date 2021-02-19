@@ -46,6 +46,7 @@ module CollectionMod
       procedure :: set_fields
 
       procedure :: advertise
+      procedure :: realize
       procedure :: register
 
       procedure :: import_collection
@@ -159,6 +160,21 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   subroutine realize(this, state, unusable, rc)
+      class(Collection),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      call this%fields%realize(state, __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine realize
 
    subroutine register(this, field_registry)
       class(Collection),   intent(inout) :: this

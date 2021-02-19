@@ -29,6 +29,7 @@ module FieldRegistryMod
       procedure :: get_map
 
       procedure :: advertise
+      procedure :: realize
 
       procedure :: contains_short_name
    end type FieldRegistry
@@ -91,6 +92,32 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   ! TODO: unit tests for realize
+
+   subroutine realize(this, state, unusable, rc)
+      class(FieldRegistry),             intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      class(FieldEntry), pointer  :: field_entry
+      type(FieldEntryMapIterator) :: iter
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         field_entry => iter%value()
+         call field_entry%realize(state, __RC__)
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine realize
 
    logical function contains_short_name(this, short_name)
       class(FieldRegistry), intent(in) :: this

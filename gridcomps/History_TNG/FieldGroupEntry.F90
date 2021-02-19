@@ -36,6 +36,7 @@ module FieldGroupEntryMod
 
       procedure :: standard_name
       procedure :: advertise
+      procedure :: realize
    end type FieldGroupEntry
 contains
    subroutine initialize(this, short_name, component_name, unusable, units, alias_name)
@@ -150,4 +151,19 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine advertise
+
+   subroutine realize(this, state, unusable, rc)
+      class(FieldGroupEntry),           intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      call this%field_entry%realize(state, __RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine realize
 end module FieldGroupEntryMod
