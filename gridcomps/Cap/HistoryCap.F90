@@ -5,6 +5,7 @@ module HistoryCapMod
    use, intrinsic :: iso_fortran_env, only: INT64
    use ESMF
    use NUOPC
+   use NUOPC_Model
    use MAPL_CapMod
 
    use FieldRegistryMod
@@ -28,6 +29,7 @@ module HistoryCapMod
    contains
       procedure :: init_p0
       procedure :: generic_init
+      procedure :: advertise
       procedure :: data_init
       procedure :: advance
       procedure :: check_import
@@ -109,6 +111,23 @@ contains
       ! end select
    end subroutine generic_init
 
+   subroutine advertise(this, model, rc)
+      class(HistoryCap),  intent(inout) :: this
+      type(ESMF_GridComp)               :: model
+      integer,            intent(  out) :: rc
+
+      type(ESMF_State) :: import_state
+      type(ESMF_State) :: export_state
+
+      rc = ESMF_SUCCESS
+
+      call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
+      VERIFY_NUOPC_(rc)
+
+      call this%registry%advertise(export_state, rc=rc)
+      VERIFY_NUOPC_(rc)
+   end subroutine advertise
+
    subroutine data_init(this, model, rc)
       class(HistoryCap),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
@@ -154,12 +173,11 @@ contains
       call ESMF_TimeIntervalSet(time_step, s=heartbeat_dt, rc=rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: investigate build error
       ! set clock with time interval
-      ! call NUOPC_ModelGet(model, modelClock=model_clock, rc=rc)
-      ! VERIFY_NUOPC_(rc)
-      ! call ESMF_ClockSet(model_clock, timeStep=time_step, rc=rc)
-      ! VERIFY_NUOPC_(rc)
+      call NUOPC_ModelGet(model, modelClock=model_clock, rc=rc)
+      VERIFY_NUOPC_(rc)
+      call ESMF_ClockSet(model_clock, timeStep=time_step, rc=rc)
+      VERIFY_NUOPC_(rc)
    end subroutine set_clock
 
    subroutine finalize(this, rc)
