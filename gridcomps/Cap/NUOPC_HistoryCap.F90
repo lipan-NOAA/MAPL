@@ -12,6 +12,7 @@ module NUOPC_HistoryCapMod
        model_SetClock       => label_SetClock, &
        model_Finalize       => label_finalize
 
+   use FieldRegistryMod
    use HistoryCapMod
    use NUOPCmapMod
 
@@ -19,6 +20,7 @@ module NUOPC_HistoryCapMod
    private
 
    public SetServices
+   public initialize_HistoryCap_wrapper
 
    character(*), parameter :: internal_name = 'NUOPC_HistoryCap'
 
@@ -229,4 +231,26 @@ contains
 
       cap => wrapper%ptr
    end function get_HistoryCap
+
+   subroutine initialize_HistoryCap_wrapper(gc, name, root_rc, set_services, registry, rc)
+      type(ESMF_GridComp), target,        intent(inout) :: gc
+      character(*),                       intent(in   ) :: name
+      character(*),                       intent(in   ) :: root_rc
+      procedure(i_set_services), pointer, intent(in   ) :: set_services
+      type(FieldRegistry),                intent(in   ) :: registry
+      integer,                            intent(  out) :: rc
+
+      type(HistoryCap)         :: cap
+      type(HistoryCap_wrapper) :: wrapper
+
+      rc = ESMF_SUCCESS
+
+      call cap%initialize(name, root_rc, set_services, registry)
+
+      allocate(wrapper%ptr)
+      wrapper%ptr = cap
+
+      call ESMF_UserCompSetInternalState(gc, internal_name, wrapper, rc)
+      VERIFY_NUOPC_(rc)
+   end subroutine initialize_HistoryCap_wrapper
 end module NUOPC_HistoryCapMod

@@ -17,6 +17,7 @@ module HistoryCapMod
    private
 
    public HistoryCap
+   public i_set_services
 
    type :: HistoryCap
       private
@@ -31,6 +32,10 @@ module HistoryCapMod
 
       type(FieldRegistry) :: registry
    contains
+      procedure :: initialize
+      procedure :: init_cap
+      procedure :: init_phase_map
+
       procedure :: init_p0
       procedure :: generic_init
       procedure :: advertise
@@ -50,14 +55,23 @@ module HistoryCapMod
       end subroutine i_set_services
    end interface
 contains
-   subroutine initialize(this, model, name, root_rc, set_services, registry, rc)
+   subroutine initialize(this, name, root_rc, set_services, registry)
       class(HistoryCap),                  intent(  out) :: this
-      type(ESMF_GridComp),                intent(inout) :: model
       character(*),                       intent(in   ) :: name
       character(*),                       intent(in   ) :: root_rc
       procedure(i_set_services), pointer, intent(in   ) :: set_services
       type(FieldRegistry),                intent(in   ) :: registry
-      integer, optional,                  intent(  out) :: rc
+
+      this%name         =  name
+      this%rc_file      =  root_rc
+      this%set_services => set_services
+      this%registry     =  registry
+   end subroutine initialize
+
+   subroutine init_cap(this, model, rc)
+      class(HistoryCap),   intent(inout) :: this
+      type(ESMF_GridComp), intent(inout) :: model
+      integer, optional,   intent(  out) :: rc
 
       integer                 :: mpi_comm, dup_comm
       type(ESMF_VM)           :: vm
@@ -65,11 +79,6 @@ contains
       type(MAPL_Cap), pointer :: cap
 
       integer :: status
-
-      this%name         =  name
-      this%rc_file      =  root_rc
-      this%set_services => set_services
-      this%registry     =  registry
 
       ! Read ESMF VM information
       call ESMF_GridCompGet(model, vm=vm, __RC__)
@@ -92,7 +101,23 @@ contains
       this%cap => cap
 
       _RETURN(_SUCCESS)
-   end subroutine initialize
+   end subroutine init_cap
+
+   subroutine init_phase_map(this, model, rc)
+      class(HistoryCap),   intent(inout) :: this
+      type(ESMF_GridComp), intent(inout) :: model
+      integer, optional,   intent(  out) :: rc
+
+      type(NUOPCmap), pointer :: phase_map
+
+      integer :: status
+
+      allocate(phase_map)
+      call phase_map%create_phase_map(model, __RC__)
+      this%phase_map => phase_map
+
+      _RETURN(_SUCCESS)
+   end subroutine init_phase_map
 
    subroutine init_p0(this, model, import_state, export_state, clock, rc)
       class(HistoryCap),  intent(inout) :: this
