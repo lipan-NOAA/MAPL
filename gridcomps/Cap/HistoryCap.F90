@@ -35,6 +35,7 @@ module HistoryCapMod
       procedure :: initialize
       procedure :: init_cap
       procedure :: init_phase_map
+      procedure :: init_mapl
 
       procedure :: init_p0
       procedure :: generic_init
@@ -119,6 +120,24 @@ contains
       _RETURN(_SUCCESS)
    end subroutine init_phase_map
 
+   subroutine init_mapl(this, rc)
+      class(HistoryCap), intent(inout) :: this
+      integer, optional, intent(  out) :: rc
+
+      integer :: status
+
+      ! Create/initialize the Cap GridComp
+      call this%cap%initialize_io_clients_servers(this%cap%get_comm_world(), __RC__)
+      ! TODO: add check return code after pull #721 gets accepted
+      call this%cap%initialize_cap_gc()
+
+      ! Call MAPL set_services and initialize MAPL components
+      call this%cap%cap_gc%set_services(__RC__)
+      call this%cap%cap_gc%initialize(__RC__)
+
+      _RETURN(_SUCCESS)
+   end subroutine init_mapl
+
    subroutine init_p0(this, model, import_state, export_state, clock, rc)
       class(HistoryCap),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
@@ -135,8 +154,10 @@ contains
          acceptStringList=["IPDv05p"], rc=rc)
       VERIFY_NUOPC_(rc)
 
-      ! TODO: Implement rest
-      ! See lines 144-192 in MAPL_NUOPCwrapperMod.F90
+      call this%init_cap(model, __RC__)
+      call this%init_mapl(__RC__)
+
+      call this%init_phase_map(model, __RC__)
    end subroutine init_p0
 
    ! TODO: eliminate generic_init in favor of using ESMF 8.1.0 specialize labels
