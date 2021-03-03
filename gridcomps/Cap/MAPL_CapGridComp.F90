@@ -106,18 +106,18 @@ contains
 
   
    subroutine MAPL_CapGridCompCreate(cap, root_set_services, cap_rc, name, final_file, &
-         unusable, import_field_registry, export_field_registry)
+         unusable, import_field_registry, export_field_registry, rc)
       use mapl_StubComponent
     type(MAPL_CapGridComp), intent(out), target :: cap
     procedure() :: root_set_services
     character(*), intent(in) :: cap_rc, name
     character(len=*), optional, intent(in) :: final_file
-    class(KeywordEnforcer), optional, intent(in) :: unusable
-    integer, optional, intent(out) :: rc
 
     class(KeywordEnforcer), optional, intent(in) :: unusable
     type(FieldRegistry),    optional, intent(in) :: import_field_registry
     type(FieldRegistry),    optional, intent(in) :: export_field_registry
+
+    integer, optional, intent(out) :: rc
 
 
     type(MAPL_CapGridComp_Wrapper) :: cap_wrapper
@@ -125,8 +125,6 @@ contains
     integer :: status
     character(*), parameter :: cap_name = "CAP"
     type(StubComponent) :: stub_component
-
-    _UNUSED_DUMMY(unusable)
     
     _UNUSED_DUMMY(unusable)
 
