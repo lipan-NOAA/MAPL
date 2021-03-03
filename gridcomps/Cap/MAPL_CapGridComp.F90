@@ -112,6 +112,8 @@ contains
     procedure() :: root_set_services
     character(*), intent(in) :: cap_rc, name
     character(len=*), optional, intent(in) :: final_file
+    class(KeywordEnforcer), optional, intent(in) :: unusable
+    integer, optional, intent(out) :: rc
 
     class(KeywordEnforcer), optional, intent(in) :: unusable
     type(FieldRegistry),    optional, intent(in) :: import_field_registry
@@ -120,12 +122,14 @@ contains
 
     type(MAPL_CapGridComp_Wrapper) :: cap_wrapper
     type(MAPL_MetaComp), pointer :: meta => null()
-    integer :: status, rc
+    integer :: status
     character(*), parameter :: cap_name = "CAP"
     type(StubComponent) :: stub_component
 
     _UNUSED_DUMMY(unusable)
     
+    _UNUSED_DUMMY(unusable)
+
     cap%cap_rc_file = cap_rc
     cap%root_set_services => root_set_services
     if (present(final_file)) then
@@ -159,6 +163,8 @@ contains
     cap_wrapper%ptr => cap
     call ESMF_UserCompSetInternalState(cap%gc, internal_cap_name, cap_wrapper, status)
     _VERIFY(status)
+
+    _RETURN(_SUCCESS)
 
   end subroutine MAPL_CapGridCompCreate
 
