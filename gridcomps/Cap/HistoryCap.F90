@@ -128,8 +128,7 @@ contains
 
       ! Create/initialize the Cap GridComp
       call this%cap%initialize_io_clients_servers(this%cap%get_comm_world(), __RC__)
-      ! TODO: add check return code after pull #721 gets accepted
-      call this%cap%initialize_cap_gc()
+      call this%cap%initialize_cap_gc(__RC__)
 
       ! Call MAPL set_services and initialize MAPL components
       call this%cap%cap_gc%set_services(__RC__)
