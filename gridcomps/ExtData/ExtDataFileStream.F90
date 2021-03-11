@@ -45,10 +45,20 @@ contains
 
       _UNUSED_DUMMY(unusable)
 
-      call config%get(this%file_template,"tmpl",default='',is_present=is_present,rc=status)
-      _VERIFY(status)
-      call config%get(file_frequency,"freq",default='',rc=status)
-      _VERIFY(status)
+      if (config%is_scalar()) then
+
+      else if (config%is_mapping()) then
+         call config%get(this%file_template,"template",default='',is_present=is_present,rc=status)
+         _VERIFY(status)
+         _ASSERT(is_present,"no file template in the collection")
+         call config%get(file_frequency,"freq",default='',rc=status)
+         _VERIFY(status)
+         call config%get(file_reff_time,"ref_time",default='',rc=status)
+         _VERIFY(status)
+         call config%get(range_str,"valid_range",default='',rc=status)
+         _VERIFY(status)
+      end if
+
       if (file_frequency /= '') then
          this%frequency = string_to_esmf_timeinterval(file_frequency)
       else
@@ -73,8 +83,6 @@ contains
          end if
       end if
 
-      call config%get(file_reff_time,"ref_time",default='',rc=status)
-      _VERIFY(status)
       if (file_reff_time /= '') then
          this%reff_time = string_to_esmf_time(file_reff_time)
       else
@@ -99,8 +107,6 @@ contains
          end if
       end if
 
-      call config%get(range_str,"valid_range",default='',rc=status)
-      _VERIFY(status)
       if (range_str /= '') then
          idx = index(range_str,',')
          _ASSERT(idx/=0,'invalid specification of time range')

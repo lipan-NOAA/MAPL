@@ -19,6 +19,8 @@ module MAPL_ExtDataOldTypesCreator
    use MAPL_ExtDataAbstractFileHandler
    use MAPL_ExtDataSimpleFileHandler
    use MAPL_ExtDataClimFileHandler
+   use MAPL_ExtDataTimeSample
+   use MAPL_ExtDataTimeSampleMap
    implicit none
    public :: ExtDataOldTypesCreator
 
@@ -64,6 +66,8 @@ module MAPL_ExtDataOldTypesCreator
 
       type(ExtDataRule), pointer :: rule
       type(ExtDataFileStream),  pointer :: dataset
+      type(ExtDataTimeSample), pointer :: time_sample
+      type(ExtDataTimeSample), target :: default_time_sample
       type(ExtDataSimpleFileHandler) :: simple_handler
       type(ExtDataClimFileHandler) :: clim_handler
       integer :: status, semi_pos
@@ -71,6 +75,12 @@ module MAPL_ExtDataOldTypesCreator
 
       _UNUSED_DUMMY(unusable)
       rule => this%rule_map%at(trim(item_name))
+      time_sample => this%sample_map%at(rule%sample_key)
+      
+      if(.not.associated(time_sample)) then
+        call default_time_sample%set_defaults()
+        time_sample=>default_time_sample
+      end if
       primary_item%isVector = allocated(rule%vector_partner)
       ! name and file var
       primary_item%name = trim(item_name)
@@ -93,8 +103,6 @@ module MAPL_ExtDataOldTypesCreator
          primary_item%fileVars%xname  = trim(rule%file_var)
       end if
       
-      ! units
-      primary_item%units = ''
       ! regrid method
       if (trim(rule%regrid_method) == "BILINEAR") then
          primary_item%trans = REGRID_METHOD_BILINEAR
@@ -110,41 +118,41 @@ module MAPL_ExtDataOldTypesCreator
          _ASSERT(.false.,"Invalid regridding method")
       end if
 
-      ! newstuff
-      if (trim(rule%extrap_outside) =="clim") then
+      if (trim(time_sample%extrap_outside) =="clim") then
          primary_item%cycling=.true.
-      else if (trim(rule%extrap_outside) == "persist_closest") then
+      else if (trim(time_sample%extrap_outside) == "persist_closest") then
          primary_item%persist_closest=.true.
-      else if (trim(rule%extrap_outside) == "none") then
+      else if (trim(time_sample%extrap_outside) == "none") then
          primary_item%cycling=.false.
          primary_item%persist_closest=.false.
       end if
-      allocate(primary_item%source_time,source=rule%source_time)
+
+      allocate(primary_item%source_time,source=time_sample%source_time)
       ! new refresh
-      call primary_item%update_freq%create_from_parameters(rule%refresh_time, &
-           rule%refresh_frequency, rule%refresh_offset, time, clock, __RC__)
+      call primary_item%update_freq%create_from_parameters(time_sample%refresh_time, &
+           time_sample%refresh_frequency, time_sample%refresh_offset, time, clock, __RC__)
 
-      disable_interpolation =  .not.rule%time_interpolation 
+      disable_interpolation =  .not.time_sample%time_interpolation 
 
-      call primary_item%modelGridFields%comp1%set_parameters(offset=rule%shift,scale_factor=rule%scaling,disable_interpolation=disable_interpolation)
-      call primary_item%modelGridFields%comp2%set_parameters(offset=rule%shift,scale_factor=rule%scaling,disable_interpolation=disable_interpolation)
-      call primary_item%modelGridFields%auxiliary1%set_parameters(offset=rule%shift,scale_factor=rule%scaling, disable_interpolation=disable_interpolation)
-      call primary_item%modelGridFields%auxiliary2%set_parameters(offset=rule%shift,scale_factor=rule%scaling, disable_interpolation=disable_interpolation)
+      call primary_item%modelGridFields%comp1%set_parameters(linear_trans=rule%linear_trans,disable_interpolation=disable_interpolation)
+      call primary_item%modelGridFields%comp2%set_parameters(linear_trans=rule%linear_trans,disable_interpolation=disable_interpolation)
+      call primary_item%modelGridFields%auxiliary1%set_parameters(linear_trans=rule%linear_trans, disable_interpolation=disable_interpolation)
+      call primary_item%modelGridFields%auxiliary2%set_parameters(linear_trans=rule%linear_trans, disable_interpolation=disable_interpolation)
 
       ! file_template
       primary_item%isConst = .false.
-      if (index(rule%file_template_key,"/dev/null")==0) then
-         dataset => this%file_stream_map%at(trim(rule%file_template_key))
+      if (index(rule%collection,"/dev/null")==0) then
+         dataset => this%file_stream_map%at(trim(rule%collection))
          primary_item%file = dataset%file_template
-         call dataset%detect_metadata(primary_item%file_metadata,time,get_range=(trim(rule%extrap_outside) /= "none"),__RC__)
+         call dataset%detect_metadata(primary_item%file_metadata,time,get_range=(trim(time_sample%extrap_outside) /= "none"),__RC__)
       else
-         primary_item%file = rule%file_template_key
+         primary_item%file = rule%collection
       end if
-      if (index(rule%file_template_key,'/dev/null') /= 0) then
+      if (index(rule%collection,'/dev/null') /= 0) then
          primary_item%isConst = .true.
-         semi_pos = index(rule%file_template_key,':')
+         semi_pos = index(rule%collection,':')
          if (semi_pos > 0) then
-            read(rule%file_template_key(semi_pos+1:),*)primary_item%const
+            read(rule%collection(semi_pos+1:),*)primary_item%const
          else
             primary_item%const=0.0
          end if

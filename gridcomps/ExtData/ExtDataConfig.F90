@@ -12,6 +12,8 @@ module MAPL_ExtDataConfig
    use MAPL_ExtDataDerived
    use MAPL_ExtDataDerivedMap
    use MAPL_ExtDataConstants
+   use MAPL_ExtDataTimeSample
+   use MAPL_ExtDataTimeSampleMap
    implicit none
    private
 
@@ -20,6 +22,7 @@ module MAPL_ExtDataConfig
       type(ExtDataRuleMap) :: rule_map
       type(ExtDataDerivedMap) :: derived_map
       type(ExtDataFileStreamMap) :: file_stream_map
+      type(ExtDataTimeSampleMap) :: sample_map
       
       contains
          procedure :: get_item_type
@@ -37,12 +40,13 @@ contains
       integer, optional, intent(out) :: rc
 
       type(Parser)              :: p
-      type(Configuration) :: config,subcfg, ds_config, rule_config, derived_config
+      type(Configuration) :: config, subcfg, ds_config, rule_config, derived_config, sample_config
       type(ConfigurationIterator) :: iter
       character(:), pointer :: key
       type(ExtDataFileStream) :: ds
       type(ExtDataDerived) :: derived
       type(ExtDataRule) :: rule,ucomp,vcomp
+      type(ExtDataTimeSample) :: ts
       integer :: status, semi_pos
       character(len=:), allocatable :: uname,vname
       type(FileStream) :: fstream
@@ -63,9 +67,21 @@ contains
          _VERIFY(status)
       enddo
 
-      ds_config = config%at("data_sets")
-      rule_config = config%at("rules")
-      derived_config = config%at("derived")
+      ds_config = config%at("Collections")
+      rule_config = config%at("Exports")
+      derived_config = config%at("Derived")
+      sample_config = config%at("Samplings")
+
+      iter = sample_config%begin()
+      do while (iter /= sample_config%end())
+         key => iter%key()
+         subcfg = iter%value()
+         call ts%set_defaults(rc=status)
+         call ts%append_from_yaml(subcfg,rc=status)
+         _VERIFY(status)
+         call ext_config%sample_map%insert(trim(key),ts)
+         call iter%next()
+      enddo
 
       iter = ds_config%begin()
       do while (iter /= ds_config%end())
@@ -82,8 +98,8 @@ contains
          call rule%set_defaults(rc=status)
          _VERIFY(status)
          key => iter%key()
-         rule_key="rules%"//key
-         call rule%append_from_yaml(config,rule_key,rc=status)
+         subcfg=iter%value()
+         call rule%append_from_yaml(subcfg,rc=status)
          _VERIFY(status)
          semi_pos = index(key,";")
          if (semi_pos > 0) then

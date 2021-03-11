@@ -110,11 +110,10 @@ contains
    end subroutine get_node
 
 
-   subroutine set_parameters(this, unusable, scale_factor, offset, disable_interpolation, left_field, right_field, intermittent_disable, rc)
+   subroutine set_parameters(this, unusable, linear_trans, disable_interpolation, left_field, right_field, intermittent_disable, rc)
       class(ExtDataBracket), intent(inout) :: this
       class(KeywordEnforcer), optional, intent(in) :: unusable
-      real, optional, intent(in) :: scale_factor
-      real, optional, intent(in) :: offset
+      real, optional, intent(in) :: linear_trans(2)
       logical, optional, intent(in) :: disable_interpolation
       type(ESMF_Field), optional, intent(in) :: left_field
       type(ESMF_Field), optional, intent(in) :: right_field
@@ -122,8 +121,10 @@ contains
       integer, optional, intent(out) :: rc
 
       _UNUSED_DUMMY(unusable)
-      if (present(scale_factor)) this%scale_factor = scale_factor
-      if (present(offset)) this%offset=offset
+      if (present(linear_trans)) then
+         this%offset=linear_trans(1)
+         this%scale_factor=linear_trans(2)
+      end if
       if (present(disable_interpolation)) this%disable_interpolation = disable_interpolation
       if (present(left_field)) this%left_node%field=left_field
       if (present(right_field)) this%right_node%field=right_field

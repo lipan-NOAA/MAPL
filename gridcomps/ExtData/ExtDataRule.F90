@@ -9,17 +9,11 @@ module MAPL_ExtDataRule
    private
 
    type, public :: ExtDataRule
-      character(:), allocatable :: file_template_key
+      character(:), allocatable :: collection
       character(:), allocatable :: file_var
-      real :: scaling
-      real :: shift
-      logical :: time_interpolation
-      type(ESMF_Time), allocatable :: source_time(:)
-      character(:), allocatable :: extrap_outside
+      character(:), allocatable :: sample_key
+      real, allocatable :: linear_trans(:)
       character(:), allocatable :: regrid_method
-      character(:), allocatable :: refresh_time
-      character(:), allocatable :: refresh_frequency
-      character(:), allocatable :: refresh_offset
       character(:), allocatable :: vector_partner
       character(:), allocatable :: vector_component
       character(:), allocatable :: vector_file_partner
@@ -38,29 +32,16 @@ contains
 
       integer :: status 
       _UNUSED_DUMMY(unusable)
-      this%file_template_key=''
+      this%collection=''
       this%file_var='missing_variable'
-      this%scaling=0.0
-      this%shift=0.0
-      this%time_interpolation=.true.
-      this%extrap_outside='none'
       this%regrid_method='BILINEAR'
-      this%refresh_time="00"
-      this%refresh_frequency="PT0S"
-      this%refresh_offset="PT0S"
-      if (allocated(this%source_time)) then 
-         deallocate(this%source_time,stat=status)
-         _VERIFY(status)
-         allocate(this%source_time(0),stat=status)
-         _VERIFY(status)
-      end if
       _RETURN(_SUCCESS)
    end subroutine set_defaults
 
-   recursive  subroutine append_from_yaml(rule,config,key,unusable,rc)
+   subroutine append_from_yaml(rule,config,unusable,rc)
       class(ExtDataRule), intent(inout), target :: rule
       type(Configuration), intent(in) :: config
-      character(len=*), intent(in) :: key
+      !character(len=*), intent(in) :: key
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
@@ -68,86 +49,41 @@ contains
       integer :: status
       character(len=:), allocatable :: source_str
       integer :: idx
-      type(Configuration) :: subcfg
-      character(len=:), allocatable :: override_key, tempc
+      type(Configuration) ::config1
+      character(len=:), allocatable :: tempc
       logical :: templ
-      real :: tempr
       _UNUSED_DUMMY(unusable)
 
-      idx=index(key,"%")
-      if (idx == 0) then
-         subcfg=config%at(trim(key))
-      else
-         subcfg=config%at(trim(key(:idx-1)),trim(key(idx+1:)))
-      end if
-
-      call subcfg%get(override_key,"opts",default='',rc=status)
+      if (allocated(tempc)) deallocate(tempc)
+      call config%get(tempc,"collection",is_present=is_present,rc=status)
       _VERIFY(status)
-      if (override_key/='') then
-         call rule%append_from_yaml(config,override_key,rc=status)
-         _VERIFY(status)
-      end if
+      _ASSERT(is_present,"no collection present in ExtData export")
+      if (is_present) rule%collection=tempc
 
       if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"file_key",is_present=is_present,rc=status)
+      call config%get(tempc,"vname",is_present=is_present,rc=status)
       _VERIFY(status)
-      if (is_present) rule%file_template_key=tempc
-
-      if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"var",is_present=is_present,rc=status)
-      _VERIFY(status)
+      _ASSERT(is_present,"no vname present in ExtData export")
       if (is_present) rule%file_var=tempc
 
       if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"extrap",is_present=is_present,rc=status)
+      call config%get(tempc,"sample",is_present=is_present,rc=status)
       _VERIFY(status)
-      if (is_present) rule%extrap_outside=tempc
+      if (is_present) rule%sample_key=tempc
 
-      call subcfg%get(tempr,"scale",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%scaling=tempr
-
-      call subcfg%get(tempr,"shift",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%shift=tempr
-
-      call subcfg%get(templ,"tinterp",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%time_interpolation=templ
-
+      config1=config%at("linear_transformation")
+      if (allocated(rule%linear_trans)) deallocate(rule%linear_trans)
+      if (.not.config1%is_none()) then
+         rule%linear_trans=config1
+      else
+         allocate(rule%linear_trans,source=[0.0,0.0])
+      end if
+    
       if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"regrid",is_present=is_present,rc=status)
+      call config%get(tempc,"regrid",is_present=is_present,rc=status)
       _VERIFY(status)
       if (is_present) rule%regrid_method=tempc
 
-      if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"upd_ref_time",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%refresh_time=tempc
-
-      if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"upd_freq",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%refresh_frequency=tempc
-
-      if (allocated(tempc)) deallocate(tempc)
-      call subcfg%get(tempc,"upd_offset",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%refresh_offset=tempc
-
-      call subcfg%get(source_str,"source_time",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) then
-         if (allocated(rule%source_time)) deallocate(rule%source_time)
-         idx = index(source_str,',')
-         _ASSERT(idx/=0,'invalid specification of source_time')
-         allocate(rule%source_time(2))
-         rule%source_time(1)=string_to_esmf_time(source_str(:idx-1))
-         rule%source_time(2)=string_to_esmf_time(source_str(idx+1:))
-      else 
-         if (.not.allocated(rule%source_time)) allocate(rule%source_time(0))
-      end if
-     
       _RETURN(_SUCCESS)
    end subroutine append_from_yaml
 

@@ -24,7 +24,7 @@ module MAPL_ExtDataTypeDef
 
   type PrimaryExport
      character(len=ESMF_MAXSTR)   :: name
-     character(len=ESMF_MAXSTR)   :: units
+     character(len=ESMF_MAXSTR)   :: units=''
      integer                      :: Trans
      character(len=ESMF_MAXSTR)   :: var
      character(len=ESMF_MAXPATHLEN)   :: file ! remove
