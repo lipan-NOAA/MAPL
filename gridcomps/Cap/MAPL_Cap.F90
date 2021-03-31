@@ -15,6 +15,7 @@ module MAPL_CapMod
    use MAPL_CapOptionsMod
    use MAPL_ServerManager
    use MAPL_ApplicationSupport
+   use FieldRegistryMod
    implicit none
    private
 
@@ -291,9 +292,11 @@ contains
 
    end subroutine run_model
    
-   subroutine initialize_cap_gc(this, unusable, rc)
+   subroutine initialize_cap_gc(this, unusable, import_field_registry, export_field_registry, rc)
      class(MAPL_Cap), intent(inout) :: this
      class (KeywordEnforcer), optional, intent(in) :: unusable
+     type(FieldRegistry),    optional, intent(in) :: import_field_registry
+     type(FieldRegistry),    optional, intent(in) :: export_field_registry
      integer, optional, intent(out) :: rc
 
      integer :: status
@@ -301,7 +304,10 @@ contains
      _UNUSED_DUMMY(unusable)
 
      call MAPL_CapGridCompCreate(this%cap_gc, this%set_services, this%get_cap_rc_file(), &
-           this%name, this%get_egress_file(), rc=status)
+           this%name, this%get_egress_file(), &
+           import_field_registry=import_field_registry, &
+           export_field_registry=export_field_registry, &
+           rc=status)
      _VERIFY(status)
      _RETURN(_SUCCESS)
    end subroutine initialize_cap_gc

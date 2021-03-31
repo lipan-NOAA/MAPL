@@ -182,7 +182,7 @@ contains
       _UNUSED_DUMMY(unusable)
 
       has_entry = NUOPC_FieldDictionaryHasEntry(name, rc=status)
-      VERIFY_NUOPC_(status)
+      !VERIFY_NUOPC_(status)
 
       _RETURN(_SUCCESS)
    end subroutine NUOPC_has_entry
@@ -302,15 +302,21 @@ contains
       integer,                optional, intent(  out) :: rc
 
       type(ESMF_StateItem_Flag) :: item_type
-
+      integer :: item_count
+      type(ESMF_Field) :: field_short
+      
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
-      call ESMF_StateGet(state, this%short_name, itemType=item_type, __RC__)
+      !call ESMF_StateGet(state, this%short_name, itemType=item_type, rc=status) 
+      !call ESMF_StateGet(state, this%short_name//"."//this%component_name, itemType=item_type, rc=status) 
+      call ESMF_StateGet(state, this%short_name, itemType=item_type, rc=status) 
 
       if (item_type == ESMF_STATEITEM_FIELD) then
-         call ESMF_StateGet(state, this%short_name, field, __RC__)
+         !call ESMF_StateGet(state, this%short_name//"."//this%component_name, field, __RC__)
+         call ESMF_StateGet(state, this%short_name, field_short, __RC__)
+         field=MAPL_FieldCreate(field_short,this%short_name//"."//this%component_name,__RC__)
          call ESMF_FieldValidate(field, __RC__)
       else
          ! This field entry is not found
@@ -320,9 +326,10 @@ contains
       _RETURN(_SUCCESS)
    end subroutine get_field_from_state
 
-   subroutine realize(this, state, unusable, rc)
+   subroutine realize(this, state, export_state, unusable, rc)
       class(FieldEntry),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
+      type(ESMF_State),                 intent(inout) :: export_state
       class(KeywordEnforcer), optional, intent(  out) :: unusable
       integer,                optional, intent(  out) :: rc
 
@@ -336,7 +343,7 @@ contains
       call ESMF_StateGet(state, stateIntent=state_intent, __RC__)
 
       if (state_intent == ESMF_STATEINTENT_EXPORT) then
-         call this%get_field_from_state(state, field, __RC__)
+         call this%get_field_from_state(export_state, field, __RC__)
          call MAPL_AllocateCoupling(field, status)
          _VERIFY(status)
          call this%NUOPC_real(state, field, __RC__)

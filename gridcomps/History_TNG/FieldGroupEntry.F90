@@ -162,7 +162,7 @@ contains
 
       _UNUSED_DUMMY(unusable)
 
-      call this%field_entry%realize(state, __RC__)
+      call this%field_entry%realize(state, state, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine realize

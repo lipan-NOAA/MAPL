@@ -180,6 +180,7 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
+         write(*,*)'bmaa new field'
          field_entry    => iter%value()
          registry_entry =  field_entry%get_field_entry()
          call field_registry%insert(registry_entry)

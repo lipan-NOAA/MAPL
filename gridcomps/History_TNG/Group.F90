@@ -123,6 +123,7 @@ contains
       class(Group),        intent(inout) :: this
       type(FieldRegistry), intent(inout) :: field_registry
 
+      write(*,*)'bmaa register fields from group'
       call this%fields%    register(field_registry)
       call this%aux_fields%register(field_registry)
    end subroutine register

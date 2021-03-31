@@ -30,6 +30,7 @@ module FieldRegistryMod
 
       procedure :: advertise
       procedure :: realize
+      procedure :: register
 
       procedure :: contains_short_name
    end type FieldRegistry
@@ -84,8 +85,10 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
+         write(*,*)'bmaa advertising field in fieldentry'
          field_entry => iter%value()
          call field_entry%advertise(state, __RC__)
+         write(*,*)'bmaa done with advertise in fieldentry'
 
          call iter%next()
       end do
@@ -93,11 +96,37 @@ contains
       _RETURN(_SUCCESS)
    end subroutine advertise
 
+   subroutine register(this, unusable, rc)
+      class(FieldRegistry),             intent(inout) :: this
+      class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      class(FieldEntry), pointer  :: field_entry
+      type(FieldEntryMapIterator) :: iter
+
+      integer :: status
+
+      _UNUSED_DUMMY(unusable)
+
+      iter = this%map%begin()
+      do while(iter /= this%map%end())
+         write(*,*)'bmaa registerg field in fieldreg'
+         field_entry => iter%value()
+         call field_entry%register( __RC__)
+         write(*,*)'bmaa done with register in fieldreg'
+
+         call iter%next()
+      end do
+
+      _RETURN(_SUCCESS)
+   end subroutine register
+
    ! TODO: unit tests for realize
 
-   subroutine realize(this, state, unusable, rc)
+   subroutine realize(this, state, export_state, unusable, rc)
       class(FieldRegistry),             intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
+      type(ESMF_State),                 intent(inout) :: export_state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
       integer,                optional, intent(  out) :: rc
 
@@ -111,7 +140,7 @@ contains
       iter = this%map%begin()
       do while(iter /= this%map%end())
          field_entry => iter%value()
-         call field_entry%realize(state, __RC__)
+         call field_entry%realize(state, export_state,__RC__)
 
          call iter%next()
       end do

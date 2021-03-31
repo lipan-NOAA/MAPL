@@ -128,7 +128,7 @@ contains
 
       ! Create/initialize the Cap GridComp
       call this%cap%initialize_io_clients_servers(this%cap%get_comm_world(), __RC__)
-      call this%cap%initialize_cap_gc(__RC__)
+      call this%cap%initialize_cap_gc(export_field_registry=this%registry,__RC__)
 
       ! Call MAPL set_services and initialize MAPL components
       call this%cap%cap_gc%set_services(__RC__)
@@ -222,7 +222,7 @@ contains
       VERIFY_NUOPC_(rc)
 
       ! Realize the GEOS fields as exports for History
-      call this%registry%realize(export_state, rc=rc)
+      call this%registry%realize(export_state, this%cap%cap_gc%export_state, rc=rc)
       VERIFY_NUOPC_(rc)
    end subroutine realize
 
