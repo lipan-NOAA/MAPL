@@ -19,7 +19,6 @@ module synthetic_driver
     use Provider_GridCompMod, only: providerSS => SetServices
     !use Reciever_GridCompMod, only: recieverSS => SetServices
 
-    use UFS_Testing_Cap, only: ufsSS => SetServices
     use FieldRegistryMod
     use CollectionRegistryMod
     use COllectionMod
