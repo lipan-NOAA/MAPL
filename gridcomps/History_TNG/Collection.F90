@@ -146,17 +146,18 @@ contains
       if(present(rc)) rc = status
    end subroutine set_fields
 
-   subroutine advertise(this, state, unusable, rc)
+   subroutine advertise(this, state, unusable, TransferOfferGeomObject, rc)
       class(Collection),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(len=*),       optional, intent(in   ) :: TransferOfferGeomObject
       integer,                optional, intent(  out) :: rc
 
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
-      call this%fields%advertise(state, __RC__)
+      call this%fields%advertise(state,TransferOfferGeomObject=TransferOfferGeomObject, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine advertise

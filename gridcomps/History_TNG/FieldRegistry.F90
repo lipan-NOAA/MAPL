@@ -70,10 +70,11 @@ contains
       map = this%map
    end function get_map
 
-   subroutine advertise(this, state, unusable, rc)
+   subroutine advertise(this, state, unusable, TransferOfferGeomObject, rc)
       class(FieldRegistry),             intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(len=*),       optional, intent(in   ) :: TransferOfferGeomObject
       integer,                optional, intent(  out) :: rc
 
       class(FieldEntry), pointer  :: field_entry
@@ -85,10 +86,8 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         write(*,*)'bmaa advertising field in fieldentry'
          field_entry => iter%value()
-         call field_entry%advertise(state, __RC__)
-         write(*,*)'bmaa done with advertise in fieldentry'
+         call field_entry%advertise(state, TransferOfferGeomObject=TransferOfferGeomObject,  __RC__)
 
          call iter%next()
       end do
@@ -110,10 +109,8 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         write(*,*)'bmaa registerg field in fieldreg'
          field_entry => iter%value()
          call field_entry%register( __RC__)
-         write(*,*)'bmaa done with register in fieldreg'
 
          call iter%next()
       end do

@@ -80,7 +80,6 @@ contains
 
       call NUOPC_CompSearchPhaseMap(gc, ESMF_METHOD_INITIALIZE, &
          phaseLabel=phase_label, phaseIndex=phase_index, rc=status)
-      write(*,*)'bmaa phase search status: ',status,phase_index,trim(phase_label)
       !VERIFY_NUOPC_(status)
       rc=status
 
@@ -96,12 +95,10 @@ contains
       integer :: status, phase_index
 
       call this%search_phase_map(gc, phase_label, phase_index, rc=status)
-      write(*,*)'bmaa phase read ',status,phase_index
       !VERIFY_NUOPC_(status)
 
       if (phase_index >= 0) then
          call this%add_phase(phase_index, phase_label, rc=status)
-         write(*,*)'bmaa add phase: ',status
          !VERIFY_NUOPC_(status)
       else
          status = ESMF_RC_OBJ_BAD

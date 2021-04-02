@@ -54,7 +54,8 @@ module FieldEntryMod
       procedure :: NUOPC_advert
       procedure :: advertise
 
-      procedure :: NUOPC_real
+      procedure :: NUOPC_real_provided
+      procedure :: NUOPC_real_accepted
       procedure :: get_field_from_state
       procedure :: realize
    end type FieldEntry
@@ -254,10 +255,11 @@ contains
       _RETURN(_SUCCESS)
    end subroutine NUOPC_advert
 
-   subroutine advertise(this, state, unusable, rc)
+   subroutine advertise(this, state, unusable, TransferOfferGeomObject, rc)
       class(FieldEntry),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(len=*),       optional, intent(in   ) :: TransferOfferGeomObject
       integer,                optional, intent(  out) :: rc
 
       integer :: status
@@ -266,18 +268,43 @@ contains
 
       call this%register(__RC__)
    
-      call this%NUOPC_advert(state, this%standard_name(),&
-         TransferOfferGeomObject=this%TransferOfferGeomObject, &
-         SharePolicyField=this%SharePolicyField, &
-         SharePolicyGeomObject=this%SharePolicyGeomObject, &
-         __RC__)
-
+      if (present(TransferOfferGeomObject)) then
+         call this%NUOPC_advert(state, this%standard_name(),&
+            TransferOfferGeomObject=TransferOfferGeomObject, &
+            SharePolicyField=this%SharePolicyField, &
+            SharePolicyGeomObject=this%SharePolicyGeomObject, &
+            __RC__)
+      else
+         call this%NUOPC_advert(state, this%standard_name(),&
+            TransferOfferGeomObject=this%TransferOfferGeomObject, &
+            SharePolicyField=this%SharePolicyField, &
+            SharePolicyGeomObject=this%SharePolicyGeomObject, &
+            __RC__)
+      end if
       _RETURN(_SUCCESS)
    end subroutine advertise
 
    ! TODO: unit tests for realize
 
-   subroutine NUOPC_real(this, state, field, unusable, rc)
+   subroutine NUOPC_real_accepted(this, state, fname, unusable, rc)
+      class(FieldEntry),                intent(inout) :: this
+      type(ESMF_State),                 intent(inout) :: state
+      character(len=*),                 intent(in   ) :: fname
+      class(KeywordEnforcer), optional, intent(  out) :: unusable
+      integer,                optional, intent(  out) :: rc
+
+      integer :: status
+
+      _UNUSED_DUMMY(this)
+      _UNUSED_DUMMY(unusable)
+
+      call NUOPC_Realize(state, fname, rc=status)
+      VERIFY_NUOPC_(status)
+
+      _RETURN(_SUCCESS)
+   end subroutine NUOPC_real_accepted
+
+   subroutine NUOPC_real_provided(this, state, field, unusable, rc)
       class(FieldEntry),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       type(ESMF_Field),                 intent(in   ) :: field
@@ -293,7 +320,7 @@ contains
       VERIFY_NUOPC_(status)
 
       _RETURN(_SUCCESS)
-   end subroutine NUOPC_real
+   end subroutine NUOPC_real_provided
 
    subroutine get_field_from_state(this, state, field, unusable, rc)
       class(FieldEntry),                intent(inout) :: this
@@ -347,10 +374,9 @@ contains
          call this%get_field_from_state(export_state, field, __RC__)
          call MAPL_AllocateCoupling(field, status)
          _VERIFY(status)
-         call this%NUOPC_real(state, field, __RC__)
+         call this%NUOPC_real_provided(state, field, __RC__)
       else if (state_intent == ESMF_STATEINTENT_IMPORT) then
-         call this%get_field_from_state(state, field, __RC__)
-         call this%NUOPC_real(state, field, __RC__)
+         call this%NUOPC_real_accepted(state, this%short_name//"."//this%component_name, __RC__)
       else
          ! This should only be run on an import or export state
          _VERIFY(1)

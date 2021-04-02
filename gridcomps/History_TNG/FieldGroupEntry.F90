@@ -137,17 +137,18 @@ contains
       std_name = this%field_entry%standard_name()
    end function standard_name
 
-   subroutine advertise(this, state, unusable, rc)
+   subroutine advertise(this, state, unusable,  TransferOfferGeomObject, rc)
       class(FieldGroupEntry),           intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(len=*),       optional, intent(in   ) :: TransferOfferGeomObject
       integer,                optional, intent(  out) :: rc
 
       integer :: status
 
       _UNUSED_DUMMY(unusable)
 
-      call this%field_entry%advertise(state, __RC__)
+      call this%field_entry%advertise(state,TransferOfferGeomObject=TransferOfferGeomObject, __RC__)
 
       _RETURN(_SUCCESS)
    end subroutine advertise

@@ -122,10 +122,11 @@ contains
       if (present(rc)) rc = status
    end subroutine erase
 
-   subroutine advertise(this, state, unusable, rc)
+   subroutine advertise(this, state, unusable, TransferOfferGeomObject, rc)
       class(FieldGroup),                intent(inout) :: this
       type(ESMF_State),                 intent(inout) :: state
       class(KeywordEnforcer), optional, intent(in   ) :: unusable
+      character(len=*),       optional, intent(in   ) :: TransferOfferGeomObject
       integer,                optional, intent(  out) :: rc
 
       class(FieldGroupEntry), pointer  :: field_entry
@@ -138,7 +139,7 @@ contains
       iter = this%map%begin()
       do while(iter /= this%map%end())
          field_entry => iter%value()
-         call field_entry%advertise(state, __RC__)
+         call field_entry%advertise(state, TransferOfferGeomObject=TransferOfferGeomObject, __RC__)
 
          call iter%next()
       end do
@@ -180,7 +181,6 @@ contains
 
       iter = this%map%begin()
       do while(iter /= this%map%end())
-         write(*,*)'bmaa new field'
          field_entry    => iter%value()
          registry_entry =  field_entry%get_field_entry()
          call field_registry%insert(registry_entry)
