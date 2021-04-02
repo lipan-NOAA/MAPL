@@ -4,13 +4,17 @@
 module NUOPC_HistoryCapMod
    use ESMF
    use NUOPC
-   use NUOPC_Model, &
-       model_SetServices    => SetServices, &
-       model_Advance        => label_advance, &
-       model_CheckImport    => label_CheckImport, &
-       model_DataInitialize => label_DataInitialize, &
-       model_SetClock       => label_SetClock, &
-       model_Finalize       => label_finalize
+    use NUOPC_Model, &
+    modelSS    => SetServices
+   !use NUOPC_Model, &
+       !model_SetServices    => SetServices, &
+       !model_Advance        => label_advance, &
+       !model_CheckImport    => label_CheckImport, &
+       !model_DataInitialize => label_DataInitialize, &
+       !model_SetClock       => label_SetClock, &
+       !model_Finalize       => label_finalize, &
+       !model_Advertise       => label_Advertise, &
+       !model_Realzie       => label_RealizeProvided
 
    use FieldRegistryMod
    use HistoryCapMod
@@ -36,81 +40,53 @@ contains
 
       rc = ESMF_SUCCESS
 
-      call NUOPC_CompDerive(model, model_SetServices, rc=rc)
+      call NUOPC_CompDerive(model, ModelSS, rc=rc)
       VERIFY_NUOPC_(rc)
-
-      call ESMF_GridCompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
-         userRoutine=initialize_p0, phase=0, rc=rc)
-      VERIFY_NUOPC_(rc)
-
-      ! TODO: eliminate entry point once we can use ESMF 8.1.0 specialize labels
-      ! set entry point for methods that require specific implementation
-      do i=1, num_phases
-         call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
-            phaseLabelList=[phase_label_list(i)], userRoutine=generic_initialize, rc=rc)
-         VERIFY_NUOPC_(rc)
-      end do
 
       ! attach specializing method(s)
-      call NUOPC_CompSpecialize(model, specLabel=model_DataInitialize, &
+      call NUOPC_CompSpecialize(model, specLabel=label_Advertise, &
+         specRoutine=advertise, rc=rc)
+      VERIFY_NUOPC_(rc)
+      call NUOPC_CompSpecialize(model, specLabel=label_RealizeProvided, &
+         specRoutine=realize, rc=rc)
+      VERIFY_NUOPC_(rc)
+      call NUOPC_CompSpecialize(model, specLabel=label_DataInitialize, &
          specRoutine=initialize_data, rc=rc)
       VERIFY_NUOPC_(rc)
-      call NUOPC_CompSpecialize(model, specLabel=model_Advance, &
+      call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
          specRoutine=advance, rc=rc)
       VERIFY_NUOPC_(rc)
-      call ESMF_MethodRemove(model, label=model_CheckImport, rc=rc)
+      call ESMF_MethodRemove(model, label=label_CheckImport, rc=rc)
       VERIFY_NUOPC_(rc)
-      call NUOPC_CompSpecialize(model, specLabel=model_CheckImport, &
+      call NUOPC_CompSpecialize(model, specLabel=label_CheckImport, &
          specRoutine=check_import, rc=rc)
       VERIFY_NUOPC_(rc)
 
-      call NUOPC_CompSpecialize(model, specLabel=model_SetClock, &
+      call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
          specRoutine=set_clock, rc=rc)
       VERIFY_NUOPC_(rc)
-      call NUOPC_CompSpecialize(model, specLabel=model_Finalize, &
+      call NUOPC_CompSpecialize(model, specLabel=label_Finalize, &
          specRoutine=finalize, rc=rc)
       VERIFY_NUOPC_(rc)
    end subroutine SetServices
 
-   subroutine initialize_p0(model, import_state, export_state, clock, rc)
+   subroutine initialize_p0(model, rc)
       type(ESMF_GridComp)  :: model
-      type(ESMF_State)     :: import_state
-      type(ESMF_State)     :: export_state
-      type(ESMF_Clock)     :: clock
+      !type(ESMF_State)     :: import_state
+      !type(ESMF_State)     :: export_state
+      !type(ESMF_Clock)     :: clock
       integer, intent(out) :: rc
 
       type(HistoryCap), pointer :: cap
 
       rc = ESMF_SUCCESS
 
-      call NUOPC_CompFilterPhaseMap(model, ESMF_METHOD_INITIALIZE, &
-          acceptStringList=["IPDv05p"], rc=rc)
-      VERIFY_NUOPC_(rc)
-
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 
-      call cap%init_p0(model, import_state, export_state, clock, rc)
+      call cap%init_p0(model, rc)
       VERIFY_NUOPC_(rc)
    end subroutine initialize_p0
-
-   subroutine generic_initialize(model, import_state, export_state, clock, rc)
-      type(ESMF_GridComp)  :: model
-      type(ESMF_State)     :: import_state
-      type(ESMF_State)     :: export_state
-      type(ESMF_Clock)     :: clock
-      integer, intent(out) :: rc
-
-      type(HistoryCap), pointer :: cap
-
-      rc = ESMF_SUCCESS
-
-      cap => get_HistoryCap(model, rc)
-      VERIFY_NUOPC_(rc)
-
-      call cap%generic_init(model, import_state, export_state, clock, rc)
-      VERIFY_NUOPC_(rc)
-   end subroutine generic_initialize
 
    subroutine advertise(model, rc)
       type(ESMF_GridComp)  :: model
@@ -120,6 +96,8 @@ contains
 
       rc = ESMF_SUCCESS
 
+      call initialize_p0(model,rc=rc)
+      VERIFY_NUOPC_(rc)
       cap => get_HistoryCap(model, rc)
       VERIFY_NUOPC_(rc)
 

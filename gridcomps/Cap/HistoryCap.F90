@@ -38,7 +38,6 @@ module HistoryCapMod
       procedure :: init_mapl
 
       procedure :: init_p0
-      procedure :: generic_init
       procedure :: advertise
       procedure :: realize
       procedure :: data_init
@@ -137,58 +136,22 @@ contains
       _RETURN(_SUCCESS)
    end subroutine init_mapl
 
-   subroutine init_p0(this, model, import_state, export_state, clock, rc)
+   subroutine init_p0(this, model, rc)
       class(HistoryCap),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
-      type(ESMF_State)                  :: import_state
-      type(ESMF_State)                  :: export_state
-      type(ESMF_Clock)                  :: clock
+      !type(ESMF_State)                  :: import_state
+      !type(ESMF_State)                  :: export_state
+      !type(ESMF_Clock)                  :: clock
       integer,            intent(  out) :: rc
 
       integer :: status
 
       rc = ESMF_SUCCESS
 
-      call NUOPC_CompFilterPhaseMap(model, ESMF_METHOD_INITIALIZE, &
-         acceptStringList=["IPDv05p"], rc=rc)
-      VERIFY_NUOPC_(rc)
-
       call this%init_cap(model, __RC__)
       call this%init_mapl(__RC__)
 
-      call this%init_phase_map(model, __RC__)
    end subroutine init_p0
-
-   ! TODO: eliminate generic_init in favor of using ESMF 8.1.0 specialize labels
-   subroutine generic_init(this, model, import_state, export_state, clock, rc)
-      class(HistoryCap),  intent(inout) :: this
-      type(ESMF_GridComp)               :: model
-      type(ESMF_State)                  :: import_state
-      type(ESMF_State)                  :: export_state
-      type(ESMF_Clock)                  :: clock
-      integer,            intent(  out) :: rc
-
-      character(len=:), pointer :: phase_label
-      integer                   :: current_phase_index
-
-      rc = ESMF_SUCCESS
-
-      call ESMF_GridCompGet(model, currentPhase=current_phase_index, rc=rc)
-      VERIFY_NUOPC_(rc)
-
-      call this%phase_map%get_phase(current_phase_index, phase_label, rc)
-      VERIFY_NUOPC_(rc)
-
-      select case(phase_label)
-      case (phase_label_list(1))
-         call this%advertise(model, rc)
-         VERIFY_NUOPC_(rc)
-
-      case (phase_label_list(2))
-         call this%realize(model, rc)
-         VERIFY_NUOPC_(rc)
-      end select
-   end subroutine generic_init
 
    subroutine advertise(this, model, rc)
       class(HistoryCap),  intent(inout) :: this

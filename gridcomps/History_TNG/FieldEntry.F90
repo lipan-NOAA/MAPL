@@ -20,6 +20,7 @@ module FieldEntryMod
 
    character(*), parameter :: default_TransferOfferGeomObject = 'will provide'
    character(*), parameter :: default_SharePolicyField        = 'not share'
+   character(*), parameter :: default_SharePolicyGeomObject   = 'not share'
 
    type :: FieldEntry
       private
@@ -264,7 +265,7 @@ contains
       _UNUSED_DUMMY(unusable)
 
       call this%register(__RC__)
-
+   
       call this%NUOPC_advert(state, this%standard_name(),&
          TransferOfferGeomObject=this%TransferOfferGeomObject, &
          SharePolicyField=this%SharePolicyField, &
