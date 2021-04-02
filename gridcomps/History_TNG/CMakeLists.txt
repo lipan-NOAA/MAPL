@@ -36,4 +36,5 @@ if (PFUNIT_FOUND)
 endif ()
 
 add_subdirectory(testing_app)
+add_subdirectory(writer_testing_app)
 
