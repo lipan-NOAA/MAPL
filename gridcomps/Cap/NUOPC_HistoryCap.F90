@@ -6,15 +6,6 @@ module NUOPC_HistoryCapMod
    use NUOPC
     use NUOPC_Model, &
     modelSS    => SetServices
-   !use NUOPC_Model, &
-       !model_SetServices    => SetServices, &
-       !model_Advance        => label_advance, &
-       !model_CheckImport    => label_CheckImport, &
-       !model_DataInitialize => label_DataInitialize, &
-       !model_SetClock       => label_SetClock, &
-       !model_Finalize       => label_finalize, &
-       !model_Advertise       => label_Advertise, &
-       !model_Realzie       => label_RealizeProvided
 
    use FieldRegistryMod
    use HistoryCapMod

@@ -33,64 +33,36 @@ module HistoryWriter_GridComp
     rc = ESMF_SUCCESS
     
     call NUOPC_CompDerive(model, modelSS, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
    
     ! specialize model
     call NUOPC_CompSpecialize(model, specLabel=label_Advertise, &
       specRoutine=Advertise, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
     call NUOPC_CompSpecialize(model, specLabel=label_RealizeAccepted, &
       specRoutine=RealizeAccepted, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
     call NUOPC_CompSpecialize(model, specLabel=label_RealizeProvided, &
       specRoutine=RealizeProvided, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
     call NUOPC_CompSpecialize(model, specLabel=label_AcceptTransfer, &
       specRoutine=acceptTransfer, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
 
-      call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
-         specRoutine=set_clock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-      call ESMF_MethodRemove(model, label=label_CheckImport, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-        call NUOPC_CompSpecialize(model, specLabel=label_CheckImport, &
-                specRoutine=writer_CheckImport, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
+       specRoutine=set_clock, rc=rc)
+    VERIFY_NUOPC_(rc)
+    call ESMF_MethodRemove(model, label=label_CheckImport, rc=rc)
+    VERIFY_NUOPC_(rc)
+     call NUOPC_CompSpecialize(model, specLabel=label_CheckImport, &
+       specRoutine=writer_CheckImport, rc=rc)
+    VERIFY_NUOPC_(rc)
 
 
 
     call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
       specRoutine=write_collection, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    VERIFY_NUOPC_(rc)
     
   end subroutine
 
