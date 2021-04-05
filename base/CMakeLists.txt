@@ -40,14 +40,16 @@ set (srcs
   MAPL_EtaHybridVerticalCoordinate.F90  MAPL_newCFIOitem.F90                
   MAPL_ExtDataCollection.F90            MAPL_NominalOrbitsMod.F90           
   MAPL_ExtDataCollectionManager.F90                 
-  MAPL_ExtDataGridCompMod.F90           MAPL_OrbGridCompMod.F90             tstqsat.F90
+  MAPL_ExtDataGridCompMod.F90           MAPL_OrbGridCompMod.F90
   MAPL_LocStreamFactoryMod.F90          MAPL_LocstreamRegridder.F90
   MAPL_ExternalGridFactory.F90
   ServerManager.F90 ApplicationSupport.F90 MAPL_OldCubedSphereGridFactory.F90
   regex_module.F90 StringTemplate.F90 MAPL_SphericalGeometry.F90  FieldBundleWrite.F90 FieldBundleRead.F90
   regex_F.c
   c_mapl_locstream_F.c  getrss.c  memuse.c
-  # new generic - needs to move eventually
+
+  # Orphaned program: should not be in this library.
+  # tstqsat.F90
   )
 
 if (BUILD_WITH_FLAP)
@@ -60,7 +62,7 @@ esma_add_library(
                esmf NetCDF::NetCDF_Fortran MPI::MPI_Fortran
   TYPE SHARED)
 
-# CMake has an OpenMP issue with Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
+# CMake has an OpenMP issue with NAG Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(${this} PRIVATE OpenMP::OpenMP_Fortran)
 endif ()
@@ -85,14 +87,14 @@ endforeach()
 
 ecbuild_add_executable (TARGET cub2latlon.x SOURCES cub2latlon_regridder.F90 DEPENDS esmf)
 target_link_libraries (cub2latlon.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBRARIES})
-# CMake has an OpenMP issue with Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
+# CMake has an OpenMP issue with NAG Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(cub2latlon.x PRIVATE OpenMP::OpenMP_Fortran)
 endif ()
 
 ecbuild_add_executable (TARGET Regrid_Util.x SOURCES Regrid_Util.F90 DEPENDS esmf)
 target_link_libraries (Regrid_Util.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBRARIES})
-# CMake has an OpenMP issue with Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
+# CMake has an OpenMP issue with NAG Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(Regrid_Util.x PRIVATE OpenMP::OpenMP_Fortran)
 endif ()

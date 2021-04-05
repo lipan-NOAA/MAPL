@@ -25,6 +25,7 @@ module MAPL_SunMod
   use MAPL_CommsMod
   use MAPL_ExceptionHandling
   use netcdf
+  use, intrinsic :: iso_fortran_env, only: REAL64
 
   implicit none
   private
@@ -515,12 +516,12 @@ type(MAPL_SunOrbit) function MAPL_SunOrbitCreate(CLOCK,                  &
 
       character(len=ESMF_MAXSTR), parameter :: IAm = "SunOrbitCreate"
 
-      real*8  :: YEARLEN
+      real(kind=REAL64)  :: YEARLEN
       integer :: K, KP, YEARS_PER_CYCLE, DAYS_PER_CYCLE
-      real*8  :: TREL, T1, T2, T3, T4, dTRELdDAY
-      real*8  :: SOB, COB, OMG0, OMG, PRH, PRHV
+      real(kind=REAL64)  :: TREL, T1, T2, T3, T4, dTRELdDAY
+      real(kind=REAL64)  :: SOB, COB, OMG0, OMG, PRH, PRHV
       real    :: D2R, OMECC, OPECC, OMSQECC, EAFAC
-      real*8  :: X, TA, EA, MA, TRRA, MNRA
+      real(kind=REAL64)  :: TA, EA, MA, TRRA, MNRA
       real    :: meanEOT
       type(MAPL_SunOrbit) :: ORBIT
       integer :: STATUS
@@ -1033,7 +1034,7 @@ subroutine  MAPL_SunOrbitQuery(ORBIT,           &
 !   Locals
 
       
-      character(len=ESMF_MAXSTR)      :: IAm = "SunGetInsolationArr"
+!!$      character(len=ESMF_MAXSTR)      :: IAm = "SunGetInsolationArr"
       integer                         :: STATUS
 
       real, pointer, dimension (:  )  :: LONS1, LATS1, ZTH1, SLR1, ZTHB1, ZTHD1

@@ -16,6 +16,7 @@ module MAPL_CapMod
    use MAPL_ServerManager
    use MAPL_ApplicationSupport
    use FieldRegistryMod
+   use, intrinsic :: iso_fortran_env, only: REAL64, INT64, OUTPUT_UNIT
    implicit none
    private
 
@@ -227,7 +228,7 @@ contains
       integer, optional, intent(out) ::rc
 
       type (ESMF_VM) :: vm
-      integer :: start_tick, stop_tick, tick_rate
+      integer(kind=INT64) :: start_tick, stop_tick, tick_rate
       integer :: status
       class(Logger), pointer :: lgr
       
@@ -268,7 +269,6 @@ contains
       end subroutine stop_timer
 
       subroutine report_throughput(rc)
-         use, intrinsic :: iso_fortran_env, only: REAL64, OUTPUT_UNIT
          integer, optional, intent(out) :: rc
 
          integer :: rank, ierror
@@ -292,11 +292,13 @@ contains
 
    end subroutine run_model
    
-   subroutine initialize_cap_gc(this, unusable, import_field_registry, export_field_registry, rc)
+   subroutine initialize_cap_gc(this, unusable, import_field_registry, export_field_registry, &
+     n_run_phases,rc)
      class(MAPL_Cap), intent(inout) :: this
      class (KeywordEnforcer), optional, intent(in) :: unusable
      type(FieldRegistry),    optional, intent(in) :: import_field_registry
      type(FieldRegistry),    optional, intent(in) :: export_field_registry
+     integer, optional, intent(in) :: n_run_phases
      integer, optional, intent(out) :: rc
 
      integer :: status
@@ -304,7 +306,7 @@ contains
      _UNUSED_DUMMY(unusable)
 
      call MAPL_CapGridCompCreate(this%cap_gc, this%set_services, this%get_cap_rc_file(), &
-           this%name, this%get_egress_file(), &
+           this%name, this%get_egress_file(), n_run_phases=n_run_phases, &
            import_field_registry=import_field_registry, &
            export_field_registry=export_field_registry, &
            rc=status)
