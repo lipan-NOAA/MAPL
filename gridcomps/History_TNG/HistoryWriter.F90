@@ -22,7 +22,7 @@ module HistoryWriterMod
       procedure :: advertise
       procedure :: acceptTransfer
       procedure :: realizeAccepted
-      procedure :: advance
+      procedure :: write_collection
    end type HistoryWriter
 
 contains
@@ -203,7 +203,7 @@ contains
 
   end subroutine acceptTransfer
    
-   subroutine advance(this, model, rc)
+   subroutine write_collection(this, model, rc)
       class(HistoryWriter),  intent(inout) :: this
       type(ESMF_GridComp)               :: model
       integer,            intent(  out) :: rc
@@ -213,33 +213,48 @@ contains
 
     type(ESMF_Field) :: field
     real, pointer :: ptr2d(:,:),ptr3d(:,:,:)
-    character(len=50) :: vname(1),units
-    integer :: rank
+    integer :: itemCount
+    character(len=ESMF_MAXSTR),allocatable :: vname(:)
+    character(len=50) :: units
+    integer :: i,mypet,rank
     type(ESMF_VM) :: vm
-    integer :: npet
-    type(ESMF_Grid) :: grid
-    integer :: lcount(3)
+    type(ESMF_Clock) :: clock
+    type(ESMF_Time) :: time
 
-      rc = ESMF_SUCCESS
+    rc = ESMF_SUCCESS
+    call ESMF_VMGetCurrent(vm)
+    call ESMF_VMGet(vm,rc=rc)
+    VERIFY_NUOPC_(rc)
+    call ESMF_VMGet(vm,localPet=mypet,rc=rc)
+    VERIFY_NUOPC_(rc)
 
-      call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, rc=rc)
-      VERIFY_NUOPC_(rc)
 
+    call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, &
+        modelClock=clock, rc=rc)
+    VERIFY_NUOPC_(rc)
+    
+    call ESMF_StateGet(import_state,itemCount=itemCount,rc=rc)
+    VERIFY_NUOPC_(rc)
+    allocate(vname(itemCount))
     call ESMF_StateGet(import_State,itemNameList=vname)
-    write(*,*)'bmaa found: ',trim(vname(1))
-    call NUOPC_FieldDictionaryGetEntry(vname(1),units,rc=rc)
-    call ESMF_StateGet(import_State,"var1.AGCM",field)
-    call ESMF_FieldGet(field,rank=rank,grid=grid)
-    call MAPL_GridGet(grid,globalCellCountPerDim=lcount)
-    write(*,*)'bmaa rank: ',rank,trim(units),lcount
-    call ESMF_FieldGet(field,0,ptr3d,rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    write(*,*)'bmaa size: ',shape(ptr3d)
-    write(*,*)'bmaa writing: ',maxval(ptr3d)
 
-   end subroutine advance
+    do i=1,itemCount
+     
+       if (mypet==0) write(*,*)'writer found: ',trim(vname(i))
+       call ESMF_StateGet(import_State,trim(vname(i)),field)
+       call ESMF_FieldGet(field,rank=rank)
+       if (rank==2) then
+          call ESMF_FieldGet(field,0,ptr2d,rc=rc)
+          if (mypet==0) write(*,*)'writer size: ',shape(ptr2d)
+          if (mypet==0) write(*,*)'writer writing: ',maxval(ptr2d)
+       else
+          call ESMF_FieldGet(field,0,ptr3d,rc=rc)
+          if (mypet==0) write(*,*)'writer size: ',shape(ptr3d)
+          if (mypet==0) write(*,*)'writer writing: ',maxval(ptr3d)
+       end if
+
+    enddo
+
+   end subroutine write_collection
 
 end module HistoryWriterMod

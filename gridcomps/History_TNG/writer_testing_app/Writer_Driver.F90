@@ -200,8 +200,8 @@ contains
 
         call NUOPC_CompAttributeSet(provider, 'Verbosity', 'high', rc=rc)
         VERIFY_NUOPC_(rc)
-        call NUOPC_CompAttributeSet(provider, 'Diagnostic', 'max', rc=rc)
-        VERIFY_NUOPC_(rc)
+        !call NUOPC_CompAttributeSet(provider, 'Diagnostic', 'max', rc=rc)
+        !VERIFY_NUOPC_(rc)
 
         !call init_wrapper(wrapper_gc=provider, name="provider", &
                 !cap_rc_file="PROVIDER_CAP.rc", root_set_services=providerSS, rc=rc)

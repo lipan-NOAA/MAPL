@@ -41,6 +41,13 @@ contains
                 units = 'rods', &
                 dims = MAPL_DimsHorzVert, &
                 vlocation = MAPL_VLocationCenter, __RC__)
+        call MAPL_AddExportSpec(GC,&
+                short_name='var2', &
+                long_name='test_variable' , &
+                units = 'rods', &
+                dims = MAPL_DimsHorzOnly, &
+                vlocation = MAPL_VLocationNone, __RC__)
+
 
         print*, "Provider Call Generic Set Services"
         call MAPL_GenericSetServices(gc, __RC__)
@@ -64,25 +71,25 @@ contains
         call ESMF_GridCompGet(gc, name=comp_name, __RC__)
         Iam = trim(comp_name) //'::'// Iam
 
-        print*, "Provider start Initialize"
+        if (mapl_am_I_root()) print*, "Provider start Initialize"
         call ESMF_LogWrite("Provider start Initialize", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
 
-        print*, "Provider run MAPL_GridCreate"
+        if (mapl_am_I_root()) print*, "Provider run MAPL_GridCreate"
         call ESMF_LogWrite("Provider run MAPL_GridCreate", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
         call MAPL_GridCreate(gc, __RC__)
 
-        print*, "Provider run GenericInitialize"
+        if (mapl_am_I_root()) print*, "Provider run GenericInitialize"
         call ESMF_LogWrite("Provider run GenericInitialize", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
         call MAPL_GenericInitialize(gc, import, export, clock, __RC__)
-        print*, "Provider run ForceAllocation"
+        if (mapl_am_I_root()) print*, "Provider run ForceAllocation"
         call ESMF_LogWrite("Provider run ForceAllocation", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
         call ForceAllocation(export, __RC__)
 
-        print*, "Provider finish Initialize"
+        if (mapl_am_I_root()) print*, "Provider finish Initialize"
         call ESMF_LogWrite("Provider finish Initialize", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
 
@@ -99,8 +106,8 @@ contains
         character(len=ESMF_MAXSTR) :: comp_name
         real, pointer              :: ptr2d(:,:),ptr3d(:,:,:)
 
-        integer :: num_import, num_export
-        character(len=ESMF_MAXSTR), allocatable :: names_import(:), names_export(:)
+        integer :: num_export,i
+        character(len=ESMF_MAXSTR), allocatable :: names_export(:)
         character(len=ESMF_MAXSTR) :: name
 
         type(ESMF_Field) :: field
@@ -112,40 +119,33 @@ contains
         Iam = trim(comp_name) //'::'// Iam
 
         call ESMF_ClockGet(clock,currtime=currtime,__RC__)
-        call ESMF_TimePrint(currtime,options='string')
+        if (mapl_am_i_root()) call ESMF_TimePrint(currtime,options='string')
 
-        print*, "Provider start Run"
+        if (mapl_am_I_root()) print*, "Provider start Run"
 
-        print*,"Provider set export value"
+        if (mapl_am_I_root()) print*,"Provider set export value"
         !call MAPL_GetPointer(export, ptr2d, 'var1', __RC__)
         !ptr2d = ptr2d + 1.0
         !print*, "The value var1 is set to is:", minval(ptr2d), maxval(ptr2d)
         call MAPL_GetPointer(export, ptr3d, 'var1', __RC__)
         ptr3d = ptr3d + 1.0
-        print*, "The value var1 is set to is:", minval(ptr3d), maxval(ptr3d)
+        if (mapl_am_I_root()) print*, "The value var1 is set to is:", minval(ptr3d), maxval(ptr3d)
+        call MAPL_GetPointer(export, ptr2d, 'var2', __RC__)
+        ptr2d = ptr2d + 1.0
+        if (mapl_am_I_root()) print*, "The value var2 is set to is:", minval(ptr2d), maxval(ptr2d)
 
-        print*,"Provider get number of imports"
-        call ESMF_StateGet(import, itemcount=num_import, rc=rc)
-        VERIFY_NUOPC_(rc)
-        print*, "Provider num import:", num_import
-
-        allocate(names_import(num_import))
-        print*,"Provider get import names"
-        call ESMF_StateGet(import, itemnamelist=names_import, rc=rc)
-        VERIFY_NUOPC_(rc)
-        print*,"Provider import names are:", names_import
-
-        print*,"Provider get number of exports"
+        if (mapl_am_I_root()) print*,"Provider get number of exports"
         call ESMF_StateGet(export, itemcount=num_export, rc=rc)
         VERIFY_NUOPC_(rc)
-        print*, "Provider num export:", num_export
+        if (mapl_am_I_root()) print*, "Provider num export:", num_export
 
         allocate(names_export(num_export))
-        print*,"Provider get export names"
+        if (mapl_am_I_root()) print*,"Provider get export names"
         call ESMF_StateGet(export, itemnamelist=names_export, rc=rc)
         VERIFY_NUOPC_(rc)
-        print*,"Provider export names are:", names_export
-
+        do i=1,num_export
+          if (mapl_am_I_root()) print*,"Provider export names are:", trim(names_export(i))
+        enddo
         call ESMF_StateGet(export, field=field, itemName="var1", rc=rc)
         VERIFY_NUOPC_(rc)
 
@@ -153,9 +153,9 @@ contains
         VERIFY_NUOPC_(rc)
 
         call ESMF_GridGet(grid, name=name, rc=rc)
-        print*,"Var1 grid name:", name
+        if (mapl_am_I_root()) print*,"Var1 grid name:", trim(name)
 
-        print*, "Provider finish Run"
+        if (mapl_am_I_root()) print*, "Provider finish Run"
         _RETURN(_SUCCESS)
     end subroutine Run
 
@@ -172,7 +172,7 @@ contains
 
         __Iam__('ForceAllocation')
 
-        print*, "Provider start ForceAllocation"
+        if (mapl_am_i_root()) print*, "Provider start ForceAllocation"
         call ESMF_LogWrite("Provider start ForceAllocation", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
 

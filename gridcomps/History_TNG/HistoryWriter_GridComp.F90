@@ -86,7 +86,7 @@ module HistoryWriter_GridComp
 
 
     call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
-      specRoutine=Advance, rc=rc)
+      specRoutine=write_collection, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -222,7 +222,7 @@ module HistoryWriter_GridComp
 
    end subroutine acceptTransfer
 
-  subroutine Advance(model,rc)
+  subroutine write_collection(model,rc)
       type(ESMF_GridComp)               :: model
       integer,            intent(  out) :: rc
       type(HistoryWriter), pointer :: writer
@@ -232,9 +232,9 @@ module HistoryWriter_GridComp
       writer => get_HistoryWriter(model,rc)
       VERIFY_NUOPC_(rc)
 
-      call writer%Advance(model,rc)
+      call writer%write_collection(model,rc)
       VERIFY_NUOPC_(rc)
 
-   end subroutine Advance
+   end subroutine write_collection
 
 end module HistoryWriter_GridComp
