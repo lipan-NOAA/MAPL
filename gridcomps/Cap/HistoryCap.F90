@@ -31,6 +31,7 @@ module HistoryCapMod
       type(NUOPCmap), pointer                    :: phase_map => null()
 
       type(FieldRegistry) :: registry
+      logical :: disable_throughput
    contains
       procedure :: initialize
       procedure :: init_cap
@@ -55,17 +56,19 @@ module HistoryCapMod
       end subroutine i_set_services
    end interface
 contains
-   subroutine initialize(this, name, root_rc, set_services, registry)
+   subroutine initialize(this, name, root_rc, set_services, registry, disable_throughput)
       class(HistoryCap),                  intent(  out) :: this
       character(*),                       intent(in   ) :: name
       character(*),                       intent(in   ) :: root_rc
       procedure(i_set_services), pointer, intent(in   ) :: set_services
       type(FieldRegistry),                intent(in   ) :: registry
+      logical,                            intent(in   ) :: disable_throughput
 
       this%name         =  name
       this%rc_file      =  root_rc
       this%set_services => set_services
       this%registry     =  registry
+      this%disable_throughput = disable_throughput
    end subroutine initialize
 
    subroutine init_cap(this, model, rc)
@@ -127,7 +130,7 @@ contains
 
       ! Create/initialize the Cap GridComp
       call this%cap%initialize_io_clients_servers(this%cap%get_comm_world(), __RC__)
-      call this%cap%initialize_cap_gc(export_field_registry=this%registry,__RC__)
+      call this%cap%initialize_cap_gc(export_field_registry=this%registry,disable_throughput=this%disable_throughput,__RC__)
 
       ! Call MAPL set_services and initialize MAPL components
       call this%cap%cap_gc%set_services(__RC__)

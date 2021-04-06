@@ -201,12 +201,13 @@ contains
       cap => wrapper%ptr
    end function get_HistoryCap
 
-   subroutine initialize_HistoryCap_wrapper(gc, name, root_rc, set_services, registry, rc)
+   subroutine initialize_HistoryCap_wrapper(gc, name, root_rc, set_services, registry, disable_throughput, rc)
       type(ESMF_GridComp), target,        intent(inout) :: gc
       character(*),                       intent(in   ) :: name
       character(*),                       intent(in   ) :: root_rc
       procedure(i_set_services), pointer, intent(in   ) :: set_services
       type(FieldRegistry),                intent(in   ) :: registry
+      logical,                            intent(in   ) :: disable_throughput
       integer,                            intent(  out) :: rc
 
       type(HistoryCap)         :: cap
@@ -214,7 +215,7 @@ contains
 
       rc = ESMF_SUCCESS
 
-      call cap%initialize(name, root_rc, set_services, registry)
+      call cap%initialize(name, root_rc, set_services, registry, disable_throughput)
 
       allocate(wrapper%ptr)
       wrapper%ptr = cap

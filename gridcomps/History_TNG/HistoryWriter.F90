@@ -220,6 +220,7 @@ contains
     type(ESMF_VM) :: vm
     type(ESMF_Clock) :: clock
     type(ESMF_Time) :: time
+    character(len=ESMF_MAXSTR) :: cname
 
     rc = ESMF_SUCCESS
     call ESMF_VMGetCurrent(vm)
@@ -232,6 +233,8 @@ contains
     call NUOPC_ModelGet(model, importState=import_state, exportState=export_state, &
         modelClock=clock, rc=rc)
     VERIFY_NUOPC_(rc)
+    call NUOPC_CompAttributeGet(model,name="CompLabel",value=cname,rc=rc)
+    VERIFY_NUOPC_(rc)
     
     call ESMF_StateGet(import_state,itemCount=itemCount,rc=rc)
     VERIFY_NUOPC_(rc)
@@ -240,7 +243,7 @@ contains
 
     do i=1,itemCount
      
-       if (mypet==0) write(*,*)'writer found: ',trim(vname(i))
+       if (mypet==0) write(*,*)trim(cname),' found: ',trim(vname(i))
        call ESMF_StateGet(import_State,trim(vname(i)),field)
        call ESMF_FieldGet(field,rank=rank)
        if (rank==2) then

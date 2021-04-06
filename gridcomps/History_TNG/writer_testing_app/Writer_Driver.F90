@@ -24,6 +24,7 @@ module synthetic_driver
     use COllectionMod
     use HistoryConfigMod
     use yafYaml
+    use gFTL_StringVector
     implicit none
     private
 
@@ -87,14 +88,15 @@ contains
         type(ESMF_GridComp)  :: driver
         integer, intent(out) :: rc
 
-        type(ESMF_GridComp) :: provider, reciever, ufs
+        type(ESMF_GridComp) :: provider!, reciever
+        type(ESMF_GridComp), allocatable :: reciever(:)
         type(ESMF_CplComp)  :: connector
         type(ESMF_VM)       :: vm
         type(ESMF_Config)   :: config
 
         logical              :: seq
-        integer              :: i, npes, n_provider_pes, n_reciever_pes, n_ufs_pes
-        integer, allocatable :: provider_petlist(:), reciever_petlist(:), ufs_petlist(:)
+        integer              :: i, n, npes, n_provider_pes, n_reciever_pes
+        integer, allocatable :: provider_petlist(:), reciever_petlist(:,:)
         type(FieldRegistry)  :: registry
         type(CollectionRegistry)  :: coll_registry
         type(Collection) :: hist_coll
@@ -102,6 +104,11 @@ contains
         type(Configuration) :: yaml_config
         type(Parser)     :: P
         type(FileStream) :: file_stream
+        integer :: n_collection
+        type(StringVector) :: enabled
+        type(StringVectorIterator) :: iter
+        character(len=1) :: ci
+        character(:), allocatable :: key
 
         P           = Parser('core')
         file_stream  = FileStream("driver_hist.yaml")
@@ -111,8 +118,10 @@ contains
         call hist_config%finish_import()
         registry=hist_config%get_fields()
         call registry%register()
+        enabled=hist_config%get_enabled()
+        n_collection=enabled%size()
         coll_registry=hist_config%get_collections()
-        hist_coll=coll_registry%at("collection_1")
+        
         
         print*, "Driver start Set Model Services"
         call ESMF_LogWrite("Driver start SetModelServices", ESMF_LOGMSG_INFO, rc=rc)
@@ -148,10 +157,6 @@ contains
         call ESMF_ConfigGetAttribute(config, n_reciever_pes, &
                 label="reciever_pets:", rc=rc)
         VERIFY_NUOPC_(rc)
-!        call ESMF_ConfigGetAttribute(config, n_ufs_pes, &
-!                label="ufs_pets:", rc=rc)
-!        VERIFY_NUOPC_(rc)
-
         ! call NUOPC_CompAttributeSet(driver, 'Diagnostic', 'max', rc=rc)
         ! VERIFY_NUOPC_(rc)
 
@@ -159,25 +164,22 @@ contains
         call ESMF_LogWrite("Driver create pet lists", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
         allocate(provider_petlist(n_provider_pes))
-        allocate(reciever_petlist(n_reciever_pes))
-!        allocate(ufs_petlist(n_ufs_pes))
+        allocate(reciever_petlist(n_collection,n_reciever_pes))
 
         if (seq) then
-            _ASSERT((n_provider_pes == n_reciever_pes), "provider_pets must be equal to reciever_pets in sequential")
-!            _ASSERT((n_provider_pes == n_ufs_pes), "provider_pets must be equal to ufs_pets in sequential")
-            ! _ASSERT((n_provider_pes == npes), "provider_pets must be equal to number of pets in sequential")
+            !_ASSERT((n_provider_pes == n_reciever_pes), "provider_pets must be equal to reciever_pets in sequential")
 
-            provider_petlist = [(i, i = 0, n_provider_pes - 1)]
-            reciever_petlist = [(i, i = 0, n_reciever_pes - 1)]
-!            ufs_petlist      = [(i, i = 0, n_ufs_pes - 1)]
+            !provider_petlist = [(i, i = 0, n_provider_pes - 1)]
+            !reciever_petlist = [(i, i = 0, n_reciever_pes - 1)]
         else
-!            _ASSERT(((n_provider_pes + n_reciever_pes + n_ufs_pes) == npes), "provider_pets + reciever_pets + ufs_pets must be equal to number of pets")
-            _ASSERT(((n_provider_pes + n_reciever_pes) == npes), "provider_pets + reciever_pets must be equal to number of pets")
+            _ASSERT(((n_provider_pes + n_reciever_pes*n_collection) == npes), "provider_pets + reciever_pets must be equal to number of pets")
 
             provider_petlist = [(i, i = 0, n_provider_pes - 1)]
-            reciever_petlist = [(i, i = n_provider_pes, npes - 1)]
-!            reciever_petlist = [(i, i = n_provider_pes, n_provider_pes + n_reciever_pes - 1)]
-!            ufs_petlist      = [(i, i = n_provider_pes + n_reciever_pes, npes - 1)]
+            reciever_petlist(1,:) = [(i,i=n_provider_pes,n_provider_pes+n_reciever_pes-1)]
+            do n=2,n_collection
+               reciever_petlist(2,:) = [(i, i = reciever_petlist(n-1,n_reciever_pes)+1 , &
+                            reciever_petlist(n-1,n_reciever_pes)  + n_reciever_pes)]
+            enddo
 
             print*,"Conncurrent mode"
         end if
@@ -185,12 +187,10 @@ contains
         print*, "Sequential? :", seq
         print*, "Provider_petlist:", provider_petlist
         print*, "Reciever_petlist:", reciever_petlist
-!        print*, "UFS_petlist:", ufs_petlist
 
         print*,"Driver add provider"
         call ESMF_LogWrite("Driver add provider", ESMF_LOGMSG_INFO, rc=rc)
         VERIFY_ESMF_(rc)
-        !call NUOPC_DriverAddComp(driver, "provider", wrapperSS, comp=provider_petlist, rc=rc)
         call NUOPC_DriverAddComp(driver, "AGCM", GeosSS, comp=provider, &
                 petlist=provider_petlist, rc=rc)
         VERIFY_NUOPC_(rc)
@@ -200,51 +200,32 @@ contains
 
         call NUOPC_CompAttributeSet(provider, 'Verbosity', 'high', rc=rc)
         VERIFY_NUOPC_(rc)
-        !call NUOPC_CompAttributeSet(provider, 'Diagnostic', 'max', rc=rc)
-        !VERIFY_NUOPC_(rc)
 
-        !call init_wrapper(wrapper_gc=provider, name="provider", &
-                !cap_rc_file="PROVIDER_CAP.rc", root_set_services=providerSS, rc=rc)
-        ! initialize history cap
-        call initialize_HistoryCap_wrapper(provider,"AGCM","PROVIDER_CAP.rc",providerSS,registry,rc=rc)
+        call initialize_HistoryCap_wrapper(provider,"AGCM","PROVIDER_CAP.rc",providerSS,registry,.true.,rc=rc)
         VERIFY_NUOPC_(rc)
-        ! call init_internal_wrapper(gc=provider, name="provider", &
-        !         rc_file="PROVIDER_CAP.rc", root_set_services=providerSS, rc=rc)
-        ! VERIFY_NUOPC_(rc)
 
         print*,"Driver add reciever"
-        !call NUOPC_DriverAddComp(driver, "reciever", wrapperSS, comp=reciever, &
-                !petlist=reciever_petlist, rc=rc)
-        call NUOPC_DriverAddComp(driver, "reciever", HistWtrSS, comp=reciever, &
-                petlist=reciever_petlist, rc=rc)
-        VERIFY_NUOPC_(rc)
-
-        call initialize_WriterGC_Wrapper(reciever,hist_coll,rc=rc)
-        VERIFY_NUOPC_(rc)
-
-        print*,"Driver wrap reciever MAPL"
-        !call init_wrapper(wrapper_gc=reciever, name="reciever", &
-                !cap_rc_file="RECIEVER_CAP.rc", root_set_services=recieverSS, rc=rc)
-        !VERIFY_NUOPC_(rc)
-        ! call init_internal_wrapper(gc=reciever, name="reciever", &
-        !         rc_file="RECIEVER_CAP.rc", root_set_services=recieverSS, rc=rc)
-        ! VERIFY_NUOPC_(rc)
-
-!        print*,"Driver add ufs"
-!        call NUOPC_DriverAddComp(driver, "ufs", ufsSS, comp=ufs, &
-!                petlist=ufs_petlist, rc=rc)
-!        VERIFY_NUOPC_(rc)
-
-        print*,"Driver connect compoinents"
-        call NUOPC_DriverAddComp(driver, srcCompLabel="AGCM", dstCompLabel="reciever", &
-                compSetServicesRoutine=cplSS, comp=connector, rc=rc)
-        VERIFY_NUOPC_(rc)
-        ! call NUOPC_DriverAddComp(driver, srcCompLabel="provider", dstCompLabel="ufs", &
-        !         compSetServicesRoutine=cplSS, comp=connector, rc=rc)
-        ! VERIFY_NUOPC_(rc)
-!        call NUOPC_DriverAddComp(driver, srcCompLabel="ufs", dstCompLabel="reciever", &
-!                compSetServicesRoutine=cplSS, comp=connector, rc=rc)
-!        VERIFY_NUOPC_(rc)
+        allocate(reciever(n_collection))
+        iter=enabled%begin()
+        i=0
+        do while (iter /= enabled%end())
+           i=i+1
+           key=iter%get()
+           hist_coll=coll_registry%at(key)
+           write(*,*)"bmaa writing: ","reciever_"//trim(key)
+           call NUOPC_DriverAddComp(driver, "reciever_"//trim(key), HistWtrSS, comp=reciever(i), &
+                   petlist=reciever_petlist(i,:), rc=rc)
+           VERIFY_NUOPC_(rc)
+           print*,"Driver add reciever"
+           !call NUOPC_DriverAddComp(driver, "reciever", HistWtrSS, comp=reciever, &
+                   !petlist=reciever_petlist(i,:), rc=rc)
+           call initialize_WriterGC_Wrapper(reciever(i),hist_coll,rc=rc)
+           VERIFY_NUOPC_(rc)
+           call NUOPC_DriverAddComp(driver, srcCompLabel="AGCM", dstCompLabel="reciever_"//trim(key), &
+                   compSetServicesRoutine=cplSS, comp=connector, rc=rc)
+           VERIFY_NUOPC_(rc)
+           call iter%next()
+        enddo
 
         print*, "Driver finish SetModelServices"
         call ESMF_LogWrite("Driver finish SetModelServices", ESMF_LOGMSG_INFO, rc=rc)

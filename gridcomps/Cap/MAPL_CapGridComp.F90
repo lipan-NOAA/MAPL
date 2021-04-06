@@ -67,6 +67,7 @@ module MAPL_CapGridCompMod
      type(ESMF_Time),  allocatable :: AlarmRingTime(:)
      logical,          allocatable :: ringingState(:)
      logical :: compute_throughput
+     logical :: disable_throughput
      type(FieldRegistry), allocatable :: export_field_registry
      type(FieldRegistry), allocatable :: import_field_registry
      integer :: n_run_phases
@@ -113,7 +114,7 @@ contains
 
   
    subroutine MAPL_CapGridCompCreate(cap, root_set_services, cap_rc, name, final_file, &
-         unusable, import_field_registry, export_field_registry, n_run_phases,rc)
+         unusable, import_field_registry, export_field_registry, n_run_phases,disable_throughput,rc)
       use mapl_StubComponent
     type(MAPL_CapGridComp), intent(out), target :: cap
     procedure() :: root_set_services
@@ -123,6 +124,7 @@ contains
     type(FieldRegistry),    optional, intent(in) :: import_field_registry
     type(FieldRegistry),    optional, intent(in) :: export_field_registry
     integer, optional, intent(in)  :: n_run_phases
+    logical, optional, intent(in)  :: disable_throughput 
     integer, optional, intent(out) :: rc
 
 
@@ -148,6 +150,12 @@ contains
 
     if (present(export_field_registry)) then
        cap%export_field_registry = export_field_registry
+    end if
+
+    if (present(disable_throughput)) then
+       cap%disable_throughput=disable_throughput
+    else
+       cap%disable_throughput=.false.
     end if
 
     cap%config = ESMF_ConfigCreate(rc=status)
@@ -308,6 +316,7 @@ contains
         cap%nsteps = nsteps
         cap%compute_throughput = .true.
     end if
+    if (cap%disable_throughput) cap%compute_throughput=.false.
 
     call ESMF_ClockGet(cap%clock,currTime=cap%cap_restart_time,rc=status)
     _VERIFY(status)

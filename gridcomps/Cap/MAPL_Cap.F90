@@ -293,12 +293,13 @@ contains
    end subroutine run_model
    
    subroutine initialize_cap_gc(this, unusable, import_field_registry, export_field_registry, &
-     n_run_phases,rc)
+     n_run_phases,disable_throughput, rc)
      class(MAPL_Cap), intent(inout) :: this
      class (KeywordEnforcer), optional, intent(in) :: unusable
      type(FieldRegistry),    optional, intent(in) :: import_field_registry
      type(FieldRegistry),    optional, intent(in) :: export_field_registry
      integer, optional, intent(in) :: n_run_phases
+     logical, optional, intent(in) :: disable_throughput
      integer, optional, intent(out) :: rc
 
      integer :: status
@@ -309,6 +310,7 @@ contains
            this%name, this%get_egress_file(), n_run_phases=n_run_phases, &
            import_field_registry=import_field_registry, &
            export_field_registry=export_field_registry, &
+           disable_throughput=disable_throughput, &
            rc=status)
      _VERIFY(status)
      _RETURN(_SUCCESS)

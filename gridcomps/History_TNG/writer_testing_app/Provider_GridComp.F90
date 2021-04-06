@@ -124,14 +124,11 @@ contains
         if (mapl_am_I_root()) print*, "Provider start Run"
 
         if (mapl_am_I_root()) print*,"Provider set export value"
-        !call MAPL_GetPointer(export, ptr2d, 'var1', __RC__)
-        !ptr2d = ptr2d + 1.0
-        !print*, "The value var1 is set to is:", minval(ptr2d), maxval(ptr2d)
         call MAPL_GetPointer(export, ptr3d, 'var1', __RC__)
         ptr3d = ptr3d + 1.0
         if (mapl_am_I_root()) print*, "The value var1 is set to is:", minval(ptr3d), maxval(ptr3d)
         call MAPL_GetPointer(export, ptr2d, 'var2', __RC__)
-        ptr2d = ptr2d + 1.0
+        ptr2d = ptr2d + 2.0
         if (mapl_am_I_root()) print*, "The value var2 is set to is:", minval(ptr2d), maxval(ptr2d)
 
         if (mapl_am_I_root()) print*,"Provider get number of exports"
