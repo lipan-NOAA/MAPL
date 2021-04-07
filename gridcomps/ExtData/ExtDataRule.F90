@@ -32,7 +32,6 @@ contains
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
-      integer :: status 
       _UNUSED_DUMMY(unusable)
       this%collection=''
       this%file_var='missing_variable'
@@ -50,11 +49,8 @@ contains
 
       logical :: is_present
       integer :: status
-      character(len=:), allocatable :: source_str
-      integer :: idx
       type(Configuration) ::config1
       character(len=:), allocatable :: tempc
-      logical :: templ
       type(ExtDataTimeSample) :: ts
       _UNUSED_DUMMY(unusable)
 
@@ -67,7 +63,9 @@ contains
       if (allocated(tempc)) deallocate(tempc)
       call config%get(tempc,"vname",is_present=is_present,rc=status)
       _VERIFY(status)
-      _ASSERT(is_present,"no vname present in ExtData export")
+      if (index(rule%collection,"/dev/null")==0) then
+         _ASSERT(is_present,"no vname present in ExtData export")
+      end if
       if (is_present) rule%file_var=tempc
 
       config1=config%at("sample")
@@ -104,7 +102,6 @@ contains
       type(ExtDataRule), intent(inout) :: ucomp,vcomp
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
-      integer :: status
       integer :: semi_pos
       character(len=:),allocatable :: uname,vname
     
