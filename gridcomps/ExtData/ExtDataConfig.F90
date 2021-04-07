@@ -99,7 +99,7 @@ contains
          _VERIFY(status)
          key => iter%key()
          subcfg=iter%value()
-         call rule%append_from_yaml(subcfg,rc=status)
+         call rule%append_from_yaml(subcfg,ext_config%sample_map,key,rc=status)
          _VERIFY(status)
          semi_pos = index(key,";")
          if (semi_pos > 0) then

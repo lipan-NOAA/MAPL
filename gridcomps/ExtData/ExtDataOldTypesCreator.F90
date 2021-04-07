@@ -150,12 +150,7 @@ module MAPL_ExtDataOldTypesCreator
       end if
       if (index(rule%collection,'/dev/null') /= 0) then
          primary_item%isConst = .true.
-         semi_pos = index(rule%collection,':')
-         if (semi_pos > 0) then
-            read(rule%collection(semi_pos+1:),*)primary_item%const
-         else
-            primary_item%const=0.0
-         end if
+         primary_item%const=rule%linear_trans(1)
       else
          if (primary_item%cycling) then
             call clim_handler%initialize(dataset,__RC__)

@@ -5,6 +5,8 @@ module MAPL_ExtDataRule
    use MAPL_KeywordEnforcerMod
    use MAPL_ExceptionHandling
    use MAPL_TimeStringConversion
+   use MAPL_ExtDataTimeSample
+   use MAPL_ExtDataTimeSampleMap
    implicit none
    private
 
@@ -38,10 +40,11 @@ contains
       _RETURN(_SUCCESS)
    end subroutine set_defaults
 
-   subroutine append_from_yaml(rule,config,unusable,rc)
+   subroutine append_from_yaml(rule,config,sample_map,key,unusable,rc)
       class(ExtDataRule), intent(inout), target :: rule
       type(Configuration), intent(in) :: config
-      !character(len=*), intent(in) :: key
+      character(len=*), intent(in) :: key
+      type(ExtDataTimeSampleMap) :: sample_map
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
@@ -52,6 +55,7 @@ contains
       type(Configuration) ::config1
       character(len=:), allocatable :: tempc
       logical :: templ
+      type(ExtDataTimeSample) :: ts
       _UNUSED_DUMMY(unusable)
 
       if (allocated(tempc)) deallocate(tempc)
@@ -66,10 +70,16 @@ contains
       _ASSERT(is_present,"no vname present in ExtData export")
       if (is_present) rule%file_var=tempc
 
-      if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"sample",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%sample_key=tempc
+      config1=config%at("sample")
+      if (config1%is_mapping()) then
+         call ts%set_defaults(rc=status)
+         call ts%append_from_yaml(config1,rc=status) 
+         _VERIFY(status)
+         call sample_map%insert(trim(key)//"_sample",ts)
+         rule%sample_key=trim(key)//"_sample"
+      else if (config1%is_scalar()) then
+         rule%sample_key=config1
+      end if
 
       config1=config%at("linear_transformation")
       if (allocated(rule%linear_trans)) deallocate(rule%linear_trans)
