@@ -8,12 +8,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added MAPL_SimpleBundleCreateEmpty procedure to MAPL_SimpleBundleCreate.
+
+### Added
+
+- Ability to run MultiGroupServer and model in a single node
+- Add command line option --one_node_output
+- Ability to split fields with ungridded dimensions (and not only 4d). 
+- Ability to add alias names to the split fields
 
 ### Changed
 
+- Setting and getting UNGRIDDED_DIMS attribute uses now single quoted string
+- Do not output `cubed_sphere` and `orientation` variables in native
+  History output as pFIO at present does not handle string variables
+- Updated Python scripts to work with Python 2 or 3. Scripts were:
+   - `base/mapl_tree.py`
+   - `base/mapl_vlist.py`
+   - `Apps/MAPL_GridCompSpecs_ACG.py`
+
 ### Fixed
 
+- Fixed unset UNGRIDDED_DIMS attribute bug
+- Fixes ESMF logging errors related to expressions in History
+- Fixed error handling in profiler/BaseProfiler.F90
+- Fix memory leak when using fast_oserver in write_restart_by_oserver
+- Bumped cube version to 2.91 in global metadata
+- Change calls to `system_clock()` to be `INT64` (#511)
+- CMake updates to allow NAG Fortran build
+- Converted some remaining `real*8`-type declarations to be `real(kind=REAL64)`-style
+- Eliminated (almost) all compiler warnings for Intel compiler
+
 ### Removed
+
+## [2.6.4] - 2021-03-18
+
+### Added
+
+- Add support for multi-run-phase for root gridcomp
+
+### Fixed
+
+- Fixed spliiting the same field in multiple collections
+- Fix out-of-bound access when printing pFIO message
+- Removed program tstqsat.F90 from MAPL.base library.  A followup
+  should add cmake logic to create an executable or just delete the
+  file.
+- CMake workaround for macOS + Intel oneAPI FLAP bug (#644)
 
 ## [2.6.3] - 2021-03-09
 
