@@ -52,7 +52,6 @@ contains
       type(FileStream) :: fstream
       type(StringVector) :: subconfigs
       integer :: i
-      character(len=:), allocatable :: rule_key
 
       _UNUSED_DUMMY(unusable)
 
@@ -120,8 +119,8 @@ contains
             call derived%set_defaults(rc=status)
             _VERIFY(status)
             key => iter%key()
-            rule_key="derived%"//key
-             call derived%append_from_yaml(config,rule_key,rc=status) 
+            subcfg=iter%value()
+             call derived%append_from_yaml(subcfg,key,rc=status) 
             _VERIFY(status)
             call ext_config%derived_map%insert(trim(key),derived)
             call iter%next()

@@ -176,14 +176,21 @@ module MAPL_ExtDataOldTypesCreator
 
       type(ExtDataDerived), pointer :: rule
       integer :: status
+      type(ExtDataTimeSample), pointer :: time_sample
+      type(ExtDataTimeSample), target :: default_time_sample
 
       _UNUSED_DUMMY(unusable)
       rule => this%derived_map%at(trim(item_name))
       derived_item%name = trim(item_name)
       derived_item%expression = rule%expression
-      call derived_item%update_freq%create_from_parameters(rule%refresh_time, &
-           rule%refresh_frequency, rule%refresh_offset, time, clock,__RC__)
-      !derived_item%refresh_template = rule%refresh_template
+      time_sample => this%sample_map%at(rule%sample_key)
+
+      if(.not.associated(time_sample)) then
+        call default_time_sample%set_defaults()
+        time_sample=>default_time_sample
+      end if
+      call derived_item%update_freq%create_from_parameters(time_sample%refresh_time, &
+           time_sample%refresh_frequency, time_sample%refresh_offset, time, clock, __RC__)
       derived_item%masking=.false.
       if (index(derived_item%expression,"mask") /= 0 ) then
          derived_item%masking=.true.

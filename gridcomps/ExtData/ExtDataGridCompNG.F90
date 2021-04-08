@@ -395,7 +395,7 @@ CONTAINS
       found_in_config = (item_types(i)/= ExtData_not_found)
       if (.not.found_in_config) call unsatisfied_imports%push_back(itemnames(i))
       if (item_types(i) == derived_type) then
-         deriveditemcount=deriveditemcount+num_derived
+         deriveditemcount=deriveditemcount+1
       else
          primaryitemcount=primaryitemcount+1
       end if

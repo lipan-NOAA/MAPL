@@ -332,11 +332,13 @@ MODULE ExtDataUtRoot_GridCompMod
          call ESMF_GridGetCoord (Grid, coordDim=1, localDE=0, &
                            staggerloc=ESMF_STAGGERLOC_CENTER, &
                            farrayPtr=ptrR8, rc=status)
+         _VERIFY(status)
          ptrR4=ptrR8
          call MAPL_GetPointer(internal,ptrR4,'lats',__RC__)
          call ESMF_GridGetCoord (Grid, coordDim=2, localDE=0, &
                            staggerloc=ESMF_STAGGERLOC_CENTER, &
-                           farrayPtr=ptrR8, rc=status) 
+                           farrayPtr=ptrR8, rc=status)
+         _VERIFY(status) 
          ptrR4=ptrR8
 
          select case (trim(synth%runMode))
