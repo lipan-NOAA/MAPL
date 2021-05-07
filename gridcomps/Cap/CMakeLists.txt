@@ -6,9 +6,14 @@ set (srcs
      MAPL_NUOPCWrapperMod.F90
     )
 
-esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.profiler MAPL.history MAPL.extdata TYPE SHARED)
-target_link_libraries (${this} PUBLIC gftl gftl-shared esmf NetCDF::NetCDF_Fortran
-                               PRIVATE MPI::MPI_Fortran $<$<BOOL:${BUILD_WITH_FLAP}>:FLAP::FLAP>)
+esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.profiler MAPL.historyMAPL.extdata TYPE SHARED)
+if (ESMA_USE_GFE_NAMESPACE)
+   target_link_libraries (${this} PUBLIC GFTL::gftl GFTL_SHARED::gftl-shared esmf NetCDF::NetCDF_Fortran
+                                 PRIVATE MPI::MPI_Fortran $<$<BOOL:${BUILD_WITH_FLAP}>:FLAP::FLAP>)
+else ()
+   target_link_libraries (${this} PUBLIC gftl gftl-shared esmf NetCDF::NetCDF_Fortran
+                                 PRIVATE MPI::MPI_Fortran $<$<BOOL:${BUILD_WITH_FLAP}>:FLAP::FLAP>)
+endif ()
 
 # CMake has an OpenMP issue with NAG Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
