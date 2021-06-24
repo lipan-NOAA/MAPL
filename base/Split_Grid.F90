@@ -15,7 +15,7 @@
    use MAPL_ExceptionHandling
    use omp_lib, only: omp_get_max_threads
    use, intrinsic :: iso_fortran_env, only: REAL64,REAL32
-   use OpenMP_Support
+   use MAPL_OpenMP_Support
 
    implicit NONE
 
@@ -40,14 +40,14 @@ CONTAINS
    integer :: status, rc
    integer :: nx,ny,nargs
    integer :: im,jm,numGrids
-   integer :: i,j,section
+   integer :: i,section
    character(len=ESMF_MAXPATHLEN) :: astr,str
    integer :: local_count(3),global_count(3)
    type(CubedSphereGridFactory) :: cs_factory
-   type(LatLonGridFactory) :: ll_factory
+   !type(LatLonGridFactory) :: ll_factory
    integer :: mpi_comm,rank,comm_size
    real(kind=ESMF_KIND_R8), pointer :: lats(:,:),lons(:,:)
-   real(kind=ESMF_KIND_R8), pointer:: xy_lats(:,:), xy_lons(:,:)
+   real(kind=ESMF_KIND_R8), pointer :: xy_lats(:,:), xy_lons(:,:)
    integer, allocatable :: lower_upper_index(:,:)
    integer :: petMap(1,1,1)
 
@@ -254,15 +254,15 @@ CONTAINS
 
 !    end subroutine
 
-   subroutine SubsetArray(input_array, output_array, lower_upper_index)
-      implicit NONE
-      integer :: i, j
-      real(kind=ESMF_KIND_R8), pointer :: input_array(:,:)
-      real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
-      integer :: lower_upper_index(2)
+   ! subroutine SubsetArray(input_array, output_array, lower_upper_index)
+   !    implicit NONE
+   !    integer :: i, j
+   !    real(kind=ESMF_KIND_R8), pointer :: input_array(:,:)
+   !    real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
+   !    integer :: lower_upper_index(2)
       
-      allocate(output_array(size(input_array,1), lower_upper_index(2)-lower_upper_index(1)+1))
-      output_array(:, :) = input_array(:,lower_upper_index(1):lower_upper_index(2)) 
-   end subroutine
+   !    allocate(output_array(size(input_array,1), lower_upper_index(2)-lower_upper_index(1)+1))
+   !    output_array(:, :) = input_array(:,lower_upper_index(1):lower_upper_index(2)) 
+   ! end subroutine
 
 end program ut_ReGridding  
