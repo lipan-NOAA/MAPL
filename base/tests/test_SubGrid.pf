@@ -1,0 +1,75 @@
+module test_SubGrid
+   use ESMF
+   use pfunit
+   use ESMF_TestMethod_mod
+   implicit none
+
+contains
+
+
+
+   ! Starting with a simple Cubed-sphere grid, create a single
+   ! local subgrid.  Verify that the local properties of the
+   ! subgrid match the original grid.
+    @test(npes=[6],type=newESMF_TestMethod)
+    subroutine test_make_subGrid(this)
+       class(ESMF_TestMethod), intent(inout) :: this
+        integer :: im, nx, status, i, j, num_grids
+        type(CubedSphereGridFactory) :: cs_factory
+        type(ESMF_Grid) :: primary_grid
+        type(ESMF_Grid), allocatable :: subgrids(:) 
+        real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+        integer :: local_count(3)
+        type(Interval), allocatable :: bounds(:)
+        integer :: tileCount, localDECount
+
+        im = 5
+        nx = 1
+        primary_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
+        @assertEqual(0,status)
+        primary_grid = primary_factory%make_grid(rc=status)
+        @assertEqual(0,status)
+
+        call ESMF_GridGetCoords(grid=primary_grid, coordDim=1, localDE=0, &
+            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
+        @assertEqual(0,status)
+        call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
+        @assertEqual(0,status)
+
+        ! Set the coordiantes to synthetic values that are easier to 
+        ! test
+        do j = 1, local_count(2) 
+            do i = 1, local_count(1)
+                lons(i,j) = j
+                lats(i,j) = i
+            end do
+        end do
+
+        ! Synthetic bounds to choose a small subregion in the primary grid
+        allocate(bounds(1))
+        bounds(1) = 2
+        bounds(2) = 3
+
+        subgrids = make_subgrids(primary_grid, bounds)
+
+        ! check 
+        call ESMF_GridGet(subgrids(1), tileCount=tileCount, localDECount=localDECount, rc=status)
+        @assertEqual(status, is(0))
+        @assert_that(tileCount, is(1))
+        @assert_that(localDECount, is(1))
+
+        ! Check coordinates
+        call ESMF_GridGetCoords(grid=subgrids(1), coordDim=1, localDE=0, &
+            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=sublons, rc=status)
+        @assertEqual(0,status)
+        call ESMF_GridGetCoords(grid=subgrids(1), coordDim=2, localDE=0, &
+            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=sublats, rc=status)
+        @assertEqual(0,status)
+
+        @assertEqual(lons(...,bounds(1):bounds(2)), sublons)
+        @assertEqual(lats(...,bounds(1):bounds(2)), sublats)
+
+    end subroutine test_make_subgrids
+
+end module test_SubGrid

@@ -156,49 +156,5 @@ module test_OpenMP_Support
 
 
 
-    @test
-    subroutine test_make_mini_grids
-        integer :: im, nx, status, i, j, num_grids
-        type(CubedSphereGridFactory) :: primary_factory
-        type(ESMF_Grid) :: primary_grid
-        type(ESMF_Grid) :: mini_grids(:) 
-        real(kind=ESMF_KIND_R8), pointer :: lons(:,:)
-        real(kind=ESMF_KIND_R8), pointer :: mini_lons(:,:)
-        integer :: local_count(3)
-        type(Interval), allocatable :: bounds(:)
-
-        im = 5
-        nx = 1
-        primary_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
-        @assertEqual(0,status)
-        primary_grid = primary_factory%make_grid(rc=status)
-        @assertEqual(0,status)
-
-        call ESMF_GridGetCoords(grid=primary_grid, coordDim=1, localDE=0, &
-            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
-        @assertEqual(0,status)
-        call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
-        @assertEqual(0,status)
-
-        do j = 1, local_count(2) 
-            do i = 1, local_count(1)
-                lons(i,j) = i
-            end do
-        end do
-
-        allocate(bounds(1))
-        bounds(1) = 1
-        bounds(2) = 2
-
-        mini_grids = make_mini_grids(primary_grid, bounds)
-
-        call ESMF_GridGetCoords(grid=mini_grids(1), coordDim=1, localDE=0, &
-            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=mini_lons, rc=status)
-        @assertEqual(0,status)
-
-        !@assertEqual(lons(...,1:2), mini_lons)
-    end subroutine test_make_mini_grids
-
-        
 
 end module test_OpenMP_Support 
