@@ -48,7 +48,7 @@ CONTAINS
    integer :: mpi_comm,rank,comm_size
    real(kind=ESMF_KIND_R8), pointer :: lats(:,:),lons(:,:)
    real(kind=ESMF_KIND_R8), pointer :: xy_lats(:,:), xy_lons(:,:)
-   integer, allocatable :: lower_upper_index(:,:)
+   type(Interval), allocatable :: bounds(:)
    integer :: petMap(1,1,1)
 
    type(ESMF_Field) :: old_field
@@ -138,12 +138,12 @@ CONTAINS
    write(*,'(A,i3,A,f10.5,f10.5)')'My pet: ',myPet,' min/max lats ',minval(lats),maxval(lats)
 
    ! now make mini-grid from full grid
-   call FindBounds(local_count(2), numGrids, lower_upper_index)
+   bounds = find_bounds(local_count(2), numGrids)
 
    allocate(xy_grid(numGrids))
    petMap(1,1,1) = myPet
    do i = 1, numGrids
-      section = lower_upper_index(i,2) - lower_upper_index(i,1) + 1
+      section = bounds(i)%max - bounds(i)%min + 1
       xy_grid(i) = ESMF_GridCreateNoPeriDim( &
             countsPerDEDim1 = [local_count(1)], &
             countsPerDEDim2 = [section], &
@@ -156,14 +156,14 @@ CONTAINS
       _VERIFY(status)
       call ESMF_GridAddCoord(grid=xy_grid(i), staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
       _VERIFY(status)
-   end do
+   end do 
  
    do i = 1, numGrids
       call ESMF_GridGetCoord(grid=xy_grid(i), coordDim=1, localDE=0, &
       staggerloc=ESMF_STAGGERLOC_CENTER, &
       farrayPtr=xy_lons, rc=status)
       _VERIFY(status)
-      call SubsetArray(lons, xy_lons, lower_upper_index(i,:))
+      xy_lons = subset_array(lons, bounds(i))
    end do
    
    do i = 1, numGrids
@@ -171,9 +171,9 @@ CONTAINS
       staggerloc=ESMF_STAGGERLOC_CENTER, &
       farrayPtr=xy_lats, rc=status)
       _VERIFY(status)
-      call SubsetArray(lats, xy_lats, lower_upper_index(i,:))
+      xy_lats = subset_array(lats, bounds(i))
    end do
-   deallocate(lower_upper_index)
+   deallocate(bounds)
 
    ! now for the fields...
   
@@ -185,7 +185,7 @@ CONTAINS
    call ESMF_FieldGet(field=old_field, localDe=0, farrayPtr=old_ptr, rc=status)
    _VERIFY(status)
 
-   call FindBounds(local_count(2), numGrids, lower_upper_index) 
+   bounds = find_bounds(local_count(2), numGrids) 
    allocate(new_field(numGrids))
    name = 'new field'
    do i = 1, numGrids
@@ -197,72 +197,15 @@ CONTAINS
            rc=status)
       _VERIFY(STATUS)  
       call ESMF_FieldEmptyComplete(field=new_field(i), &
-      typekind=ESMF_TYPEKIND_R4, rc=status) !ungriddedLBound=(/1/), ungriddedUBound=(/5/)
+      typekind=ESMF_TYPEKIND_R4, rc=status) 
       _VERIFY(status)
       call ESMF_FieldGet(field=new_field(i), localDe=0, farrayPtr=new_ptr, rc=status)
       _VERIFY(status)
-      new_ptr => old_ptr(:,lower_upper_index(i,1):lower_upper_index(i,2)) 
+      new_ptr => old_ptr(:,bounds(i)%min:bounds(i)%max) 
    end do
 
    ! finish
    call ESMF_Finalize()
    end subroutine main
-
-!   ! find the lower and upper bounds (2 y-coodinates) of each mini-grid
-!    subroutine FindBounds(yDim, numGrids, lower_upper_index)
-!       implicit NONE
-!       integer :: yDim, numGrids, i, step, count, numOfFirstSize, numOfSecondSize, firstSize, secondSize
-!       integer, allocatable :: lower_upper_index(:,:)
-!       allocate(lower_upper_index(numGrids,2))
-
-!       ! if the size of each grid is the same
-!       if (modulo(yDim, numGrids) == 0) then
-!          step = yDim/numGrids
-!          count = 1
-!          ! go from 1-yDim incrementing by step size
-!          do i = 1, yDim, step
-!             lower_upper_index(count,1) = i
-!             lower_upper_index(count,2) = i + step - 1
-!             count = count + 1
-!          end do
-!       ! if at least one grid is a different size
-!       else 
-!          firstSize = yDim/numGrids 
-!          numOfSecondSize = modulo(yDim, numGrids)
-!          numOfFirstSize = numGrids - numOfSecondSize
-!          secondSize = (yDim - firstSize * numOfFirstSize) / numOfSecondSize
-         
-!          count = 1
-!          do i = 1, numOfFirstSize * firstSize, firstSize 
-!             lower_upper_index(count,1) = i
-!             lower_upper_index(count,2) = i + firstSize - 1
-!             count = count + 1
-!          end do
-
-!          do i = numOfFirstSize * firstSize + 1, yDim, secondSize
-!             lower_upper_index(count,1) = i   
-!             lower_upper_index(count,2) = i + secondSize - 1
-!             count = count + 1
-!          end do
-!       end if
-
-!       ! ! test the number of boxes/grids and the indices
-!       ! print*, 'number of boxes: ', size(lower_upper_index, 1)
-!       ! do i = 1,size(lower_upper_index,1)
-!       !    print*, lower_upper_index(i,1), lower_upper_index(i,2)
-!       ! end do
-
-!    end subroutine
-
-   ! subroutine SubsetArray(input_array, output_array, lower_upper_index)
-   !    implicit NONE
-   !    integer :: i, j
-   !    real(kind=ESMF_KIND_R8), pointer :: input_array(:,:)
-   !    real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
-   !    integer :: lower_upper_index(2)
-      
-   !    allocate(output_array(size(input_array,1), lower_upper_index(2)-lower_upper_index(1)+1))
-   !    output_array(:, :) = input_array(:,lower_upper_index(1):lower_upper_index(2)) 
-   ! end subroutine
 
 end program ut_ReGridding  

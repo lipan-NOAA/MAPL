@@ -13,7 +13,7 @@ module test_OpenMP_Support
         integer :: numGrids = 1
         type(Interval), allocatable :: bounds(:) 
 
-        bounds = NewFindBounds(yDim, numGrids)
+        bounds = find_bounds(yDim, numGrids)
 
         @assertEqual(1, bounds(1)%min)
         @assertEqual(1, bounds(1)%max)
@@ -23,138 +23,195 @@ module test_OpenMP_Support
     subroutine test_find_bounds_trivial1()
         integer :: yDim = 1
         integer :: numGrids = 1
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(1, bounds(1,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(1, bounds(1)%max)
     end subroutine
 
     @test
     subroutine test_find_bounds_trivial2()
         integer :: yDim = 2
         integer :: numGrids = 1
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:) 
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(2, bounds(1,2))
+        @assertEqual(1, bounds%min)
+        @assertEqual(2, bounds%max)
     end subroutine
 
     @test
     subroutine test_find_bounds_easy1()
         integer :: yDim = 4
         integer :: numGrids = 2
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(2, bounds(1,2))
-        @assertEqual(3, bounds(2,1))
-        @assertEqual(4, bounds(2,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(2, bounds(1)%max)
+        @assertEqual(3, bounds(2)%min)
+        @assertEqual(4, bounds(2)%max)
     end subroutine
 
     @test
     subroutine test_find_bounds_easy2()
         integer :: yDim = 4
         integer :: numGrids = 3
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(1, bounds(1,2))
-        @assertEqual(2, bounds(2,1))
-        @assertEqual(2, bounds(2,2))
-        @assertEqual(3, bounds(3,1))
-        @assertEqual(4, bounds(3,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(1, bounds(1)%max)
+        @assertEqual(2, bounds(2)%min)
+        @assertEqual(2, bounds(2)%max)
+        @assertEqual(3, bounds(3)%min)
+        @assertEqual(4, bounds(3)%max)
     end subroutine
 
     @test 
     subroutine test_find_bounds_even1() 
         integer :: yDim = 40
         integer :: numGrids = 4
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(10, bounds(1,2))
-        @assertEqual(11, bounds(2,1))
-        @assertEqual(20, bounds(2,2))
-        @assertEqual(21, bounds(3,1))
-        @assertEqual(30, bounds(3,2))
-        @assertEqual(31, bounds(4,1))
-        @assertEqual(40, bounds(4,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(10, bounds(1)%max)
+        @assertEqual(11, bounds(2)%min)
+        @assertEqual(20, bounds(2)%max)
+        @assertEqual(21, bounds(3)%min)
+        @assertEqual(30, bounds(3)%max)
+        @assertEqual(31, bounds(4)%min)
+        @assertEqual(40, bounds(4)%max)
     end subroutine 
 
     @test
     subroutine test_find_bounds_even2()
         integer :: yDim = 81
         integer :: numGrids = 9
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(9, bounds(1,2))
-        @assertEqual(10, bounds(2,1))
-        @assertEqual(18, bounds(2,2))
-        @assertEqual(19, bounds(3,1))
-        @assertEqual(27, bounds(3,2))
-        @assertEqual(28, bounds(4,1))
-        @assertEqual(36, bounds(4,2))
-        @assertEqual(37, bounds(5,1))
-        @assertEqual(45, bounds(5,2))
-        @assertEqual(46, bounds(6,1))
-        @assertEqual(54, bounds(6,2))
-        @assertEqual(55, bounds(7,1))
-        @assertEqual(63, bounds(7,2))
-        @assertEqual(64, bounds(8,1))
-        @assertEqual(72, bounds(8,2))
-        @assertEqual(73, bounds(9,1))
-        @assertEqual(81, bounds(9,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(9, bounds(1)%max)
+        @assertEqual(10, bounds(2)%min)
+        @assertEqual(18, bounds(2)%max)
+        @assertEqual(19, bounds(3)%min)
+        @assertEqual(27, bounds(3)%max)
+        @assertEqual(28, bounds(4)%min)
+        @assertEqual(36, bounds(4)%max)
+        @assertEqual(37, bounds(5)%min)
+        @assertEqual(45, bounds(5)%max)
+        @assertEqual(46, bounds(6)%min)
+        @assertEqual(54, bounds(6)%max)
+        @assertEqual(55, bounds(7)%min)
+        @assertEqual(63, bounds(7)%max)
+        @assertEqual(64, bounds(8)%min)
+        @assertEqual(72, bounds(8)%max)
+        @assertEqual(73, bounds(9)%min)
+        @assertEqual(81, bounds(9)%max)
     end subroutine
 
     @test
     subroutine test_find_bounds_odd1()
         integer :: yDim = 75
         integer :: numGrids = 4
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(18, bounds(1,2))    
-        @assertEqual(19, bounds(2,1))   
-        @assertEqual(37, bounds(2,2))
-        @assertEqual(38, bounds(3,1))
-        @assertEqual(56, bounds(3,2))
-        @assertEqual(57, bounds(4,1))
-        @assertEqual(75, bounds(4,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(18, bounds(1)%max)    
+        @assertEqual(19, bounds(2)%min)   
+        @assertEqual(37, bounds(2)%max)
+        @assertEqual(38, bounds(3)%min)
+        @assertEqual(56, bounds(3)%max)
+        @assertEqual(57, bounds(4)%min)
+        @assertEqual(75, bounds(4)%max)
     end subroutine
 
     @test
     subroutine test_find_bounds_odd2()
         integer :: yDim = 100
         integer :: numGrids = 3
-        integer, allocatable :: bounds(:,:) 
+        type(Interval), allocatable :: bounds(:)
 
-        call FindBounds(yDim, numGrids, bounds)
+        bounds = find_bounds(yDim, numGrids)
 
-        @assertEqual(1, bounds(1,1))
-        @assertEqual(33, bounds(1,2))    
-        @assertEqual(34, bounds(2,1))   
-        @assertEqual(66, bounds(2,2))
-        @assertEqual(67, bounds(3,1))
-        @assertEqual(100, bounds(3,2))
+        @assertEqual(1, bounds(1)%min)
+        @assertEqual(33, bounds(1)%max)    
+        @assertEqual(34, bounds(2)%min)   
+        @assertEqual(66, bounds(2)%max)
+        @assertEqual(67, bounds(3)%min)
+        @assertEqual(100, bounds(3)%max)
+    end subroutine
+
+    !@test
+    subroutine test_subset_array_trivial()
+        real(kind=ESMF_KIND_R8), pointer  :: input_array(:,:)
+        type(Interval) :: bounds
+        real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
+        
+        allocate(input_array(1,1))
+        bounds%min = 1
+        bounds%max = 1
+        input_array(1,1) = 2
+
+        output_array  = subset_array(input_array, bounds)
+        @assertEqual(2, output_array(1,1))
     end subroutine
 
 
+    ! !@test
+    ! subroutine test_make_mini_grids
+    !     integer :: im, nx, status, i, j, num_grids
+    !     type(CubedSphereGridFactory) :: primary_factory
+    !     type(ESMF_Grid) :: primary_grid
+    !     type(ESMF_Grid) :: mini_grids(:) 
+    !     real(kind=ESMF_KIND_R8), pointer :: lons(:,:)
+    !     real(kind=ESMF_KIND_R8), pointer :: mini_lons(:,:)
+    !     integer :: local_count(3)
+    !     type(Interval), allocatable :: bounds(:)
 
+    !     im = 5
+    !     nx = 1
+    !     primary_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
+    !     @assertEqual(0,status)
+    !     primary_grid = primary_factory%make_grid(rc=status)
+    !     @assertEqual(0,status)
 
+    !     call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
+    !         staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
+    !     @assertEqual(0,status)
+    !     call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
+    !     @assertEqual(0,status)
+
+    !     do j = 1, local_count(2) 
+    !         do i = 1, local_count(1)
+    !             lons(i,j) = i
+    !         end do
+    !     end do
+
+    !     allocate(bounds(1))
+    !     bounds(1) = 1
+    !     bounds(2) = 2
+
+    !     mini_grids = make_subgrids(primary_grid, bounds)
+
+    !     call ESMF_GridGetCoord(grid=mini_grids(1), coordDim=1, localDE=0, &
+    !         staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=mini_lons, rc=status)
+    !     @assertEqual(0,status)
+
+    !     !@assertEqual(lons(...,1:2), mini_lons)
+    ! end subroutine test_make_mini_grids
+
+        
 
 end module test_OpenMP_Support 

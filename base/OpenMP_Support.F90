@@ -13,28 +13,28 @@ module MAPL_OpenMP_Support
         integer :: max
     end type Interval
 
-    interface  make_mini_grids
-        module procedure make_mini_grids_from_num_grids
-        module procedure make_mini_grids_from_bounds
-    end interface make_mini_grids
+    interface  make_subgrids
+        module procedure make_subgrids_from_num_grids
+        module procedure make_subgrids_from_bounds
+    end interface make_subgrids
     
     CONTAINS 
 
-    function make_mini_grids_from_num_grids(primary_grid, num_grids, rc) result(mini_grids)
+    function make_subgrids_from_num_grids(primary_grid, num_grids, rc) result(mini_grids)
         type(ESMF_Grid), allocatable :: mini_grids(:)
         type(ESMF_Grid), intent(in) :: primary_grid
         integer, intent(in) :: num_grids
         integer, optional, intent(out) :: rc
         integer :: local_count(3)
         integer :: status
-        type(Interval) :: bounds(:)
+        type(Interval), allocatable :: bounds(:)
         
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
-        bounds = FindBounds(local_count(2), num_grids)
-        mini_grids = make_mini_grids(primary_grid, bounds, __RC__)
-    end function make_mini_grids_from_num_grids
+        bounds = find_bounds(local_count(2), num_grids)
+        mini_grids = make_subgrids(primary_grid, bounds, __RC__)
+    end function make_subgrids_from_num_grids
 
-    function make_mini_grids_from_bounds(primary_grid, bounds, rc) result(mini_grids)
+    function make_subgrids_from_bounds(primary_grid, bounds, rc) result(mini_grids)
         type(ESMF_Grid), allocatable :: mini_grids(:)
         type(ESMF_Grid), intent(in) :: primary_grid
         type(Interval), intent(in) :: bounds(:)
@@ -42,18 +42,20 @@ module MAPL_OpenMP_Support
         integer :: local_count(3)
         integer :: status
         integer :: petMap(1,1,1)
-        integer :: myPet
+        integer :: myPet, i, section
         type(ESMF_VM) :: vm
+        real(kind=ESMF_KIND_R8), pointer :: new_lats(:,:), new_lons(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
 
-        ! allocate(minigrids(something))
+        allocate(mini_grids(size(bounds)))
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         call ESMF_VMGetCurrent(vm, __RC__)
         call ESMF_VMGet(vm, localPET=myPET, __RC__)
 
         petMap(1,1,1) = myPet
-        do i = 1, numGrids
+        do i = 1, size(bounds)
             section = bounds(i)%max - bounds(i)%min + 1
-            xy_grid(i) = ESMF_GridCreateNoPeriDim( &
+            mini_grids(i) = ESMF_GridCreateNoPeriDim( &
                   countsPerDEDim1 = [local_count(1)], &
                   countsPerDEDim2 = [section], &
                   indexFlag=ESMF_INDEX_DELOCAL, &
@@ -62,20 +64,91 @@ module MAPL_OpenMP_Support
                   coordSys=ESMF_COORDSYS_SPH_RAD, &
                   petMap = petMap, &
                   __RC__)
-            call ESMF_GridAddCoord(grid=xy_grid(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
+            call ESMF_GridAddCoord(grid=mini_grids(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
+         end do
+
+         call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
+            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, __RC__)
+         call ESMF_GridGetCoord(grid=primary_grid, coordDim=2, localDE=0, &
+            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, __RC__)
+
+         do i = 1, size(bounds)
+            call ESMF_GridGetCoord(grid=mini_grids(i), coordDim=1, localDE=0, &
+                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                 farrayPtr=new_lons, __RC__)
+            new_lons = subset_array(lons, bounds(i))
+         end do
+         
+         do i = 1, size(bounds)
+            call ESMF_GridGetCoord(grid=mini_grids(i), coordDim=2, localDE=0, &
+                 staggerloc=ESMF_STAGGERLOC_CENTER, &
+                 farrayPtr=new_lats, __RC__)
+            new_lats = subset_array(lats, bounds(i))
          end do
         
-    end function make_mini_grids_from_bounds
+    end function make_subgrids_from_bounds
 
-    subroutine FindBounds(yDim, numGrids, bounds)
-        implicit NONE
-        integer :: yDim, numGrids, i, step, count, numOfFirstSize, numOfSecondSize, firstSize, secondSize
-        integer, allocatable :: bounds(:,:)
-        allocate(bounds(numGrids,2)) 
+    function find_bounds(yDim, num_grids) result(bounds)
+        integer, intent(in) :: yDim
+        integer, intent(in) :: num_grids
+        type(Interval), allocatable :: bounds(:) 
+        integer :: i, step
+        integer :: count, numOfFirstSize, numOfSecondSize, firstSize, secondSize
+        allocate(bounds(num_grids))
 
         ! if the size of each grid is the same
-        if (modulo(yDim, numGrids) == 0) then
-            step = yDim/numGrids
+        if (modulo(yDim, num_grids) == 0) then
+            step = yDim/num_grids
+            count = 1
+            ! go from 1-yDim incrementing by step size
+            do i = 1, yDim, step
+            bounds(count)%min = i
+            bounds(count)%max = i + step - 1
+            count = count + 1
+            end do
+        ! if at least one grid is a different size
+        else 
+            firstSize = yDim/num_grids 
+            numOfSecondSize = modulo(yDim, num_grids)
+            numOfFirstSize = num_grids - numOfSecondSize
+            secondSize = (yDim - firstSize * numOfFirstSize) / numOfSecondSize
+            
+            count = 1
+            do i = 1, numOfFirstSize * firstSize, firstSize 
+            bounds(count)%min = i
+            bounds(count)%max = i + firstSize - 1
+            count = count + 1
+            end do
+
+            do i = numOfFirstSize * firstSize + 1, yDim, secondSize
+            bounds(count)%min = i   
+            bounds(count)%max = i + secondSize - 1
+            count = count + 1
+            end do
+        end if
+    end function
+
+    function subset_array(input_array, bounds) result(output_array)
+        real(kind=ESMF_KIND_R8), pointer, intent(in) :: input_array(:,:)
+        type(Interval), intent(in) :: bounds
+        real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
+        
+        allocate(output_array(size(input_array,1), bounds%max - bounds%min + 1))
+        output_array(:, :) = input_array(:,bounds%min:bounds%max) 
+
+    end function
+
+
+
+
+    subroutine FindBounds(yDim, num_grids, bounds)
+        integer :: yDim, num_grids, i, step, count, numOfFirstSize, numOfSecondSize, firstSize, secondSize
+        integer, allocatable :: bounds(:,:)
+        allocate(bounds(num_grids,2)) 
+
+        ! if the size of each grid is the same
+        if (modulo(yDim, num_grids) == 0) then
+            step = yDim/num_grids
             count = 1
             ! go from 1-yDim incrementing by step size
             do i = 1, yDim, step
@@ -85,9 +158,9 @@ module MAPL_OpenMP_Support
             end do
         ! if at least one grid is a different size
         else 
-            firstSize = yDim/numGrids 
-            numOfSecondSize = modulo(yDim, numGrids)
-            numOfFirstSize = numGrids - numOfSecondSize
+            firstSize = yDim/num_grids 
+            numOfSecondSize = modulo(yDim, num_grids)
+            numOfFirstSize = num_grids - numOfSecondSize
             secondSize = (yDim - firstSize * numOfFirstSize) / numOfSecondSize
             
             count = 1
@@ -106,7 +179,6 @@ module MAPL_OpenMP_Support
     end subroutine
 
     subroutine SubsetArray(input_array, output_array, bounds)
-        implicit NONE
         real(kind=ESMF_KIND_R8), pointer :: input_array(:,:)
         real(kind=ESMF_KIND_R8), pointer :: output_array(:,:)
         integer :: bounds(2)
@@ -114,5 +186,6 @@ module MAPL_OpenMP_Support
         allocate(output_array(size(input_array,1), bounds(2)-bounds(1)+1))
         output_array(:, :) = input_array(:,bounds(1):bounds(2)) 
      end subroutine
+
 
 end module MAPL_OpenMP_Support 

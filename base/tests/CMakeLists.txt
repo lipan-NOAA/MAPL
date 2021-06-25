@@ -13,6 +13,7 @@ set (TEST_SRCS
     test_DirPath.pf
     Test_VarSpec.pf
     test_OpenMP_Support.pf
+    test_SubGrid.pf
   )
 
 # SRCS are mostly mocks to facilitate tests
