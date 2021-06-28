@@ -14,6 +14,7 @@ set (TEST_SRCS
     Test_VarSpec.pf
     test_OpenMP_Support.pf
     test_SubGrid.pf
+    test_SubField.pf
   )
 
 # SRCS are mostly mocks to facilitate tests

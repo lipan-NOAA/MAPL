@@ -26,14 +26,14 @@ contains
         integer :: local_count(3)
         type(Interval), allocatable :: bounds(:)
         integer :: tileCount, localDECount
-
-        im = 5
+        
+        im = 12
         nx = 1
         primary_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
         @assertEqual(0,status)
         primary_grid = primary_factory%make_grid(rc=status)
         @assertEqual(0,status)
-
+        
         call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
         @assertEqual(0,status)
@@ -56,8 +56,9 @@ contains
         allocate(bounds(1))
         bounds%min = 2
         bounds%max = 4
-
-        subgrids = make_subgrids(primary_grid, bounds)
+        
+        subgrids = make_subgrids(primary_grid, bounds, rc=status)
+        @assertEqual(0,status)
 
         ! check 
         call ESMF_GridGet(subgrids(1), tileCount=tileCount, localDECount=localDECount, rc=status)
