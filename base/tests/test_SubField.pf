@@ -1,0 +1,142 @@
+module test_SubField
+   use ESMF
+   use pfunit
+   use ESMF_TestMethod_mod
+   implicit none
+
+   type(ESMF_Grid)  :: primary_grid
+
+   type(ESMF_Field) :: primary_field
+   type(ESMF_Field) :: f_2d_r4
+   type(ESMF_Field) :: f_2d_r8
+   type(ESMF_Field) :: f_3d_r4
+   type(ESMF_Field) :: f_3d_r8
+
+   type(ESMF_Field) :: f_2d_i4
+   type(ESMF_Field) :: f_3d_i4
+   real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
+
+   integer, parameter :: IM = 5
+   integer, parameter :: NX = 1
+
+contains
+
+   @before
+   subroutine setup(this)
+      class(ESMF_TestMethod), intent(inout) :: this
+      type(CubedSphereGridFactory) :: cs_factory
+      real, pointer :: data_ptr
+
+      integer :: status
+      integer :: local_count(3)
+
+      cs_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
+      @assertEqual(0,status)
+
+      primary_grid = cs_factory%make_grid(rc=status)
+      @assertEqual(0,status)
+
+      call ESMF_GridGetCoords(grid=primary_grid, coordDim=1, localDE=0, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
+      @assert_that(status, is(0))
+
+      call ESMF_GridGetCoords(grid=primary_grid, coordDim=2, localDE=0, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, rc=status)
+      @assert_that(status, is(0))
+
+      call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
+      @assertEqual(0,status)
+
+      ! Set the coordiantes to synthetic values that are easier to 
+      ! test
+      do j = 1, local_count(2) 
+         do i = 1, local_count(1)
+            lons(i,j) = j
+            lats(i,j) = i
+         end do
+      end do
+
+
+      primary_field = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R4, &
+           indexflag=ESMF_INDEX_DELOCAL, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
+      @assert_that(status, is(0))
+
+      call ESMF_FieldGet(primary_field, localDe=0, farrayPtr=data_ptr, rc=status)
+      @assert_that(status, is(0))
+
+      do j = 1, local_count(2)
+         do i = 1, local_Count(1)
+            data_ptr(i,j) = f(i,j)
+         end do
+      end do
+
+   end subroutine setup
+
+   real function f(i,j)
+      integer, intent(in) :: i
+      integer, intent(in) :: j
+
+      f = i + 2 * j
+
+   end function f
+
+   @after
+   subroutine teardown(this)
+      class(ESMF_TestMethod), intent(inout) :: this
+      type(CubedSphereGridFactory) :: cs_factory
+      integer :: status
+      call ESMF_FieldDestroy(primary_field, rc=status)
+      @assert_that(status, is(0))
+      call ESMF_GridDestroy(primary_grid, rc=status)
+      @assert_that(status, is(0))
+   end subroutine teardown
+
+   ! Starting with a simple Cubed-sphere grid, create a single
+   ! local subgrid.  Verify that the local properties of the
+   ! subgrid match the original grid.
+   @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_make_subField(this)
+      class(ESMF_TestMethod), intent(inout) :: this
+      integer :: status, i, j, num_grids
+      type(ESMF_Grid) :: primary_grid
+      type(ESMF_Grid), allocatable :: subgrids(:) 
+      real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+      integer :: local_count(3)
+      type(Interval), allocatable :: bounds(:)
+      integer :: tileCount, localDECount
+      real, pointer :: expected(:,:), data_ptr(:,:)
+      im = 5
+      nx = 1
+      call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
+      @assertEqual(0,status)
+
+
+      num_grids = 1
+      ! Synthetic bounds to choose a small subregion in the primary grid
+      allocate(bounds(num_grids))
+      bounds(1)%min = 2
+      bounds(1)%max = 3
+
+      subgrids = make_subgrids(primary_grid, bounds)
+
+      ! check 
+      call ESMF_GridGet(subgrids(1), rc=status)
+      @assertEqual(status, is(0))
+
+      ! As with make_subgrids() we first implement a lower level interface
+      ! that assumes the subgrids are already available.
+      ! the higher level overload will construct the actual subgrids and then
+      ! call this lower level procedure.
+      subfield = make_subfields(field, subgrids(1), bounds, rc=status)
+      @assert_that(status, is(0))
+
+      call ESMF_FieldGet(subfield, localDe=0, farrayPtr=data_ptr, rc=status)
+      @assert_that(status, is(0))
+
+      expected => data_ptr(:,bounds(1)%min:bounds(1)%max)
+      @assert_that(data_ptr, is(expected))
+
+   end subroutine test_make_subField
+
+end module test_SubField
