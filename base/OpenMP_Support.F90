@@ -117,24 +117,17 @@ module MAPL_OpenMP_Support
         type(Interval), intent(in) :: bounds(:)
         integer, optional, intent(out) :: rc
         integer :: status, i
-        real(kind=ESMF_KIND_R4), pointer:: old_ptr(:,:)
-        real(kind=ESMF_KIND_R4), pointer :: new_ptr(:,:)
+        real, pointer:: old_ptr(:,:)
+        real, pointer :: new_ptr(:,:)
         character(len=20) :: name
-
-        call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr, rc=status)
+       
+        call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr, __RC__)
 
         allocate(subfields(size(bounds)))
         name = 'new field'
         do i = 1, size(bounds)
-            subfields(i) = ESMF_FieldEmptyCreate(name=name, __RC__)
-            call ESMF_FieldEmptySet(field=subfields(i), &
-                grid=subgrids(i), &
-                staggerloc=ESMF_STAGGERLOC_CENTER, &
-                __RC__) 
-            call ESMF_FieldEmptyComplete(field=subfields(i), &
-                typekind=ESMF_TYPEKIND_R4, __RC__)
-            call ESMF_FieldGet(field=subfields(i), localDe=0, farrayPtr=new_ptr, __RC__)
-            new_ptr => old_ptr(:,bounds(i)%min:bounds(i)%max) 
+           new_ptr => old_ptr(:,bounds(i)%min:bounds(i)%max)
+           subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr, __RC__)
         end do
 
     end function make_subfields_from_bounds

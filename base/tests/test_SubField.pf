@@ -9,7 +9,6 @@ module test_SubField
 
    type(ESMF_Grid), save  :: primary_grid
 
-   type(ESMF_Field) :: primary_field
    type(ESMF_Field) :: f_2d_r4
    type(ESMF_Field) :: f_2d_r8
    type(ESMF_Field) :: f_3d_r4
@@ -18,7 +17,8 @@ module test_SubField
    type(ESMF_Field) :: f_2d_i4
    type(ESMF_Field) :: f_3d_i4
    real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
-
+   real(kind=ESMF_KIND_R4), pointer :: ptr_2d_r4(:,:)
+   real(kind=ESMF_KIND_R8), pointer :: ptr_2d_r8(:,:)
    integer, parameter :: IM = 5
    integer, parameter :: NX = 1
 
@@ -28,7 +28,6 @@ contains
    subroutine setup(this)
       class(ESMF_TestMethod), intent(inout) :: this
       type(CubedSphereGridFactory) :: cs_factory
-      real, pointer :: data_ptr(:,:)
 
       integer :: status, i, j
       integer :: local_count(3)
@@ -60,17 +59,23 @@ contains
       end do
 
 
-      primary_field = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R4, &
+      f_2d_r4 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R4, &
            indexflag=ESMF_INDEX_DELOCAL, &
            staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
       @assert_that(status, is(0))
-
-      call ESMF_FieldGet(primary_field, localDe=0, farrayPtr=data_ptr, rc=status)
+      f_2d_r8 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R8, &
+           indexflag=ESMF_INDEX_DELOCAL, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
+      @assert_that(status, is(0))
+      call ESMF_FieldGet(f_2d_r4, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
+      @assert_that(status, is(0))
+      call ESMF_FieldGet(f_2d_r8, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
       @assert_that(status, is(0))
 
       do j = 1, local_count(2)
-         do i = 1, local_Count(1)
-            data_ptr(i,j) = f(i,j)
+         do i = 1, local_count(1)
+            ptr_2d_r4(i,j) = f(i,j)
+            ptr_2d_r8(i,j) = f(i,j)
          end do
       end do
       call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
@@ -89,7 +94,9 @@ contains
    subroutine teardown(this)
       class(ESMF_TestMethod), intent(inout) :: this
       integer :: status
-      call ESMF_FieldDestroy(primary_field, rc=status)
+      call ESMF_FieldDestroy(f_2d_r4, rc=status)
+      @assert_that(status, is(0))
+      call ESMF_FieldDestroy(f_2d_r8, rc=status)
       @assert_that(status, is(0))
       call ESMF_GridDestroy(primary_grid, rc=status)
       @assert_that(status, is(0))
@@ -106,8 +113,10 @@ contains
       type(ESMF_Field), allocatable :: subfields(:)
       integer :: local_count(3)
       type(Interval), allocatable :: bounds(:)
-      real, pointer :: expected(:,:), data_ptr(:,:), primary_ptr(:,:)
-      
+      real(kind=ESMF_KIND_R4), pointer :: expected_2d_r4(:,:)
+      real(kind=ESMF_KIND_R8), pointer :: expected_2d_r8(:,:)
+      real(kind=ESMF_KIND_R4), pointer :: sub_ptr_2d_r4(:,:)
+      real(kind=ESMF_KIND_R8), pointer :: sub_ptr_2d_r8(:,:)
       call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
       @assertEqual(0, status)
 
@@ -117,7 +126,7 @@ contains
       bounds(1)%min = 2
       bounds(1)%max = 3
 
-      subgrids = make_subgrids(primary_grid, bounds)
+      subgrids = make_subgrids(primary_grid, bounds, status)
 
       ! check 
       call ESMF_GridGet(subgrids(1), rc=status)
@@ -127,16 +136,23 @@ contains
       ! that assumes the subgrids are already available.
       ! the higher level overload will construct the actual subgrids and then
       ! call this lower level procedure.
-      subfields = make_subfields(primary_field, subgrids, bounds, rc=status)
+      subfields = make_subfields(f_2d_r4, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=data_ptr, rc=status)
+      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
       @assert_that(status, is(0))
-      
-      call ESMF_FieldGet(primary_field, localDe=0, farrayptr=primary_ptr, rc=status)
-      expected => primary_ptr(:,bounds(1)%min:bounds(1)%max)
-      @assert_that(data_ptr, is(equal_to(expected)))
 
+      expected_2d_r4 => ptr_2d_r4(:,bounds(1)%min:bounds(1)%max)
+      @assert_that(sub_ptr_2d_r4, is(equal_to(expected_2d_r4)))
+
+      subfields = make_subfields(f_2d_r8, subgrids, bounds, rc=status)
+      @assert_that(status, is(0))
+
+      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
+      @assert_that(status, is(0))
+
+      expected_2d_r8 => ptr_2d_r8(:,bounds(1)%min:bounds(1)%max)
+      @assert_that(sub_ptr_2d_r8, is(equal_to(expected_2d_r8)))
    end subroutine test_make_subField
 
 end module test_SubField
