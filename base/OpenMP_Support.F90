@@ -104,7 +104,7 @@ module MAPL_OpenMP_Support
         integer :: status
         integer :: local_count(3)
         type(Interval), allocatable :: bounds(:)
-    
+
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         bounds = find_bounds(local_count(2), num_grids)
         subfields = make_subfields(primary_field, subgrids, bounds, __RC__)
@@ -117,20 +117,55 @@ module MAPL_OpenMP_Support
         type(Interval), intent(in) :: bounds(:)
         integer, optional, intent(out) :: rc
         integer :: status, i
-        real, pointer:: old_ptr(:,:)
-        real, pointer :: new_ptr(:,:)
-        character(len=20) :: name
-       
-        call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr, __RC__)
+        real(kind=ESMF_KIND_R4), pointer :: old_ptr_2d_r4(:,:)
+        real(kind=ESMF_KIND_R4), pointer :: new_ptr_2d_r4(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: old_ptr_2d_r8(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: new_ptr_2d_r8(:,:)
+        real(kind=ESMF_KIND_R4), pointer :: old_ptr_3d_r4(:,:,:)
+        real(kind=ESMF_KIND_R4), pointer :: new_ptr_3d_r4(:,:,:)
+        real(kind=ESMF_KIND_R8), pointer :: old_ptr_3d_r8(:,:,:)
+        real(kind=ESMF_KIND_R8), pointer :: new_ptr_3d_r8(:,:,:)
+        type(ESMF_TypeKind_Flag) :: typekind
+        integer :: dimensions
 
         allocate(subfields(size(bounds)))
-        name = 'new field'
-        do i = 1, size(bounds)
-           new_ptr => old_ptr(:,bounds(i)%min:bounds(i)%max)
-           subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr, __RC__)
-        end do
+        call ESMF_FieldGet(primary_field, typekind=typekind, dimCount=dimensions, __RC__)
+        
+        ! 2d, r4
+        if (typekind == ESMF_TYPEKIND_R4 .AND. dimensions == 2) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_2d_r4, __RC__)
+           do i = 1, size(bounds)
+              new_ptr_2d_r4 => old_ptr_2d_r4(:,bounds(i)%min:bounds(i)%max)
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_r4, __RC__)
+           end do
+       
+        ! 2d, r8
+        else if (typekind == ESMF_TYPEKIND_R8 .AND. dimensions == 2) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_2d_r8, __RC__)
+           do i = 1, size(bounds)
+              new_ptr_2d_r8 => old_ptr_2d_r8(:,bounds(i)%min:bounds(i)%max)
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_r8, __RC__)
+           end do
+        
+        ! 3d, r4
+        else if (typekind == ESMF_TYPEKIND_R4 .AND. dimensions == 3) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_3d_r4, __RC__)
+           do i = 1, size(bounds)
+              new_ptr_3d_r4 => old_ptr_3d_r4(:,bounds(i)%min:bounds(i)%max,:) !is this correct?
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_r4, __RC__)
+           end do
+       
+        ! 3d, r8
+        else if (typekind == ESMF_TYPEKIND_R8 .AND. dimensions == 3) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_3d_r8, __RC__)
+           do i = 1, size(bounds)
+              new_ptr_3d_r8 => old_ptr_3d_r8(:,bounds(i)%min:bounds(i)%max,:)
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_r8, __RC__) !need values for ungridded bounds?
+           end do
+        end if
 
     end function make_subfields_from_bounds
+
 
     function find_bounds(yDim, num_grids) result(bounds)
         integer, intent(in) :: yDim
