@@ -5,6 +5,7 @@ module MAPL_OpenMP_Support
     use ESMF
     use MAPL_BaseMod
     use MAPL_ExceptionHandling
+    use mapl_KeywordEnforcerMod
 
     implicit none
     private
@@ -12,8 +13,10 @@ module MAPL_OpenMP_Support
     public :: Interval
     public :: make_subgrids
     public :: make_subfields
+    public :: make_subFieldBundles
     public :: find_bounds
     public :: subset_array
+
     
     type :: Interval
         integer :: min
@@ -252,5 +255,18 @@ module MAPL_OpenMP_Support
         output_array(:,:) = input_array(:,bounds%min:bounds%max) 
 
     end function
+
+
+    function make_subFieldBundles(bundle, num_grids, unusable, rc) result(sub_bundles)
+       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+       type(ESMF_FieldBundle), intent(in) :: bundle
+       integer, intent(in) :: num_grids
+       class(KeywordEnforcer), optional, intent(in) :: unusable
+       integer, optional, intent(out) :: rc
+
+       allocate(sub_bundles(10))
+       if (present(rc)) rc = -1
+
+    end function make_subFieldBundles
 
 end module MAPL_OpenMP_Support 
