@@ -187,6 +187,14 @@ module MAPL_OpenMP_Support
 
     end function make_subfields_from_bounds
 
+    function make_field_bundle(fields, rc) result(bundle)
+      type(ESMF_Field), intent(in) :: fields(:)
+      integer, optional, intent(out) :: rc
+      type(ESMF_FieldBundle) :: bundle
+      integer :: status
+
+      bundle  = ESMF_FieldBundleCreate(fieldList=fields(:), __RC__)
+    end function make_field_bundle
 
     function find_bounds(yDim, num_grids) result(bounds)
         integer, intent(in) :: yDim

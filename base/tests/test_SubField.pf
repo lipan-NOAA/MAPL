@@ -173,6 +173,9 @@ contains
       real(kind=ESMF_KIND_R8), pointer :: sub_ptr_3d_r8(:,:,:)
       integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_2d_i4(:,:)
       integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_3d_i4(:,:,:)
+
+      type(ESMF_FieldBundle) :: bundle
+      type(ESMF_Field) :: fields(2)
       
       call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
       @assertEqual(0, status)
@@ -258,6 +261,12 @@ contains
 
       expected_3d_i4 => ptr_3d_i4(:,bounds(1)%min:bounds(1)%max,:)
       @assertEqual(expected_3d_i4, sub_ptr_3d_i4)
+
+      ! creating a field bundle with the fields
+      fields(1) = f_2d_r4
+      fields(2) = f_2d_r8
+      bundle = make_field_bundle(fields, status)
+      @assert_that(status, is(0))
 
    end subroutine test_make_subField
 
