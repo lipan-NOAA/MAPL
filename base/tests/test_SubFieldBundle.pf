@@ -1,0 +1,85 @@
+module test_SubFieldBundle
+   use ESMF
+   use pfunit
+   implicit none
+
+
+   type (ESMF_FieldBundle) :: trivial_bundle
+   
+contains
+
+
+   @before
+   subroutine setup()
+      type(ESMF_Field) :: empty_list(0)
+      integer :: status
+      
+      trivial_bundle = ESMF_FieldBundleCreate(fieldList=empty_list, &
+           & name='trivial', rc=status)
+      @assert_that(status, is(0))
+      
+   end subroutine setup
+
+   @after
+   subroutine teardown()
+      integer :: status
+      call ESMF_FieldBundleDestroy(trivial_bundle, rc=status)
+      @assert_that(status, is(0))
+   end subroutine teardown
+
+
+   @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_trivial_num_subfields
+
+      type(ESMF_FieldBundle) :: trivial_bundle
+      type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+      
+      integer :: status
+
+      sub_bundles = make_subbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(size(sub_bundles), is(1))
+
+      sub_bundles = make_subbundles(trivial_bundle, num_grids=2, rc=status)
+      @assert_that(status, is(0))
+      @assert_that(size(sub_bundles), is(2))
+
+   end subroutine test_trivial_num_subfields
+
+   @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_trivial_name
+
+      type(ESMF_FieldBundle) :: trivial_bundle
+      type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+      type(ESMF_Field) :: empty_list(0)
+      
+      integer :: status
+
+      sub_bundles = make_subbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(size(sub_bundles), is(1))
+
+      call ESMF_FieldBundleGet(sub_bundle(1), name=found_name, rc=status)
+      @assert_that(status, is(0))
+      @assertEqual('trivial', found_name)
+      
+   end subroutine test_trivial_name
+
+
+   @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_trivial_num_fields
+
+      type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+      integer :: status
+      integer :: expected_field_count, found_field_count
+
+      sub_bundles = make_subbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(status, is(0))
+
+      call ESMF_FieldBundleGet(trivial_bundle, fieldcount=expected_field_count, rc=status)
+      call ESMF_FieldBundleGet(sub_bundles(1), fieldcount=found_field_count, rc=status)
+
+      @assert_that(status, is(0))
+      @asert_that(field_count, is(expected_field_count))
+
+   end subroutine test_trivial_num_fields
+
+end module test_SubFieldBundle

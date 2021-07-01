@@ -15,6 +15,7 @@ set (TEST_SRCS
     test_OpenMP_Support.pf
     test_SubGrid.pf
     test_SubField.pf
+    test_SubFieldBundle.pf
   )
 
 # SRCS are mostly mocks to facilitate tests
