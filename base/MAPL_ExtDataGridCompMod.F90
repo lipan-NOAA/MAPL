@@ -201,6 +201,7 @@
      integer              :: blocksize
      logical              :: prefetch
      logical              :: distributed_trans
+     logical              :: use_file_coords
   end type MAPL_ExtData_State
 
 ! Hook for the ESMF
@@ -517,6 +518,8 @@ CONTAINS
 
    call ESMF_ConfigGetAttribute(CF_main,value=self%distributed_trans,Label="CONSERVATIVE_DISTRIBUTED_TRANS:",default=.false., rc=status)
    _VERIFY(STATUS)
+   call ESMF_ConfigGetAttribute(CF_main,value=self%use_file_coords,Label="Use_File_Coords:",default=.false., rc=status)
+   _VERIFY(status)
 
    CFtemp = ESMF_ConfigCreate (rc=STATUS )
    _VERIFY(STATUS)
@@ -625,6 +628,7 @@ CONTAINS
                         ! N - conventional bilinear regridding
                         ! Y - conservative regridding
                         ! H - conservative horizontal flux regridding
+                        ! E - nearest neighbor regridding
                         ! V - voting, tile based
                         ! F;val - fractional, returns the fraction of the input cells with value, val
                         !         that overlap the target cell
@@ -637,6 +641,8 @@ CONTAINS
                            primary%item(totalPrimaryEntries)%trans = REGRID_METHOD_BILINEAR
                         else if (trim(buffer) == 'h') then
                            primary%item(totalPrimaryEntries)%trans = REGRID_METHOD_CONSERVE_HFLUX
+                        else if (trim(buffer) == 'e') then
+                           primary%item(totalPrimaryEntries)%trans = REGRID_METHOD_NEAREST_STOD
                         else if (trim(buffer) == 'v') then
                            primary%item(totalPrimaryEntries)%trans = REGRID_METHOD_VOTE
                         else if (index(trim(buffer),'f') ==1 ) then
@@ -645,7 +651,7 @@ CONTAINS
                            _ASSERT(k > 0,'ERROR: MAPL fractional regridding requires semi-colon in ExtData.rc entry: '//trim(primary%item(totalPrimaryEntries)%name))
                            read(buffer(k+1:),*,iostat=ios) primary%item(totalPrimaryEntries)%FracVal
                         else
-                           __raise__(MAPL_RC_ERROR, "the regridding keyword for extdata primary export must be N, Y, V, or F")
+                           __raise__(MAPL_RC_ERROR, "the regridding keyword for extdata primary export must be E, H, N, Y, V, or F")
                         end if
 
                         ! refresh template entry
@@ -944,7 +950,7 @@ CONTAINS
 
       call lgr%debug('ExtData Initialize_(): PrimaryLoop: ')
 
-      item%pfioCollection_id = MAPL_ExtDataAddCollection(item%file)
+      item%pfioCollection_id = MAPL_ExtDataAddCollection(item%file,use_file_coords=self%use_file_coords)
 
       ! parse refresh template to see if we have a time shift during constant updating
       k = index(item%refresh_template,';')
@@ -1035,7 +1041,7 @@ CONTAINS
       ! get clim year if this is cyclic
       call GetClimYear(item,__RC__)
       ! get levels, other information
-      call GetLevs(item,time,self%allowExtrap,__RC__)
+      call GetLevs(item,time,self%ExtDataState,self%allowExtrap,__RC__)
       call ESMF_VMBarrier(vm)
       ! register collections
       item%iclient_collection_id=i_clients%add_ext_collection(trim(item%file))
@@ -2074,10 +2080,11 @@ CONTAINS
 
      end subroutine GetClimYear
 
-     subroutine GetLevs(item, time, allowExtrap, rc)
+     subroutine GetLevs(item, time, state, allowExtrap, rc)
 
         type(PrimaryExport)      , intent(inout) :: item
         type(ESMF_Time)          , intent(inout) :: time
+        type(ESMF_State)         , intent(in   ) :: state
         logical                  , intent(in   ) :: allowExtrap
         integer, optional        , intent(out  ) :: rc
 
@@ -2085,8 +2092,9 @@ CONTAINS
 
         integer(ESMF_KIND_I4)      :: iyr,imm,idd,ihr,imn,iss,i,n,refYear
         character(len=ESMF_MAXPATHLEN) :: file
-        integer                    :: nymd, nhms
+        integer                    :: nymd, nhms, rank
         type(ESMF_Time)            :: fTime
+        type(ESMF_Field)           :: field
         real, allocatable          :: levFile(:) 
         character(len=ESMF_MAXSTR) :: buff,levunits,tlevunits
         logical                    :: found,lFound,intOK
@@ -2101,8 +2109,15 @@ CONTAINS
 
         call ESMF_TimeIntervalSet(zero,__RC__)
 
-        if (item%frequency == zero) then
+        call ESMF_StateGet(state,trim(item%name),field,__RC__)
+        call ESMF_FieldGet(field,rank=rank,__RC__)
+        if (rank==2) then
+           item%lm=0
+           _RETURN(_SUCCESS)
+        end if
 
+        if (item%frequency == zero) then
+           
            file = item%file
            Inquire(file=trim(file),EXIST=found)
 
@@ -3407,6 +3422,9 @@ CONTAINS
      integer :: id_ps
      type(ESMF_Field) :: field, newfield,psF
 
+     if (item%lm==0) then
+        _RETURN(_SUCCESS)
+     end if
      if (item%do_VertInterp) then
         if (trim(item%importVDir)/=trim(item%fileVDir)) then
            call MAPL_ExtDataFlipVertical(item,filec,rc=status)

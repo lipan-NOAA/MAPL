@@ -29,12 +29,13 @@ set (srcs
   
   MaplGeneric.F90
   )
-
-find_package(PFLOGGER REQUIRED)
+if (BUILD_WITH_PFLOGGER)
+  find_package(PFLOGGER REQUIRED)
+endif ()
 find_package(GFTL REQUIRED)
 find_package(GFTL_SHARED REQUIRED)
 
-esma_add_library(${this} SRCS ${srcs} DEPENDENCIES MAPL.shared pflogger gftl-shared gftl TYPE SHARED)
+esma_add_library(${this} SRCS ${srcs} DEPENDENCIES MAPL.shared PFLOGGER::pflogger GFTL_SHARED::gftl-shared GFTL::gftl TYPE ${MAPL_LIBRARY_TYPE})
 target_include_directories (${this} PUBLIC
   $<BUILD_INTERFACE:${MAPL_SOURCE_DIR}/include>)
 target_link_libraries (${this} PUBLIC esmf NetCDF::NetCDF_Fortran)
@@ -45,3 +46,4 @@ endif ()
 
 add_executable(demo driver.F90 UserComponent.F90)
 target_link_libraries(demo PRIVATE ${this})
+set_target_properties(demo PROPERTIES Fortran_MODULE_DIRECTORY ${include_${this}})

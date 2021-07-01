@@ -23,7 +23,7 @@ set (srcs
   MAPL_AbstractGridFactory.F90          MAPL_GridSpec.F90                   MAPL_StringGridFactoryMap.F90
   MAPL_GridType.F90                     MAPL_StringGridMap.F90
   MAPL_AbstractRegridder.F90                      
-  MAPL_Base.F90                         MAPL_StringRouteHandleMap.F90
+  MAPL_StringRouteHandleMap.F90
   MAPL_IdentityRegridder.F90            MAPL_stubs.F90
   MAPL_Integer64GridFactoryMap.F90      MAPL_sun_uc.F90
   MAPL_CapOptions.F90                   MAPL_TilingRegridder.F90
@@ -47,20 +47,21 @@ set (srcs
   regex_module.F90 StringTemplate.F90 MAPL_SphericalGeometry.F90  FieldBundleWrite.F90 FieldBundleRead.F90
   regex_F.c
   c_mapl_locstream_F.c  getrss.c  memuse.c
+  Base/Base.F90 Base/Base_implementation.F90
 
   # Orphaned program: should not be in this library.
   # tstqsat.F90
   )
 
 if (BUILD_WITH_FLAP)
-  list (APPEND srcs MAPL_FlapCapOptions.F90)
+  list (APPEND srcs MAPL_FlapCLI.F90)
 endif()
 
 esma_add_library(
   ${this} SRCS ${srcs}
-  DEPENDENCIES MAPL.generic MAPL.shared MAPL.profiler MAPL.pfio MAPL_cfio_r4 pflogger gftl-shared
+  DEPENDENCIES MAPL.generic MAPL.shared MAPL.profiler MAPL.pfio MAPL_cfio_r4 PFLOGGER::pflogger GFTL_SHARED::gftl-shared
                esmf NetCDF::NetCDF_Fortran MPI::MPI_Fortran
-  TYPE SHARED)
+  TYPE ${MAPL_LIBRARY_TYPE})
 
 # CMake has an OpenMP issue with NAG Fortran: https://gitlab.kitware.com/cmake/cmake/-/issues/21280
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
@@ -91,6 +92,7 @@ target_link_libraries (cub2latlon.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBR
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(cub2latlon.x PRIVATE OpenMP::OpenMP_Fortran)
 endif ()
+set_target_properties(cub2latlon.x PROPERTIES Fortran_MODULE_DIRECTORY ${include_${this}})
 
 ecbuild_add_executable (TARGET Regrid_Util.x SOURCES Regrid_Util.F90 DEPENDS esmf)
 target_link_libraries (Regrid_Util.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBRARIES})
@@ -98,6 +100,7 @@ target_link_libraries (Regrid_Util.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIB
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(Regrid_Util.x PRIVATE OpenMP::OpenMP_Fortran)
 endif ()
+set_target_properties(Regrid_Util.x PROPERTIES Fortran_MODULE_DIRECTORY ${include_${this}})
 
 if (EXTENDED_SOURCE)
   esma_fortran_generator_list (${this} ${EXTENDED_SOURCE})
