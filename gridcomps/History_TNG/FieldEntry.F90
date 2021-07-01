@@ -7,6 +7,7 @@ module FieldEntryMod
    use MAPL_BaseMod
    use MAPL_ExceptionHandling
    use MAPL_KeywordEnforcerMod
+   use ESMFL_Mod
 
    implicit none
    private
@@ -332,6 +333,7 @@ contains
       type(ESMF_StateItem_Flag) :: item_type
       integer :: item_count
       type(ESMF_Field) :: field_short
+      type(ESMF_FieldStatus_Flag)     :: fieldStatus
       
       integer :: status
 
@@ -344,6 +346,11 @@ contains
       if (item_type == ESMF_STATEITEM_FIELD) then
          !call ESMF_StateGet(state, this%short_name//"."//this%component_name, field, __RC__)
          call ESMF_StateGet(state, this%short_name, field_short, __RC__)
+         call ESMF_FieldGet(field_short, status=fieldStatus,__RC__)
+         if (fieldStatus /= ESMF_FIELDSTATUS_COMPLETE) then 
+            call MAPL_AllocateCOupling(field_short,__RC__)
+         end if
+         
          field=MAPL_FieldCreate(field_short,this%short_name//"."//this%component_name,__RC__)
          call ESMF_FieldValidate(field, __RC__)
       else
