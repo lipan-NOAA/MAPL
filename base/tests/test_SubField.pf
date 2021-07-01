@@ -4,6 +4,7 @@ module test_SubField
    use ESMF_TestMethod_mod
    use MAPL_CubedSphereGridFactoryMod, only: CubedSphereGridFactory
    use MAPL_OpenMP_Support
+   use mapl_MaplGrid
 
    implicit none
 

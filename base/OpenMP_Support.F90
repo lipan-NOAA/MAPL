@@ -6,8 +6,15 @@ module MAPL_OpenMP_Support
     use MAPL_BaseMod
     use MAPL_ExceptionHandling
 
-    implicit NONE
+    implicit none
+    private
 
+    public :: Interval
+    public :: make_subgrids
+    public :: make_subfields
+    public :: find_bounds
+    public :: subset_array
+    
     type :: Interval
         integer :: min
         integer :: max
