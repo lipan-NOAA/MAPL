@@ -141,6 +141,7 @@ module MAPL_OpenMP_Support
         integer(kind=ESMF_KIND_I4), pointer :: new_ptr_3d_i4(:,:,:)
         type(ESMF_TypeKind_Flag) :: typekind
         integer :: rank
+        character :: char
 
         allocate(subfields(size(bounds)))
         call ESMF_FieldGet(primary_field, typekind=typekind, rank=rank, __RC__)
@@ -197,14 +198,6 @@ module MAPL_OpenMP_Support
 
     end function make_subfields_from_bounds
 
-    function make_field_bundle(fields, rc) result(bundle)
-      type(ESMF_Field), intent(in) :: fields(:)
-      integer, optional, intent(out) :: rc
-      type(ESMF_FieldBundle) :: bundle
-      integer :: status
-
-      bundle  = ESMF_FieldBundleCreate(fieldList=fields(:), __RC__)
-    end function make_field_bundle
 
     function find_bounds(yDim, num_grids) result(bounds)
         integer, intent(in) :: yDim
@@ -263,9 +256,21 @@ module MAPL_OpenMP_Support
        integer, intent(in) :: num_grids
        class(KeywordEnforcer), optional, intent(in) :: unusable
        integer, optional, intent(out) :: rc
+       integer :: i, num_fields
+       type(ESMF_Field) :: field_list(:)
+       character(len=20) :: f_name
+       type(ESMF_Field) :: subfields(:)
 
-       allocate(sub_bundles(10))
-       if (present(rc)) rc = -1
+       allocate(sub_bundles(num_grids))
+       !if (present(rc)) rc = -1
+
+       ! pseudo code
+       call ESMF_FieldBundleGet(bundle, fieldCount=num_fields, fieldList=field_list__RC__)
+       do i = 1, num_fields
+          call ESMF_FieldGet(field_list(i), name=f_name, __RC__)
+          subfields = make_subfields(field_list(i), num_grids, __RC__)
+       end do
+       call ESMF_FieldBundleAdd(sub_bundles(i), subfield(i:#), __RC__)
 
     end function make_subFieldBundles
 

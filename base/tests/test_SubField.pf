@@ -4,7 +4,7 @@ module test_SubField
    use ESMF_TestMethod_mod
    use MAPL_CubedSphereGridFactoryMod, only: CubedSphereGridFactory
    use MAPL_OpenMP_Support
-   use mapl_MaplGrid
+   use MAPL_MaplGrid
 
    implicit none
 
@@ -25,7 +25,7 @@ module test_SubField
    integer(kind=ESMF_KIND_I4), pointer :: ptr_2d_i4(:,:)
    integer(kind=ESMF_KIND_I4), pointer :: ptr_3d_i4(:,:,:)
 
-   integer, parameter :: IM = 5
+   integer, parameter :: IM = 10
    integer, parameter :: NX = 1
 
 contains
@@ -156,7 +156,7 @@ contains
    @test(npes=[6],type=newESMF_TestMethod)
    subroutine test_make_subField(this)
       class(ESMF_TestMethod), intent(inout) :: this
-      integer :: status, num_grids
+      integer :: status, num_grids, i
       type(ESMF_Grid), allocatable :: subgrids(:) 
       type(ESMF_Field), allocatable :: subfields(:)
       integer :: local_count(3)
@@ -174,18 +174,17 @@ contains
       real(kind=ESMF_KIND_R8), pointer :: sub_ptr_3d_r8(:,:,:)
       integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_2d_i4(:,:)
       integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_3d_i4(:,:,:)
-
-      type(ESMF_FieldBundle) :: bundle
-      type(ESMF_Field) :: fields(2)
       
       call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
       @assertEqual(0, status)
 
-      num_grids = 1
+      num_grids = 5
       ! Synthetic bounds to choose a small subregion in the primary grid
       allocate(bounds(num_grids))
-      bounds(1)%min = 2
-      bounds(1)%max = 3
+      do i = 1, num_grids
+         bounds(i)%min = i
+         bounds(i)%max = i + 1
+      end do 
 
       subgrids = make_subgrids(primary_grid, bounds, status)
 
@@ -202,72 +201,78 @@ contains
       subfields = make_subfields(f_2d_r4, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
-      @assert_that(status, is(0))
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
+         @assert_that(status, is(0))
 
-      expected_2d_r4 => ptr_2d_r4(:,bounds(1)%min:bounds(1)%max)
-      @assert_that(sub_ptr_2d_r4, is(equal_to(expected_2d_r4)))
+         expected_2d_r4 => ptr_2d_r4(:,bounds(i)%min:bounds(i)%max)
+         @assert_that(sub_ptr_2d_r4, is(equal_to(expected_2d_r4)))
+      end do
 
 
       ! make subfields for 2d, r8 field and run tests    
       subfields = make_subfields(f_2d_r8, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
-      @assert_that(status, is(0))
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
+         @assert_that(status, is(0))
 
-      expected_2d_r8 => ptr_2d_r8(:,bounds(1)%min:bounds(1)%max)
-      @assert_that(sub_ptr_2d_r8, is(equal_to(expected_2d_r8)))
+         expected_2d_r8 => ptr_2d_r8(:,bounds(i)%min:bounds(i)%max)
+         @assert_that(sub_ptr_2d_r8, is(equal_to(expected_2d_r8)))
+      end do
 
 
       ! make subfields for 3d, r4 field and run tests
       subfields = make_subfields(f_3d_r4, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
-      @assert_that(status, is(0))
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
+         @assert_that(status, is(0))
 
-      expected_3d_r4 => ptr_3d_r4(:,bounds(1)%min:bounds(1)%max,:)
-      @assertEqual(expected_3d_r4, sub_ptr_3d_r4)
+         expected_3d_r4 => ptr_3d_r4(:,bounds(i)%min:bounds(i)%max,:)
+         @assertEqual(expected_3d_r4, sub_ptr_3d_r4)
+      end do
 
 
       ! make subfields for 3d, r8 field and run tests    
       subfields = make_subfields(f_3d_r8, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
-      @assert_that(status, is(0))
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
+         @assert_that(status, is(0))
 
-      expected_3d_r8 => ptr_3d_r8(:,bounds(1)%min:bounds(1)%max,:)
-      @assertEqual(expected_3d_r8, sub_ptr_3d_r8)
+         expected_3d_r8 => ptr_3d_r8(:,bounds(i)%min:bounds(i)%max,:)
+         @assertEqual(expected_3d_r8, sub_ptr_3d_r8)
+      end do
 
 
       ! make subfields for 2d, i4 field and run tests
       subfields = make_subfields(f_2d_i4, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_2d_i4, rc=status)
-      @assert_that(status, is(0))
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_i4, rc=status)
+         @assert_that(status, is(0))
 
-      expected_2d_i4 => ptr_2d_i4(:,bounds(1)%min:bounds(1)%max)
-      @assertEqual(expected_2d_i4, sub_ptr_2d_i4)
+         expected_2d_i4 => ptr_2d_i4(:,bounds(i)%min:bounds(i)%max)
+         @assertEqual(expected_2d_i4, sub_ptr_2d_i4)
+      end do
 
       
       ! make subfields for 3d, i4 field and run tests
       subfields = make_subfields(f_3d_i4, subgrids, bounds, rc=status)
       @assert_that(status, is(0))
+     
+      do i = 1, size(subfields)
+         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_i4, rc=status)
+         @assert_that(status, is(0))
 
-      call ESMF_FieldGet(subfields(1), localDe=0, farrayPtr=sub_ptr_3d_i4, rc=status)
-      @assert_that(status, is(0))
-
-      expected_3d_i4 => ptr_3d_i4(:,bounds(1)%min:bounds(1)%max,:)
-      @assertEqual(expected_3d_i4, sub_ptr_3d_i4)
-
-      ! creating a field bundle with the fields
-      fields(1) = f_2d_r4
-      fields(2) = f_2d_r8
-      bundle = make_field_bundle(fields, status)
-      @assert_that(status, is(0))
+         expected_3d_i4 => ptr_3d_i4(:,bounds(i)%min:bounds(i)%max,:)
+         @assertEqual(expected_3d_i4, sub_ptr_3d_i4)
+      end do
 
    end subroutine test_make_subField
 
