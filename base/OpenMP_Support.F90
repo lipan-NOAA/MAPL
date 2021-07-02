@@ -256,21 +256,35 @@ module MAPL_OpenMP_Support
        integer, intent(in) :: num_grids
        class(KeywordEnforcer), optional, intent(in) :: unusable
        integer, optional, intent(out) :: rc
-       integer :: i, num_fields
-       type(ESMF_Field) :: field_list(:)
-       character(len=20) :: f_name
-       type(ESMF_Field) :: subfields(:)
+       integer :: i, j, num_fields, status
+       type(ESMF_Field), allocatable :: field_list(:)
+       type(ESMF_Field), allocatable :: subfields(:)
+       type(ESMF_Grid) :: main_grid
+       type(ESMF_Grid), allocatable :: subgrids(:)
 
        allocate(sub_bundles(num_grids))
        !if (present(rc)) rc = -1
+       
+       ! get number of fields and field list from field bundle
+       call ESMF_FieldBundleGet(bundle, fieldCount=num_fields, __RC__)
+       allocate(field_list(num_fields))
+       call ESMF_FieldBundleGet(bundle, fieldList=field_list, grid=main_grid, __RC__)
 
-       ! pseudo code
-       call ESMF_FieldBundleGet(bundle, fieldCount=num_fields, fieldList=field_list__RC__)
+
+       ! get the subgrids to make subfields later    
+       subgrids = make_subgrids(main_grid, num_grids, __RC__)
+       ! get fields from field list
        do i = 1, num_fields
-          call ESMF_FieldGet(field_list(i), name=f_name, __RC__)
-          subfields = make_subfields(field_list(i), num_grids, __RC__)
+          call ESMF_FieldGet(field_list(i), __RC__)
        end do
-       call ESMF_FieldBundleAdd(sub_bundles(i), subfield(i:#), __RC__)
+       
+       ! make subfields for each field and add each subfield to corresponding field bundle
+       do i = 1, size(field_list)
+          subfields = make_subfields(field_list(i), main_grid, subgrids, num_grids, __RC__)
+          do j = 1, size(subfields)
+             call ESMF_FieldBundleAdd(sub_bundles(j), subfields(j:j), __RC__)
+          end do
+       end do
 
     end function make_subFieldBundles
 

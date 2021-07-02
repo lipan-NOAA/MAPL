@@ -42,12 +42,12 @@ contains
       integer :: status
 
       sub_bundles = make_subFieldBundles(trivial_bundle, num_grids=1, rc=status)
-      !@assert_that(status, is(0))
-      !@assert_that(size(sub_bundles), is(1))
+      @assert_that(status, is(0))
+      @assert_that(size(sub_bundles), is(1))
      
-      !sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=2, rc=status)
-      !@assert_that(status, is(0))
-      !@assert_that(size(sub_bundles), is(2))
+      sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=2, rc=status)
+      @assert_that(status, is(0))
+      @assert_that(size(sub_bundles), is(2))
 
    end subroutine test_trivial_num_subfields
 
@@ -61,12 +61,12 @@ contains
       
       integer :: status
 
-      !sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
-      !@assert_that(size(sub_bundles), is(1))
+      sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(size(sub_bundles), is(1))
 
-      !call ESMF_FieldBundleGet(sub_bundles(1), name=found_name, rc=status)
-      !@assert_that(status, is(0))
-      !@assertEqual('trivial', found_name)
+      call ESMF_FieldBundleGet(sub_bundles(1), name=found_name, rc=status)
+      @assert_that(status, is(0))
+      @assertEqual('trivial', found_name)
       
    end subroutine test_trivial_name
 
@@ -79,14 +79,14 @@ contains
       integer :: status
       integer :: expected_field_count, found_field_count
 
-      !sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
-      !@assert_that(status, is(0))
+      sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(status, is(0))
 
-      !call ESMF_FieldBundleGet(trivial_bundle, fieldcount=expected_field_count, rc=status)
-      !call ESMF_FieldBundleGet(sub_bundles(1), fieldcount=found_field_count, rc=status)
+      call ESMF_FieldBundleGet(trivial_bundle, fieldcount=expected_field_count, rc=status)
+      call ESMF_FieldBundleGet(sub_bundles(1), fieldcount=found_field_count, rc=status)
 
-      !@assert_that(status, is(0))
-      !@assert_that(found_field_count, is(expected_field_count))
+      @assert_that(status, is(0))
+      @assert_that(found_field_count, is(expected_field_count))
 
    end subroutine test_trivial_num_fields
 
