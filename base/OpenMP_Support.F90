@@ -47,6 +47,7 @@ module MAPL_OpenMP_Support
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         bounds = find_bounds(local_count(2), num_grids)
         subgrids = make_subgrids(primary_grid, bounds, __RC__)
+        _RETURN(ESMF_SUCCESS)
     end function make_subgrids_from_num_grids
 
     function make_subgrids_from_bounds(primary_grid, bounds, rc) result(subgrids)
@@ -101,6 +102,7 @@ module MAPL_OpenMP_Support
             new_lats = subset_array(lats, bounds(i))
          end do
         
+        _RETURN(ESMF_SUCCESS)
     end function make_subgrids_from_bounds
         
 
@@ -118,6 +120,8 @@ module MAPL_OpenMP_Support
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         bounds = find_bounds(local_count(2), num_grids)
         subfields = make_subfields(primary_field, subgrids, bounds, __RC__)
+
+        _RETURN(ESMF_SUCCESS)
     end function make_subfields_from_num_grids
 
     function make_subfields_from_bounds(primary_field, subgrids, bounds, rc) result(subfields)
@@ -195,6 +199,7 @@ module MAPL_OpenMP_Support
         
         end if
 
+        _RETURN(ESMF_SUCCESS)
     end function make_subfields_from_bounds
 
 
@@ -259,6 +264,7 @@ module MAPL_OpenMP_Support
        allocate(sub_bundles(10))
        if (present(rc)) rc = -1
 
+        _RETURN(ESMF_SUCCESS)
     end function make_subFieldBundles
 
 end module MAPL_OpenMP_Support 
