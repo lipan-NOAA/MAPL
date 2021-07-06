@@ -15,7 +15,7 @@ contains
    subroutine setup(this)
       class(ESMF_TestMethod), intent(inout) :: this
       type(ESMF_Field) :: empty_list(0)
-      integer :: status
+      integer :: status, fieldCount
       
       trivial_bundle = ESMF_FieldBundleCreate(fieldList=empty_list, &
            & name='trivial', rc=status)
@@ -35,10 +35,7 @@ contains
    @test(npes=[6],type=newESMF_TestMethod)
    subroutine test_trivial_num_subfields(this)
       class(ESMF_TestMethod), intent(inout) :: this
-
-      type(ESMF_FieldBundle) :: trivial_bundle
       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
-      
       integer :: status
 
       sub_bundles = make_subFieldBundles(trivial_bundle, num_grids=1, rc=status)
@@ -54,14 +51,13 @@ contains
    @test(npes=[6],type=newESMF_TestMethod)
    subroutine test_trivial_name(this)
       class(ESMF_TestMethod), intent(inout) :: this
-
-      type(ESMF_FieldBundle) :: trivial_bundle
       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
       character(ESMF_MAXSTR) :: found_name
       
       integer :: status
 
       sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
+      @assert_that(status, is(0))
       @assert_that(size(sub_bundles), is(1))
 
       call ESMF_FieldBundleGet(sub_bundles(1), name=found_name, rc=status)

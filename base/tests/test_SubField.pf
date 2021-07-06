@@ -2,57 +2,169 @@ module test_SubField
    use ESMF
    use pfunit
    use ESMF_TestMethod_mod
+   use ESMF_TestCase_mod
+   use ESMF_TestParameter_mod
    use MAPL_CubedSphereGridFactoryMod, only: CubedSphereGridFactory
    use MAPL_OpenMP_Support
    use MAPL_MaplGrid
 
    implicit none
 
-   type(ESMF_Grid), save  :: primary_grid
-
-   type(ESMF_Field) :: f_2d_r4
-   type(ESMF_Field) :: f_2d_r8
-   type(ESMF_Field) :: f_3d_r4
-   type(ESMF_Field) :: f_3d_r8
-
-   type(ESMF_Field) :: f_2d_i4
-   type(ESMF_Field) :: f_3d_i4
-   real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
-   real(kind=ESMF_KIND_R4), pointer :: ptr_2d_r4(:,:)
-   real(kind=ESMF_KIND_R8), pointer :: ptr_2d_r8(:,:)
-   real(kind=ESMF_KIND_R4), pointer :: ptr_3d_r4(:,:,:)
-   real(kind=ESMF_KIND_R8), pointer :: ptr_3d_r8(:,:,:)
-   integer(kind=ESMF_KIND_I4), pointer :: ptr_2d_i4(:,:)
-   integer(kind=ESMF_KIND_I4), pointer :: ptr_3d_i4(:,:,:)
-
    integer, parameter :: IM = 10
    integer, parameter :: NX = 1
+   integer, parameter :: LM = 5
+
+   @testParameter
+   type, extends(ESMF_TestParameter) :: FieldSpec
+      character(:), allocatable :: field_name
+      integer :: im
+      character(:), allocatable :: typekind_str
+      integer :: rank
+      integer :: num_subgrids
+      integer :: nx, ny
+   contains
+      procedure :: toString
+   end type FieldSpec
+
+   @testCase(constructor=SubFieldTest, testParameters={make_parameters()})
+   type, extends(ESMF_TestCase) :: SubFieldTest
+      character(:), allocatable :: field_name
+      integer :: im
+      type(ESMF_TYPEKIND_FLAG) :: typekind
+      character(:), allocatable :: typekind_str
+      integer :: rank
+      integer :: num_subgrids
+      integer :: nx, ny
+      type(Interval), allocatable :: bounds(:)
+      type(ESMF_Grid), allocatable :: subgrids(:)
+      type(ESMF_Field) :: field
+      type(ESMF_Grid) :: grid
+   contains
+      procedure :: setup
+      procedure :: teardown
+   end type SubFieldTest
+
+   interface SubFieldTest
+      module procedure new_SubFieldTest
+   end interface SubFieldTest
+
+   interface FieldSpec
+      module procedure new_FieldSpec
+   end interface FieldSpec
 
 contains
 
-   @before
+   function new_FieldSpec(field_name, im, typekind_str, rank, num_subgrids, nx, ny) result(specs)
+      type(FieldSpec) :: specs
+      character(*), intent(in) :: field_name
+      integer, intent(in) :: im
+      character(*), intent(in) :: typekind_str
+      integer, intent(in) :: rank
+      integer, intent(in) :: num_subgrids
+      integer, intent(in) :: nx, ny
+
+      specs%field_name = field_name
+      specs%im = im
+      specs%typekind_str = typekind_str
+      specs%rank = rank
+      specs%num_subgrids = num_subgrids
+      specs%nx = nx
+      specs%ny = ny
+      
+      call specs%setNumPETsRequested(nx*ny*6)
+
+   end function new_FieldSpec
+
+   function new_SubFieldTest(test_parameter) result(a_test)
+      type(SubFieldTest) :: a_test
+      class(FieldSpec), intent(in) :: test_parameter
+
+   end function new_SubFieldTest
+
+   function make_parameters() result(params)
+      type(FieldSpec), allocatable :: params(:)
+
+      params = [ &
+           FieldSpec(field_name='A', im=5, typekind_str='R4', rank=2, num_subgrids=1, nx=1, ny=1), &
+           ! typekind variants
+           FieldSpec(field_name='A', im=5, typekind_str='R8', rank=2, num_subgrids=1, nx=1, ny=1), &
+           FieldSpec(field_name='A', im=5, typekind_str='I4', rank=2, num_subgrids=1, nx=1, ny=1), &
+           FieldSpec(field_name='A', im=5, typekind_str='I8', rank=2, num_subgrids=1, nx=1, ny=1), &
+           ! Rank variant
+           FieldSpec(field_name='A', im=5, typekind_str='R8', rank=3, num_subgrids=1, nx=1, ny=1), &
+           ! num_grids variant
+           FieldSpec(field_name='A', im=8, typekind_str='R8', rank=2, num_subgrids=2, nx=1, ny=1), & ! even
+           FieldSpec(field_name='A', im=8, typekind_str='R8', rank=2, num_subgrids=3, nx=1, ny=1), & ! uneven
+           ! Name variant
+           FieldSpec(field_name='B', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1) &
+           ]
+   end function make_parameters
+   
+
    subroutine setup(this)
-      class(ESMF_TestMethod), intent(inout) :: this
+      class(SubFieldTest), intent(inout) :: this
       type(CubedSphereGridFactory) :: cs_factory
 
       integer :: status, i, j
       integer :: local_count(3)
-      
-      cs_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=1,rc=status)
+      real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
+
+      real(kind=ESMF_KIND_R4), pointer :: ptr_2d_r4(:,:)
+      real(kind=ESMF_KIND_R8), pointer :: ptr_2d_r8(:,:)
+      integer(kind=ESMF_KIND_I4), pointer :: ptr_2d_i4(:,:)
+      integer(kind=ESMF_KIND_I8), pointer :: ptr_2d_i8(:,:)
+
+      real(kind=ESMF_KIND_R4), pointer :: ptr_3d_r4(:,:,:)
+      real(kind=ESMF_KIND_R8), pointer :: ptr_3d_r8(:,:,:)
+      integer(kind=ESMF_KIND_I4), pointer :: ptr_3d_i4(:,:,:)
+      integer(kind=ESMF_KIND_I8), pointer :: ptr_3d_i8(:,:,:)
+
+      integer, allocatable :: data(:,:,:)
+
+      ! unpack params
+      select type (p => this%testParameter)
+      type is (FieldSpec)
+
+         this%field_name = p%field_name
+         this%im = p%im
+         this%typekind_str = p%typekind_str
+         this%rank = p%rank
+         this%num_subgrids = p%num_subgrids
+         this%nx = p%nx
+         this%ny = p%ny
+
+         select case (p%typekind_str)
+         case ('R4')
+            this%typekind = ESMF_TYPEKIND_R4
+         case ('R8')
+            this%typekind = ESMF_TYPEKIND_R8
+         case ('I4')
+            this%typekind = ESMF_TYPEKIND_I4
+         case ('I8')
+            this%typekind = ESMF_TYPEKIND_I8
+         end select
+
+      end select
+
+
+      cs_factory = CubedSphereGridFactory(im_world=this%im, nx=this%nx, ny=this%ny, lm=1, rc=status)
       @assertEqual(0,status)
 
-      primary_grid = cs_factory%make_grid(rc=status)
+      this%grid = cs_factory%make_grid(rc=status)
       @assertEqual(0,status)
 
-      call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
+      call ESMF_GridGetCoord(this%grid, coordDim=1, localDE=0, &
            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
       @assert_that(status, is(0))
 
-      call ESMF_GridGetCoord(grid=primary_grid, coordDim=2, localDE=0, &
+      call ESMF_GridGetCoord(this%grid, coordDim=2, localDE=0, &
            staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, rc=status)
       @assert_that(status, is(0))
 
-      call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
+      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, rc=status)
+      @assertEqual(0,status)
+
+      this%subgrids = make_subgrids(this%grid, this%num_subgrids, rc=status)
       @assertEqual(0,status)
 
       ! Set the coordinates to synthetic values that are easier to 
@@ -64,216 +176,248 @@ contains
          end do
       end do
 
+      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, rc=status)
+      @assertEqual(0, status)
+      this%bounds = find_bounds(local_count(2), this%num_subgrids)
 
-      f_2d_r4 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R4, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
+      select case (this%rank)
+      case (2)
+         this%field = ESMF_FieldCreate(grid=this%grid, typekind=this%typekind, &
+              name=this%field_name, &
+              indexflag=ESMF_INDEX_DELOCAL, &
+              staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
+         @assert_that(status, is(0))
+      case (3)
+         this%field = ESMF_FieldCreate(grid=this%grid, typekind=this%typekind, &
+              name=this%field_name, &
+              indexflag=ESMF_INDEX_DELOCAL, &
+              ungriddedLBound=[1], ungriddedUBound=[LM], &
+              staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
+         @assert_that(status, is(0))
+      end select
 
-      f_2d_r8 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R8, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-
-      f_3d_r4 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R4, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           ungriddedLBound=[1], ungriddedUBound=[5], &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-
-      f_3d_r8 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_R8, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           ungriddedLBound=[1], ungriddedUBound=[5], &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-
-      f_2d_i4 =  ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_I4, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-
-      f_3d_i4 = ESMF_FieldCreate(grid=primary_grid, typekind=ESMF_TYPEKIND_I4, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           ungriddedLBound=[1], ungriddedUBound=[5], &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-      
-      call ESMF_FieldGet(f_2d_r4, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_2d_r8, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_3d_r4, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_3d_r8, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_2d_i4, localDe=0, farrayPtr=ptr_2d_i4, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_3d_i4, localDe=0, farrayPtr=ptr_3d_i4, rc=status)
-      @assert_that(status, is(0))
-
+      allocate(data(local_count(1), local_count(2), LM))
       do j = 1, local_count(2)
          do i = 1, local_count(1)
-            ptr_2d_r4(i,j) = f(i,j)
-            ptr_2d_r8(i,j) = f(i,j)
-            ptr_3d_r4(i,j,:) = f(i,j) 
-            ptr_3d_r8(i,j,:) = f(i,j)
-            ptr_2d_i4(i,j) = f(i,j)
-            ptr_3d_i4(i,j,:) = f(i,j)
+            data(i,j,:) = f(i,j)
          end do
       end do
-      call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
-      @assertEqual(0,status)
+
+      select case(this%typekind_str)
+      case ('R4')
+         if (this%rank == 2) then
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
+            @assert_that(status, is(0))
+            ptr_2d_r4 = data(:,:,1)
+         else ! rank 3
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
+            @assert_that(status, is(0))
+            ptr_3d_r4 = data
+         end if
+      case ('R8')
+         if (this%rank == 2) then 
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
+            @assert_that(status, is(0))
+            ptr_2d_r8 = data(:,:,1)
+         else ! rank 3
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
+            @assert_that(status, is(0))
+            ptr_3d_r8 = data
+         end if
+      case ('I4')
+         if (this%rank == 2) then 
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, rc=status)
+            @assert_that(status, is(0))
+            ptr_2d_i4 = data(:,:,1)
+         else ! rank 3
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, rc=status)
+            @assert_that(status, is(0))
+            ptr_3d_i4 = data
+         end if
+      case ('I8')
+         if (this%rank == 2) then 
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, rc=status)
+            @assert_that(status, is(0))
+            ptr_2d_i8 = data(:,:,1)
+         else ! rank 3
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, rc=status)
+            @assert_that(status, is(0))
+            ptr_3d_i8 = data
+         end if
+      end select
+
    end subroutine setup
 
-   real function f(i,j)
+   elemental real function f(i,j)
       integer, intent(in) :: i
       integer, intent(in) :: j
-
       f = i + 2 * j
-
    end function f
 
-   @after
+
    subroutine teardown(this)
-      class(ESMF_TestMethod), intent(inout) :: this
+      class(SubFieldTest), intent(inout) :: this
       integer :: status
-      call ESMF_FieldDestroy(f_2d_r4, rc=status)
-      @assert_that(status, is(0))
-      call ESMF_FieldDestroy(f_2d_r8, rc=status)
-      @assert_that(status, is(0))
-      call ESMF_GridDestroy(primary_grid, rc=status)
+      call ESMF_FieldDestroy(this%field, rc=status)
       @assert_that(status, is(0))
    end subroutine teardown
 
-   ! Starting with a simple Cubed-sphere grid, create a single
-   ! local subgrid.  Verify that the local properties of the
-   ! subgrid match the original grid.
-   @test(npes=[6],type=newESMF_TestMethod)
+
+   @test
    subroutine test_make_subField(this)
-      class(ESMF_TestMethod), intent(inout) :: this
-      integer :: status, num_grids, i
-      type(ESMF_Grid), allocatable :: subgrids(:) 
-      type(ESMF_Field), allocatable :: subfields(:)
-      integer :: local_count(3)
-      type(Interval), allocatable :: bounds(:)
-      real(kind=ESMF_KIND_R4), pointer :: expected_2d_r4(:,:)
-      real(kind=ESMF_KIND_R8), pointer :: expected_2d_r8(:,:)
-      real(kind=ESMF_KIND_R4), pointer :: expected_3d_r4(:,:,:)
-      real(kind=ESMF_KIND_R8), pointer :: expected_3d_r8(:,:,:)
-      integer(kind=ESMF_KIND_I4), pointer :: expected_2d_i4(:,:)
-      integer(kind=ESMF_KIND_I4), pointer :: expected_3d_i4(:,:,:)
-
-      real(kind=ESMF_KIND_R4), pointer :: sub_ptr_2d_r4(:,:)
-      real(kind=ESMF_KIND_R8), pointer :: sub_ptr_2d_r8(:,:)
-      real(kind=ESMF_KIND_R4), pointer :: sub_ptr_3d_r4(:,:,:)
-      real(kind=ESMF_KIND_R8), pointer :: sub_ptr_3d_r8(:,:,:)
-      integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_2d_i4(:,:)
-      integer(kind=ESMF_KIND_I4), pointer :: sub_ptr_3d_i4(:,:,:)
-      
-      call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, rc=status)
-      @assertEqual(0, status)
-
-      num_grids = 5
-      ! Synthetic bounds to choose a small subregion in the primary grid
-      allocate(bounds(num_grids))
-      do i = 1, num_grids
-         bounds(i)%min = i
-         bounds(i)%max = i + 1
-      end do 
-
-      subgrids = make_subgrids(primary_grid, bounds, status)
-
-      ! check 
-      call ESMF_GridGet(subgrids(1), rc=status)
-      @assertEqual(0,status)
-
+     class(SubFieldTest), intent(inout) :: this
+     integer :: status, i
+     type(ESMF_Field), allocatable :: subfields(:)
+     real(kind=ESMF_KIND_R4), pointer :: ptr_2d_r4(:,:), sub_ptr_2d_r4(:,:)
+     real(kind=ESMF_KIND_R8), pointer :: ptr_2d_r8(:,:), sub_ptr_2d_r8(:,:)
+     real(kind=ESMF_KIND_R4), pointer :: ptr_3d_r4(:,:,:), sub_ptr_3d_r4(:,:,:)
+     real(kind=ESMF_KIND_R8), pointer :: ptr_3d_r8(:,:,:), sub_ptr_3d_r8(:,:,:)
+     integer(kind=ESMF_KIND_I4), pointer :: ptr_2d_i4(:,:), sub_ptr_2d_i4(:,:)
+     integer(kind=ESMF_KIND_I4), pointer :: ptr_3d_i4(:,:,:), sub_ptr_3d_i4(:,:,:)
+     integer(kind=ESMF_KIND_I8), pointer :: ptr_2d_i8(:,:), sub_ptr_2d_i8(:,:)
+     integer(kind=ESMF_KIND_I8), pointer :: ptr_3d_i8(:,:,:), sub_ptr_3d_i8(:,:,:)
+     
       ! As with make_subgrids() we first implement a lower level interface
       ! that assumes the subgrids are already available.
       ! the higher level overload will construct the actual subgrids and then
       ! call this lower level procedure.
    
-      ! make subfields for 2d, r4 field and run tests
-      subfields = make_subfields(f_2d_r4, subgrids, bounds, rc=status)
+      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
       @assert_that(status, is(0))
 
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
+      do i = 1, this%num_subgrids
+         call check(subfields(i), this%bounds(i), rc=status)
          @assert_that(status, is(0))
-
-         expected_2d_r4 => ptr_2d_r4(:,bounds(i)%min:bounds(i)%max)
-         @assert_that(sub_ptr_2d_r4, is(equal_to(expected_2d_r4)))
       end do
 
+   contains
 
-      ! make subfields for 2d, r8 field and run tests    
-      subfields = make_subfields(f_2d_r8, subgrids, bounds, rc=status)
-      @assert_that(status, is(0))
+      subroutine check(subfield, bounds, rc)
+         type(ESMF_Field), intent(in) :: subfield
+         type(Interval), intent(in) :: bounds
+         integer, optional, intent(out) :: rc
 
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
-         @assert_that(status, is(0))
+         select case (this%typekind_str)
+         case ('R4')
 
-         expected_2d_r8 => ptr_2d_r8(:,bounds(i)%min:bounds(i)%max)
-         @assert_that(sub_ptr_2d_r8, is(equal_to(expected_2d_r8)))
-      end do
+            select case (this%rank)
+            case (2)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_2d_r4(:,bounds%min:bounds%max), sub_ptr_2d_r4)
+            case (3)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_3d_r4(:,bounds%min:bounds%max,:), sub_ptr_3d_r4)
+            end select
+            
+         case ('R8')
 
+            select case (this%rank)
+            case (2)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_2d_r8(:,bounds%min:bounds%max), sub_ptr_2d_r8)
+            case (3)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_3d_r8(:,bounds%min:bounds%max,:), sub_ptr_3d_r8)
+            end select
 
-      ! make subfields for 3d, r4 field and run tests
-      subfields = make_subfields(f_3d_r4, subgrids, bounds, rc=status)
-      @assert_that(status, is(0))
+         case ('I4')
 
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
-         @assert_that(status, is(0))
+            select case (this%rank)
+            case (2)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i4, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_2d_i4(:,bounds%min:bounds%max), sub_ptr_2d_i4)
+            case (3)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i4, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_3d_i4(:,bounds%min:bounds%max,:), sub_ptr_3d_i4)
+            end select
 
-         expected_3d_r4 => ptr_3d_r4(:,bounds(i)%min:bounds(i)%max,:)
-         @assertEqual(expected_3d_r4, sub_ptr_3d_r4)
-      end do
+         case ('I8')
 
+            select case (this%rank)
+            case (2)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i8, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_2d_i8(:,bounds%min:bounds%max), sub_ptr_2d_i8)
+            case (3)
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, rc=status)
+               @assert_that(status, is(0))
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i8, rc=status)
+               @assert_that(status, is(0))
+               @assertEqual(ptr_3d_i8(:,bounds%min:bounds%max,:), sub_ptr_3d_i8)
+            end select
 
-      ! make subfields for 3d, r8 field and run tests    
-      subfields = make_subfields(f_3d_r8, subgrids, bounds, rc=status)
-      @assert_that(status, is(0))
-
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
-         @assert_that(status, is(0))
-
-         expected_3d_r8 => ptr_3d_r8(:,bounds(i)%min:bounds(i)%max,:)
-         @assertEqual(expected_3d_r8, sub_ptr_3d_r8)
-      end do
-
-
-      ! make subfields for 2d, i4 field and run tests
-      subfields = make_subfields(f_2d_i4, subgrids, bounds, rc=status)
-      @assert_that(status, is(0))
-
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_2d_i4, rc=status)
-         @assert_that(status, is(0))
-
-         expected_2d_i4 => ptr_2d_i4(:,bounds(i)%min:bounds(i)%max)
-         @assertEqual(expected_2d_i4, sub_ptr_2d_i4)
-      end do
-
-      
-      ! make subfields for 3d, i4 field and run tests
-      subfields = make_subfields(f_3d_i4, subgrids, bounds, rc=status)
-      @assert_that(status, is(0))
-     
-      do i = 1, size(subfields)
-         call ESMF_FieldGet(subfields(i), localDe=0, farrayPtr=sub_ptr_3d_i4, rc=status)
-         @assert_that(status, is(0))
-
-         expected_3d_i4 => ptr_3d_i4(:,bounds(i)%min:bounds(i)%max,:)
-         @assertEqual(expected_3d_i4, sub_ptr_3d_i4)
-      end do
+         end select
+      end subroutine check
 
    end subroutine test_make_subField
+
+
+   function toString(this) result(string)
+      character(len=:), allocatable :: string
+      class (FieldSpec), intent(in) :: this
+      character(len=2) :: buf
+
+      string = '{name:'//this%field_name
+
+      write(buf,'(i2.0)') this%im
+      string = string // ',IM:'//buf
+
+      string = string // ',TK:'//this%typekind_str
+
+      write(buf,'(i2.0)') this%rank
+      string = string // ',rank:'//buf
+
+      write(buf,'(i2.0)') this%num_subgrids
+      string = string // ',n_grids:'//buf
+
+      write(buf,'(i2.0)') this%nx
+      string = string // ',nx:'//buf
+
+      write(buf,'(i2.0)') this%ny
+      string = string // ',nx:'//buf
+
+      string = string // '}'
+
+   end function toString
+
+   @test
+   subroutine test_subField_name(this)
+      class(SubFieldTest), intent(inout) :: this
+      integer :: status
+      type(ESMF_Field), allocatable :: subfields(:)
+      integer :: i
+      character(len=ESMF_MAXSTR) :: expected_name, found_name
+      
+      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
+      @assert_that(status, is(0))
+      call ESMF_FieldGet(this%field, name=expected_name, rc=status)
+      @assert_that(status, is(0))
+      do i = 1, this%num_subgrids
+         call ESMF_FieldGet(subfields(i), name=found_name, rc=status)
+         @assert_that(status, is(0))
+      end do
+      @assertEqual(expected_name, found_name)
+   end subroutine test_subField_name
+
 
 end module test_SubField
