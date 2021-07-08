@@ -214,11 +214,11 @@ contains
       case ('A')
          call ESMF_AttributeSet(this%field, name='A', value=1)
       case ('B')
-         call ESMF_AttributeSet(this%field, name='B1', value=int(1, kind=ESMF_KIND_I4))
-         call ESMF_AttributeSet(this%field, name='B2', value=real(1.,kind=ESMF_KIND_R8))
+         call ESMF_AttributeSet(this%field, name='B1', value=int(2, kind=ESMF_KIND_I4))
+         call ESMF_AttributeSet(this%field, name='B2', value=real(3.,kind=ESMF_KIND_R4))
       case ('C')
-         call ESMF_AttributeSet(this%field, name='C1', value=real(1., kind=ESMF_KIND_R8))
-         call ESMF_AttributeSet(this%field, name='C2', value=int(1,kind=ESMF_KIND_I4))
+         call ESMF_AttributeSet(this%field, name='C1', value=real(3., kind=ESMF_KIND_R8))
+         call ESMF_AttributeSet(this%field, name='C2', value=int(2,kind=ESMF_KIND_I4))
          call ESMF_AttributeSet(this%field, name='C3', value=.true.)
       end select
 
@@ -411,15 +411,10 @@ contains
       subfields = make_subfields(this%field, this%num_subgrids, rc=status)
       @assert_that(status, is(0))
 
-      print*,'WHAT: ',this%atts
       do i = 1, size(subfields)
          call ESMF_AttributeGet(subfields(i), count=count, rc=status)
          @assert_that(status, is(ESMF_SUCCESS))
-         if (count > 0) then
-            call ESMF_AttributeGet(subfields(i), attributeIndex=1, name=name, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            print*,'huh: ', name
-         end if
+
          select case (this%atts)
          case ('none')
             @assert_that(count, is(0))
@@ -434,6 +429,118 @@ contains
       end do
 
    end subroutine test_subField_attribute_count
+         
+
+   @test
+   subroutine test_subField_attribute_typekind(this)
+      class(SubFieldTest), intent(inout) :: this
+
+      integer :: status
+      type(ESMF_Field), allocatable :: subfields(:)
+      integer :: i
+      type(ESMF_TYPEKIND_FLAG) :: typekind
+      
+      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
+      @assert_that(status, is(0))
+
+      do i = 1, size(subfields)
+
+         select case (this%atts)
+         case ('none')
+         case ('A')
+            call ESMF_AttributeGet(subfields(i), name='A', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+         case ('B')
+            call ESMF_AttributeGet(subfields(i), name='B1', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+
+            call ESMF_AttributeGet(subfields(i), name='B2', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_R4)
+
+
+         case ('C')
+            call ESMF_AttributeGet(subfields(i), name='C1', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_R8)
+
+
+            call ESMF_AttributeGet(subfields(i), name='C2', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+
+            call ESMF_AttributeGet(subfields(i), name='C3', typekind=typekind, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assertTrue(typekind == ESMF_TYPEKIND_LOGICAL)
+
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_subField_attribute_typekind
+         
+
+   @test
+   subroutine test_subField_attribute_values(this)
+      class(SubFieldTest), intent(inout) :: this
+
+      integer :: status
+      type(ESMF_Field), allocatable :: subfields(:)
+      integer :: i
+
+      integer(kind=ESMF_KIND_I4) :: i_value
+      real(kind=ESMF_KIND_R4) :: x_value
+      real(kind=ESMF_KIND_R8) :: y_value
+      logical :: flag
+      
+      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
+      @assert_that(status, is(0))
+
+      do i = 1, size(subfields)
+
+         select case (this%atts)
+         case ('none')
+         case ('A')
+            call ESMF_AttributeGet(subfields(i), name='A', value=i_value, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(i_value, is(1))
+
+         case ('B')
+            call ESMF_AttributeGet(subfields(i), name='B1', value=i_value, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(i_value, is(2))
+
+            call ESMF_AttributeGet(subfields(i), name='B2', value=x_value, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(x_value, is(3._ESMF_KIND_R4))
+
+         case ('C')
+            call ESMF_AttributeGet(subfields(i), name='C1', value=y_value, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(y_value, is(3._ESMF_KIND_R8))
+
+            call ESMF_AttributeGet(subfields(i), name='C2', value=i_value, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(i_value, is(2))
+
+            call ESMF_AttributeGet(subfields(i), name='C3', value=flag, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            @assert_that(flag, is(true()))
+
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_subField_attribute_values
          
 
 
