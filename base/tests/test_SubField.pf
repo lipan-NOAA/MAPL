@@ -422,6 +422,8 @@ contains
             @assert_that(count, is(1))
          case ('B')
             @assert_that(count, is(2))
+         case('C')
+            @assert_that(count,is(3))
          case default
             ! should not reach here
             @assert_that(1, is(0))

@@ -34,9 +34,16 @@ contains
          f_list(i) = ESMF_FieldEmptyCreate(name=field_name,rc=status)
          @assertEqual(0,status)
       enddo
-      populated_bundle = ESMF_FieldBUndleCreate(fieldList=f_list,name="foo",rc=status)
+      populated_bundle = ESMF_FieldBundleCreate(fieldList=f_list,name="foo",rc=status)
       @assertEqual(0,status)
-     
+
+      call ESMF_AttributeSet(populated_bundle, name='A1', value=7)
+      call ESMF_AttributeSet(populated_bundle, name='A2', value=int(3, kind=ESMF_KIND_I4))
+      call ESMF_AttributeSet(populated_bundle, name='A3', value=int(2, kind=ESMF_KIND_I8))
+      call ESMF_AttributeSet(populated_bundle, name='A4', value=real(5.0, kind=ESMF_KIND_R4))
+      call ESMF_AttributeSet(populated_bundle, name='A5', value=real(4.2, kind=ESMF_KIND_R8))
+      call ESMF_AttributeSet(populated_bundle, name='A6', value=.FALSE.)
+           
    end subroutine setup
 
    function mock_make_subfields(field, num_grids, rc) result(fields)
@@ -110,7 +117,7 @@ contains
       integer :: status
       integer :: expected_field_count, found_field_count
 
-      sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=1, rc=status)
+      sub_bundles = make_subFieldbundles(trivial_bundle, num_grids=3, rc=status)
       @assert_that(status, is(0))
 
       call ESMF_FieldBundleGet(trivial_bundle, fieldcount=expected_field_count, rc=status)
@@ -195,4 +202,83 @@ contains
      end do
 
    end subroutine test_subFieldBundle_name
+
+   
+   @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_subFieldBundle_attributes(this)
+     class(ESMF_TestMethod), intent(inout) :: this
+     integer :: status
+     type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+     integer :: i, count
+     type(ESMF_TYPEKIND_FLAG) :: typekind
+     integer(kind=ESMF_KIND_I4) :: i4_val
+     integer(kind=ESMF_KIND_I8) :: i8_val
+     real(kind=ESMF_KIND_R4) :: r4_val
+     real(kind=ESMF_KIND_R8) :: r8_val
+     logical :: bool_val
+     
+     sub_bundles = make_subFieldBundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, rc=status)
+     @assert_that(status, is(0))
+
+     do i = 1, size(sub_bundles)
+        ! check attribute count
+        call ESMF_AttributeGet(sub_bundles(i), count=count, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(count, is(6))
+
+        ! check attribute typekind 
+        call ESMF_AttributeGet(sub_bundles(i), name='A1', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A2', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_I4)
+     
+        call ESMF_AttributeGet(sub_bundles(i), name='A3', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_I8)
+      
+        call ESMF_AttributeGet(sub_bundles(i), name='A4', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_R4)
+       
+        call ESMF_AttributeGet(sub_bundles(i), name='A5', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_R8)
+       
+        call ESMF_AttributeGet(sub_bundles(i), name='A6', typekind=typekind, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assertTrue(typekind == ESMF_TYPEKIND_LOGICAL)
+        
+
+        ! check attribute value
+        call ESMF_AttributeGet(sub_bundles(i), name='A1', value=i4_val, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(i4_val, is(7))
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A2', value=i4_val,  rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(i4_val, is(3))
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A3', value=i8_val,  rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(i8_val, is(2_ESMF_KIND_I8))
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A4', value=r4_val,  rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(r4_val, is(5.0_ESMF_KIND_R4))
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A5', value=r8_val, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(r8_val, is(4.2_ESMF_KIND_R8))
+        ! ^ failing, actual value is 4.199999809265137D
+
+        call ESMF_AttributeGet(sub_bundles(i), name='A6', value=bool_val, rc=status)
+        @assert_that(status, is(ESMF_SUCCESS))
+        @assert_that(bool_val, is(false()))
+     end do
+
+     
+   end subroutine test_subFieldBundle_attributes
 end module test_SubFieldBundle
