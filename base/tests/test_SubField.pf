@@ -22,6 +22,7 @@ module test_SubField
       integer :: rank
       integer :: num_subgrids
       integer :: nx, ny
+      character(:), allocatable :: atts
    contains
       procedure :: toString
    end type FieldSpec
@@ -39,6 +40,7 @@ module test_SubField
       type(ESMF_Grid), allocatable :: subgrids(:)
       type(ESMF_Field) :: field
       type(ESMF_Grid) :: grid
+      character(:), allocatable :: atts
    contains
       procedure :: setup
       procedure :: teardown
@@ -54,7 +56,7 @@ module test_SubField
 
 contains
 
-   function new_FieldSpec(field_name, im, typekind_str, rank, num_subgrids, nx, ny) result(specs)
+   function new_FieldSpec(field_name, im, typekind_str, rank, num_subgrids, nx, ny, atts) result(specs)
       type(FieldSpec) :: specs
       character(*), intent(in) :: field_name
       integer, intent(in) :: im
@@ -62,6 +64,7 @@ contains
       integer, intent(in) :: rank
       integer, intent(in) :: num_subgrids
       integer, intent(in) :: nx, ny
+      character(*), optional, intent(in) :: atts
 
       specs%field_name = field_name
       specs%im = im
@@ -70,6 +73,11 @@ contains
       specs%num_subgrids = num_subgrids
       specs%nx = nx
       specs%ny = ny
+      if (present(atts)) then
+         specs%atts = atts
+      else
+         specs%atts = 'none'
+      end if
       
       call specs%setNumPETsRequested(nx*ny*6)
 
@@ -96,7 +104,11 @@ contains
            FieldSpec(field_name='A', im=8, typekind_str='R8', rank=2, num_subgrids=2, nx=1, ny=1), & ! even
            FieldSpec(field_name='A', im=8, typekind_str='R8', rank=2, num_subgrids=3, nx=1, ny=1), & ! uneven
            ! Name variant
-           FieldSpec(field_name='B', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1) &
+           FieldSpec(field_name='B', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1), &
+           ! Attribute variant
+           FieldSpec(field_name='A', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1, atts='A'), &
+           FieldSpec(field_name='A', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1, atts='B'), &
+           FieldSpec(field_name='A', im=5, typekind_str='R4', rank=2, num_subgrids=2, nx=1, ny=1, atts='C') &
            ]
    end function make_parameters
    
@@ -143,6 +155,8 @@ contains
          case ('I8')
             this%typekind = ESMF_TYPEKIND_I8
          end select
+
+         this%atts = p%atts
 
       end select
 
@@ -194,6 +208,18 @@ contains
               ungriddedLBound=[1], ungriddedUBound=[LM], &
               staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
          @assert_that(status, is(0))
+      end select
+
+      select case (this%atts)
+      case ('A')
+         call ESMF_AttributeSet(this%field, name='A', value=1)
+      case ('B')
+         call ESMF_AttributeSet(this%field, name='B1', value=int(1, kind=ESMF_KIND_I4))
+         call ESMF_AttributeSet(this%field, name='B2', value=real(1.,kind=ESMF_KIND_R8))
+      case ('C')
+         call ESMF_AttributeSet(this%field, name='C1', value=real(1., kind=ESMF_KIND_R8))
+         call ESMF_AttributeSet(this%field, name='C2', value=int(1,kind=ESMF_KIND_I4))
+         call ESMF_AttributeSet(this%field, name='C3', value=.true.)
       end select
 
       allocate(data(local_count(1), local_count(2), LM))
@@ -372,12 +398,53 @@ contains
    end subroutine test_make_subField
 
 
+   @test
+   subroutine test_subField_attribute_count(this)
+      class(SubFieldTest), intent(inout) :: this
+
+      integer :: status
+      type(ESMF_Field), allocatable :: subfields(:)
+      integer :: i
+      integer :: count
+      character(ESMF_MAXSTR) :: name
+      
+      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
+      @assert_that(status, is(0))
+
+      print*,'WHAT: ',this%atts
+      do i = 1, size(subfields)
+         call ESMF_AttributeGet(subfields(i), count=count, rc=status)
+         @assert_that(status, is(ESMF_SUCCESS))
+         if (count > 0) then
+            call ESMF_AttributeGet(subfields(i), attributeIndex=1, name=name, rc=status)
+            @assert_that(status, is(ESMF_SUCCESS))
+            print*,'huh: ', name
+         end if
+         select case (this%atts)
+         case ('none')
+            @assert_that(count, is(0))
+         case ('A')
+            @assert_that(count, is(1))
+         case ('B')
+            @assert_that(count, is(2))
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_subField_attribute_count
+         
+
+
+
    function toString(this) result(string)
       character(len=:), allocatable :: string
       class (FieldSpec), intent(in) :: this
       character(len=2) :: buf
 
       string = '{name:'//this%field_name
+      string = string //',ATTR:'//this%atts
 
       write(buf,'(i2.0)') this%im
       string = string // ',IM:'//buf
@@ -418,6 +485,5 @@ contains
          @assertEqual(expected_name, found_name)
       end do
     end subroutine test_subField_name
-
 
 end module test_SubField
