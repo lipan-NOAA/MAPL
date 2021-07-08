@@ -9,24 +9,9 @@ module test_SubFieldBundle
 
 
    type (ESMF_FieldBundle) :: trivial_bundle
-   type (ESMF_FieldBundle) :: cs_bundle_2d3d_mixedtype
-
-
-   real(kind=ESMF_KIND_R4), pointer :: ptr_2d_r4(:,:)
-   real(kind=ESMF_KIND_R8), pointer :: ptr_2d_r8(:,:)
-   real(kind=ESMF_KIND_R4), pointer :: ptr_3d_r4(:,:,:)
-   real(kind=ESMF_KIND_R8), pointer :: ptr_3d_r8(:,:,:)
-
-   real(kind=ESMF_KIND_R4), pointer :: sub_ptr_2d_r4(:,:)
-   real(kind=ESMF_KIND_R8), pointer :: sub_ptr_2d_r8(:,:)
-   real(kind=ESMF_KIND_R4), pointer :: sub_ptr_3d_r4(:,:,:)
-   real(kind=ESMF_KIND_R8), pointer :: sub_ptr_3d_r8(:,:,:)
-
-   integer, parameter :: IM = 12
-   integer, parameter :: NX = 1
-   integer, parameter :: lm = 3
+   type (ESMF_FieldBundle) :: populated_bundle
    integer, parameter :: num_grids = 4
-   type(Interval), allocatable :: bounds(:)
+   integer, parameter :: num_fields = 3
 
    
 contains
@@ -37,79 +22,44 @@ contains
       class(ESMF_TestMethod), intent(inout) :: this
       type(ESMF_Field) :: empty_list(0)
       integer :: status
-      type(CubedSphereGridFactory) :: cs_factory
-      type(ESMF_Grid) :: cs_grid
-      type(ESMF_Field) :: f_2d_r4, f_3d_r4,f_2d_r8,f_3d_r8
-      type(ESMF_Field) :: f_list_2(2)
-      integer          :: local_counts(3), i,j 
+      type(ESMF_Field) :: f_list(num_fields)
+      character(len=2) :: field_name
+      integer :: i
 
       trivial_bundle = ESMF_FieldBundleCreate(fieldList=empty_list, &
            & name='trivial', rc=status)
       @assert_that(status, is(0))
-
-
-      cs_factory = CubedSphereGridFactory(im_world=im,nx=nx,ny=nx,lm=lm,rc=status)
+      do i=1,num_fields
+         write(field_name,'(a1,i1)')"f",i
+         f_list(i) = ESMF_FieldEmptyCreate(name=field_name,rc=status)
+         @assertEqual(0,status)
+      enddo
+      populated_bundle = ESMF_FieldBUndleCreate(fieldList=f_list,name="foo",rc=status)
       @assertEqual(0,status)
+     
 
-      cs_grid = cs_factory%make_grid(rc=status)
-      @assertEqual(0,status)
-      call MAPL_GridGet(cs_grid,localCellCountPerDim=local_counts,rc=status)
-      @assertEqual(0,status)
-      bounds = find_bounds(local_counts(2), num_grids)
 
-      @assertEqual(0,status)
-      f_2d_r4 = ESMF_FieldCreate(grid=cs_grid, typekind=ESMF_TYPEKIND_R4, &
-           indexflag=ESMF_INDEX_DELOCAL, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-      f_3d_r4 = ESMF_FieldCreate(grid=cs_grid, typekind=ESMF_TYPEKIND_R4, &
-           indexflag=ESMF_INDEX_DELOCAL, ungriddedLbound=[1], ungriddedUBound=[lm], &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-      f_2d_r8 = ESMF_FieldCreate(grid=cs_grid, typekind=ESMF_TYPEKIND_R8, &
-           indexflag=ESMF_INDEX_DELOCAL,  &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-      f_3d_r8 = ESMF_FieldCreate(grid=cs_grid, typekind=ESMF_TYPEKIND_R8, &
-           indexflag=ESMF_INDEX_DELOCAL, ungriddedLbound=[1], ungriddedUBound=[lm], &
-           staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_2d_r4, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_2d_r8, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_3d_r4, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
-      @assert_that(status, is(0))
-
-      call ESMF_FieldGet(f_3d_r8, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
-      @assert_that(status, is(0))
-
-      do j = 1, local_counts(2)
-         do i = 1, local_counts(1)
-            ptr_2d_r4(i,j) = f(i,j)
-            ptr_2d_r8(i,j) = f(i,j)
-            ptr_3d_r4(i,j,:) = f(i,j)
-            ptr_3d_r8(i,j,:) = f(i,j)
-         end do
-      end do
-      f_list_2(1)=f_2d_r4
-      f_list_2(2)=f_3d_r8
-
-      cs_bundle_2d3d_mixedtype = ESMF_FieldBundleCreate(fieldlist=f_list_2,name="cs_bundle_2d3d_mixedtype",rc=status)
-      @assert_that(status, is(0))
 
    end subroutine setup
 
-   real function f(i,j)
-      integer, intent(in) :: i
-      integer, intent(in) :: j
+   function mock_make_subfields(field, num_grids, rc) result(fields)
+      type(ESMF_Field), allocatable :: fields(:)
+      type(ESMF_Field), intent(in) :: field
+      integer, intent(in) :: num_grids
+      integer, optional, intent(out) :: rc
 
-      f = i + 2 * j
+      integer :: status,i
+      character(len=ESMF_MAXSTR) :: name
 
-   end function f
+      call ESMF_FieldGet(field, name=name,rc=status)
+      @assert_that(status, is(0))
+      allocate(fields(num_grids))
+      do i=1,num_grids
+         fields(i) = ESMF_FieldEmptyCreate(name=trim(name),rc=status)
+         @assert_that(status, is(0))
+      enddo
+      if (present(rc)) rc=0
+   end function mock_make_subfields
 
    @after
    subroutine teardown(this)
@@ -175,7 +125,7 @@ contains
    end subroutine test_trivial_num_fields
 
    @test(npes=[6],type=newESMF_TestMethod)
-   subroutine test_2d3d_mixedtype(this)
+   subroutine test_populated_bundle(this)
       class(ESMF_TestMethod), intent(inout) :: this
 
       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
@@ -183,22 +133,25 @@ contains
       integer :: expected_field_count, found_field_count, i, j
       type(ESMF_Field), allocatable :: fields(:)
       type(ESMF_Field), allocatable :: subfields(:)
+      character(ESMF_MAXSTR) :: fname,sub_fname
+      character(ESMF_MAXSTR) :: bname,sub_bname
 
-      sub_bundles = make_subFieldbundles(cs_bundle_2d3d_mixedtype, num_grids=num_grids, rc=status)
+      sub_bundles = make_subFieldbundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, rc=status)
       @assert_that(status, is(0))
       @assert_that(size(sub_bundles),is(num_grids))
 
-      call ESMF_FieldBundleGet(cs_bundle_2d3d_mixedtype, fieldcount=expected_field_count, rc=status)
+      call ESMF_FieldBundleGet(populated_bundle, fieldcount=expected_field_count, name=bname, rc=status)
       do i=1,size(sub_bundles)
-         call ESMF_FieldBundleGet(sub_bundles(i), fieldcount=found_field_count, rc=status)
+         call ESMF_FieldBundleGet(sub_bundles(i), fieldcount=found_field_count, name=sub_bname, rc=status)
          @assert_that(status, is(0))
          @assert_that(found_field_count, is(expected_field_count))
+         @assertequal(trim(bname),trim(sub_bname))
       enddo
 
 
       allocate(fields(expected_field_count))
       allocate(subfields(found_field_count))
-      call ESMF_FieldBundleGet(cs_bundle_2d3d_mixedtype,fieldList=fields,rc=status)
+      call ESMF_FieldBundleGet(populated_bundle,fieldList=fields,rc=status)
       @assert_that(status, is(0))
 
 
@@ -206,66 +159,12 @@ contains
          call ESMF_FieldBundleGet(sub_bundles(j),fieldList=subfields,rc=status)
          @assert_that(status, is(0))
          do i=1,size(fields)
-            call check(fields(i),subfields(i),bounds(j),rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(fields(i),name=fname,rc=status)
+            call ESMF_FieldGet(subfields(i),name=sub_fname,rc=status)
+            @assertequal(trim(fname),trim(sub_fname))
          enddo
       enddo
-      
-         
 
-   end subroutine test_2d3d_mixedtype
-
-   subroutine check(field,subfield, ibounds, rc)
-      type(ESMF_Field), intent(in) :: field
-      type(ESMF_Field), intent(in) :: subfield
-      type(interval),   intent(in) :: ibounds
-      integer, optional, intent(out) :: rc
-
-      type(ESMF_TYPEKIND_FLAG) :: typekind
-      integer :: rank, status
-      character(:), allocatable :: typekind_str
-
-      call ESMF_FieldGet(field,rank=rank,typekind=typekind,rc=status)
-      @assert_that(status, is(0))
-      if (typekind==ESMF_TYPEKIND_R4) typekind_str="R4"
-      if (typekind==ESMF_TYPEKIND_R8) typekind_str="R8"
-
-      select case (typekind_str)
-      case ("R4")
-
-         select case (rank)
-         case (2)
-            call ESMF_FieldGet(field, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
-            @assert_that(status, is(0))
-            call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
-            @assert_that(status, is(0))
-            @assertEqual(ptr_2d_r4(:,ibounds%min:ibounds%max), sub_ptr_2d_r4)
-         case (3)
-            call ESMF_FieldGet(field, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
-            @assert_that(status, is(0))
-            call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
-            @assert_that(status, is(0))
-            @assertEqual(ptr_3d_r4(:,ibounds%min:ibounds%max,:), sub_ptr_3d_r4)
-         end select
-
-      case ("R8")
-
-         select case (rank)
-         case (2)
-            call ESMF_FieldGet(field, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
-            @assert_that(status, is(0))
-            call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
-            @assert_that(status, is(0))
-            @assertEqual(ptr_2d_r8(:,ibounds%min:ibounds%max), sub_ptr_2d_r8)
-         case (3)
-            call ESMF_FieldGet(field, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
-            @assert_that(status, is(0))
-            call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
-            @assert_that(status, is(0))
-            @assertEqual(ptr_3d_r8(:,ibounds%min:ibounds%max,:), sub_ptr_3d_r8)
-         end select
-
-      end select
-   end subroutine check
+   end subroutine test_populated_bundle
 
 end module test_SubFieldBundle
