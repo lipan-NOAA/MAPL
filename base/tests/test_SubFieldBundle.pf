@@ -37,9 +37,6 @@ contains
       populated_bundle = ESMF_FieldBUndleCreate(fieldList=f_list,name="foo",rc=status)
       @assertEqual(0,status)
      
-
-
-
    end subroutine setup
 
    function mock_make_subfields(field, num_grids, rc) result(fields)
@@ -127,7 +124,6 @@ contains
    @test(npes=[6],type=newESMF_TestMethod)
    subroutine test_populated_bundle(this)
       class(ESMF_TestMethod), intent(inout) :: this
-
       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
       integer :: status
       integer :: expected_field_count, found_field_count, i, j
@@ -165,6 +161,38 @@ contains
          enddo
       enddo
 
-   end subroutine test_populated_bundle
+  end subroutine test_populated_bundle
 
+  @test(npes=[6],type=newESMF_TestMethod)
+   subroutine test_subFieldBundle_name(this)
+     class(ESMF_TestMethod), intent(inout) :: this
+     integer :: status
+     type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+     integer :: i
+     character(len=ESMF_MAXSTR) :: expected_name, found_name
+     
+     ! trivial bundle
+     sub_bundles = make_subFieldBundles(trivial_bundle, num_grids=num_grids, make=mock_make_subfields, rc=status)
+     @assert_that(status, is(0))
+     call ESMF_FieldBundleGet(trivial_bundle, name=expected_name, rc=status)
+     @assert_that(status, is(0))
+     do i = 1, num_grids
+        call ESMF_FieldBundleGet(sub_bundles(i), name=found_name, rc=status)
+        @assert_that(status, is(0))
+        @assertEqual(expected_name, found_name)
+     end do
+       
+
+     ! populated bundle
+     sub_bundles = make_subFieldBundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, rc=status)
+     @assert_that(status, is(0))
+     call ESMF_FieldBundleGet(populated_bundle, name=expected_name, rc=status)
+     @assert_that(status, is(0))
+     do i = 1, num_grids
+        call ESMF_FieldBundleGet(sub_bundles(i), name=found_name, rc=status)
+        @assert_that(status, is(0))
+        @assertEqual(expected_name, found_name)
+     end do
+
+   end subroutine test_subFieldBundle_name
 end module test_SubFieldBundle

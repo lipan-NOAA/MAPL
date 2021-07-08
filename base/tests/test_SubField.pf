@@ -415,9 +415,9 @@ contains
       do i = 1, this%num_subgrids
          call ESMF_FieldGet(subfields(i), name=found_name, rc=status)
          @assert_that(status, is(0))
+         @assertEqual(expected_name, found_name)
       end do
-      @assertEqual(expected_name, found_name)
-   end subroutine test_subField_name
+    end subroutine test_subField_name
 
 
 end module test_SubField

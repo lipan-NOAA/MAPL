@@ -336,8 +336,7 @@ module MAPL_OpenMP_Support
        class(KeywordEnforcer), optional, intent(in) :: unusable
        integer, optional, intent(out) :: rc
        integer :: status
-       sub_bundles = make_subFieldBundles_base(bundle,num_grids,make_subFields_from_num_grids,rc=status)
-       _VERIFY(status)
+       sub_bundles = make_subFieldBundles_base(bundle,num_grids,make_subFields_from_num_grids, __RC__)
        _RETURN(ESMF_SUCCESS)
     end function make_subfieldBundles_ordinary
 
