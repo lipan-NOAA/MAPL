@@ -296,29 +296,21 @@ module MAPL_OpenMP_Support
       
        ! get number of fields and field list from field bundle
        call ESMF_FieldBundleGet(bundle, fieldCount=num_fields, name=name, __RC__)
-       if (num_fields > 0) then
-          allocate(field_list(num_fields))
-          call ESMF_FieldBundleGet(bundle, fieldList=field_list, __RC__)
+       allocate(field_list(num_fields))
+       call ESMF_FieldBundleGet(bundle, fieldList=field_list, __RC__)
 
-          ! get fields from field list
-          do i = 1, num_fields
-             call ESMF_FieldGet(field_list(i),  __RC__)
+       ! make subfields for each field and add each subfield to corresponding field bundle
+       do i = 1, num_grids
+          sub_bundles(i) = ESMF_FieldBundleCreate(name=name, __RC__)
+       end do
+       do i = 1, size(field_list)
+          subfields = make_subfields(field_list(i), num_grids, __RC__)
+          do j = 1, size(subfields)
+             call ESMF_FieldBundleAdd(sub_bundles(j), subfields(j:j), __RC__)
           end do
+       end do
 
-          ! make subfields for each field and add each subfield to corresponding field bundle
-          do i = 1, size(field_list)
-             subfields = make_subfields(field_list(i), num_grids, __RC__)
-             do j = 1, size(subfields)
-                sub_bundles(j) = ESMF_FieldBundleCreate(name=name, __RC__)
-                call ESMF_FieldBundleAdd(sub_bundles(j), subfields(j:j), __RC__)
-             end do
-          end do
-
-       else
-          sub_bundles(:) = ESMF_FieldBundleCreate(name=name, __RC__)
-       end if
-
-        _RETURN(ESMF_SUCCESS)
+       _RETURN(ESMF_SUCCESS)
     end function make_subFieldBundles
 
 end module MAPL_OpenMP_Support 
