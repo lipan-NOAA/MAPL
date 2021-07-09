@@ -1,3 +1,5 @@
+#define I_AM_PFUNIT
+#include "MAPL_ErrLog.h"
 module test_SubField
    use ESMF
    use pfunit
@@ -161,25 +163,19 @@ contains
       end select
 
 
-      cs_factory = CubedSphereGridFactory(im_world=this%im, nx=this%nx, ny=this%ny, lm=1, rc=status)
-      @assertEqual(0,status)
+      cs_factory = CubedSphereGridFactory(im_world=this%im, nx=this%nx, ny=this%ny, lm=1, _RC)
 
-      this%grid = cs_factory%make_grid(rc=status)
-      @assertEqual(0,status)
+      this%grid = cs_factory%make_grid(_RC)
 
       call ESMF_GridGetCoord(this%grid, coordDim=1, localDE=0, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, rc=status)
-      @assert_that(status, is(0))
-
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, _RC)
+      
       call ESMF_GridGetCoord(this%grid, coordDim=2, localDE=0, &
-           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, rc=status)
-      @assert_that(status, is(0))
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, _RC)
+      
+      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, _RC)
 
-      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, rc=status)
-      @assertEqual(0,status)
-
-      this%subgrids = make_subgrids(this%grid, this%num_subgrids, rc=status)
-      @assertEqual(0,status)
+      this%subgrids = make_subgrids(this%grid, this%num_subgrids, _RC)
 
       ! Set the coordinates to synthetic values that are easier to 
       ! test
@@ -190,8 +186,7 @@ contains
          end do
       end do
 
-      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, rc=status)
-      @assertEqual(0, status)
+      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, _RC)
       this%bounds = find_bounds(local_count(2), this%num_subgrids)
 
       select case (this%rank)
@@ -199,15 +194,15 @@ contains
          this%field = ESMF_FieldCreate(grid=this%grid, typekind=this%typekind, &
               name=this%field_name, &
               indexflag=ESMF_INDEX_DELOCAL, &
-              staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-         @assert_that(status, is(0))
+              staggerloc=ESMF_STAGGERLOC_CENTER, _RC)
+         
       case (3)
          this%field = ESMF_FieldCreate(grid=this%grid, typekind=this%typekind, &
               name=this%field_name, &
               indexflag=ESMF_INDEX_DELOCAL, &
               ungriddedLBound=[1], ungriddedUBound=[LM], &
-              staggerloc=ESMF_STAGGERLOC_CENTER, rc=status)
-         @assert_that(status, is(0))
+              staggerloc=ESMF_STAGGERLOC_CENTER, _RC)
+         
       end select
 
       select case (this%atts)
@@ -232,42 +227,35 @@ contains
       select case(this%typekind_str)
       case ('R4')
          if (this%rank == 2) then
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, _RC)
             ptr_2d_r4 = data(:,:,1)
          else ! rank 3
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, _RC)
+            
             ptr_3d_r4 = data
          end if
       case ('R8')
          if (this%rank == 2) then 
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, _RC)
             ptr_2d_r8 = data(:,:,1)
          else ! rank 3
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, _RC)
             ptr_3d_r8 = data
          end if
       case ('I4')
          if (this%rank == 2) then 
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, _RC)
             ptr_2d_i4 = data(:,:,1)
          else ! rank 3
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, _RC)
             ptr_3d_i4 = data
          end if
       case ('I8')
          if (this%rank == 2) then 
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, _RC)
             ptr_2d_i8 = data(:,:,1)
          else ! rank 3
-            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, rc=status)
-            @assert_that(status, is(0))
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, _RC)
             ptr_3d_i8 = data
          end if
       end select
@@ -284,8 +272,8 @@ contains
    subroutine teardown(this)
       class(SubFieldTest), intent(inout) :: this
       integer :: status
-      call ESMF_FieldDestroy(this%field, rc=status)
-      @assert_that(status, is(0))
+      call ESMF_FieldDestroy(this%field, _RC)
+      
    end subroutine teardown
 
 
@@ -308,12 +296,10 @@ contains
       ! the higher level overload will construct the actual subgrids and then
       ! call this lower level procedure.
    
-      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
-      @assert_that(status, is(0))
-
+      subfields = make_subfields(this%field, this%num_subgrids, _RC)
+      
       do i = 1, this%num_subgrids
-         call check(subfields(i), this%bounds(i), rc=status)
-         @assert_that(status, is(0))
+         call check(subfields(i), this%bounds(i), _RC)
       end do
 
    contains
@@ -328,16 +314,12 @@ contains
 
             select case (this%rank)
             case (2)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r4, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r4, _RC)
                @assertEqual(ptr_2d_r4(:,bounds%min:bounds%max), sub_ptr_2d_r4)
             case (3)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r4, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r4, _RC)
                @assertEqual(ptr_3d_r4(:,bounds%min:bounds%max,:), sub_ptr_3d_r4)
             end select
             
@@ -345,16 +327,12 @@ contains
 
             select case (this%rank)
             case (2)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r8, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r8, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_r8, _RC)
                @assertEqual(ptr_2d_r8(:,bounds%min:bounds%max), sub_ptr_2d_r8)
             case (3)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r8, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r8, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_r8, _RC)
                @assertEqual(ptr_3d_r8(:,bounds%min:bounds%max,:), sub_ptr_3d_r8)
             end select
 
@@ -362,16 +340,12 @@ contains
 
             select case (this%rank)
             case (2)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i4, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i4, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i4, _RC)
                @assertEqual(ptr_2d_i4(:,bounds%min:bounds%max), sub_ptr_2d_i4)
             case (3)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i4, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i4, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i4, _RC)
                @assertEqual(ptr_3d_i4(:,bounds%min:bounds%max,:), sub_ptr_3d_i4)
             end select
 
@@ -379,16 +353,12 @@ contains
 
             select case (this%rank)
             case (2)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i8, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_i8, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_2d_i8, _RC)
                @assertEqual(ptr_2d_i8(:,bounds%min:bounds%max), sub_ptr_2d_i8)
             case (3)
-               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, rc=status)
-               @assert_that(status, is(0))
-               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i8, rc=status)
-               @assert_that(status, is(0))
+               call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_i8, _RC)
+               call ESMF_FieldGet(subfield, localDe=0, farrayPtr=sub_ptr_3d_i8, _RC)
                @assertEqual(ptr_3d_i8(:,bounds%min:bounds%max,:), sub_ptr_3d_i8)
             end select
 
@@ -401,20 +371,16 @@ contains
    @test
    subroutine test_subField_attribute_count(this)
       class(SubFieldTest), intent(inout) :: this
-
       integer :: status
       type(ESMF_Field), allocatable :: subfields(:)
       integer :: i
       integer :: count
-      character(ESMF_MAXSTR) :: name
       
-      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
-      @assert_that(status, is(0))
-
+      subfields = make_subfields(this%field, this%num_subgrids, _RC)
+      
       do i = 1, size(subfields)
-         call ESMF_AttributeGet(subfields(i), count=count, rc=status)
-         @assert_that(status, is(ESMF_SUCCESS))
-
+         call ESMF_AttributeGet(subfields(i), count=count, _RC)
+         
          select case (this%atts)
          case ('none')
             @assert_that(count, is(0))
@@ -436,48 +402,36 @@ contains
    @test
    subroutine test_subField_attribute_typekind(this)
       class(SubFieldTest), intent(inout) :: this
-
       integer :: status
       type(ESMF_Field), allocatable :: subfields(:)
       integer :: i
       type(ESMF_TYPEKIND_FLAG) :: typekind
       
-      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
-      @assert_that(status, is(0))
-
+      subfields = make_subfields(this%field, this%num_subgrids, _RC)
+      
       do i = 1, size(subfields)
 
          select case (this%atts)
          case ('none')
          case ('A')
-            call ESMF_AttributeGet(subfields(i), name='A', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+            call ESMF_AttributeGet(subfields(i), name='A', typekind=typekind, _RC)
+             @assertTrue(typekind == ESMF_TYPEKIND_I4)
 
          case ('B')
-            call ESMF_AttributeGet(subfields(i), name='B1', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+            call ESMF_AttributeGet(subfields(i), name='B1', typekind=typekind, _RC)
+             @assertTrue(typekind == ESMF_TYPEKIND_I4)
 
-
-            call ESMF_AttributeGet(subfields(i), name='B2', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
+            call ESMF_AttributeGet(subfields(i), name='B2', typekind=typekind, _RC)
             @assertTrue(typekind == ESMF_TYPEKIND_R4)
 
-
          case ('C')
-            call ESMF_AttributeGet(subfields(i), name='C1', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
+            call ESMF_AttributeGet(subfields(i), name='C1', typekind=typekind, _RC)
             @assertTrue(typekind == ESMF_TYPEKIND_R8)
 
-
-            call ESMF_AttributeGet(subfields(i), name='C2', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
+            call ESMF_AttributeGet(subfields(i), name='C2', typekind=typekind, _RC)
             @assertTrue(typekind == ESMF_TYPEKIND_I4)
 
-
-            call ESMF_AttributeGet(subfields(i), name='C3', typekind=typekind, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
+            call ESMF_AttributeGet(subfields(i), name='C3', typekind=typekind, _RC)
             @assertTrue(typekind == ESMF_TYPEKIND_LOGICAL)
 
          case default
@@ -492,7 +446,6 @@ contains
    @test
    subroutine test_subField_attribute_values(this)
       class(SubFieldTest), intent(inout) :: this
-
       integer :: status
       type(ESMF_Field), allocatable :: subfields(:)
       integer :: i
@@ -502,39 +455,32 @@ contains
       real(kind=ESMF_KIND_R8) :: y_value
       logical :: flag
       
-      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
-      @assert_that(status, is(0))
-
+      subfields = make_subfields(this%field, this%num_subgrids, _RC)
+      
       do i = 1, size(subfields)
 
          select case (this%atts)
          case ('none')
          case ('A')
-            call ESMF_AttributeGet(subfields(i), name='A', value=i_value, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
+            call ESMF_AttributeGet(subfields(i), name='A', value=i_value, _RC)
             @assert_that(i_value, is(1))
 
          case ('B')
-            call ESMF_AttributeGet(subfields(i), name='B1', value=i_value, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assert_that(i_value, is(2))
+            call ESMF_AttributeGet(subfields(i), name='B1', value=i_value, _RC)
+             @assert_that(i_value, is(2))
 
-            call ESMF_AttributeGet(subfields(i), name='B2', value=x_value, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assert_that(x_value, is(3._ESMF_KIND_R4))
+            call ESMF_AttributeGet(subfields(i), name='B2', value=x_value, _RC)
+             @assert_that(x_value, is(3._ESMF_KIND_R4))
 
          case ('C')
-            call ESMF_AttributeGet(subfields(i), name='C1', value=y_value, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assert_that(y_value, is(3._ESMF_KIND_R8))
+            call ESMF_AttributeGet(subfields(i), name='C1', value=y_value, _RC)
+             @assert_that(y_value, is(3._ESMF_KIND_R8))
 
-            call ESMF_AttributeGet(subfields(i), name='C2', value=i_value, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assert_that(i_value, is(2))
+            call ESMF_AttributeGet(subfields(i), name='C2', value=i_value, _RC)
+             @assert_that(i_value, is(2))
 
-            call ESMF_AttributeGet(subfields(i), name='C3', value=flag, rc=status)
-            @assert_that(status, is(ESMF_SUCCESS))
-            @assert_that(flag, is(true()))
+            call ESMF_AttributeGet(subfields(i), name='C3', value=flag, _RC)
+             @assert_that(flag, is(true()))
 
          case default
             ! should not reach here
@@ -584,13 +530,11 @@ contains
       integer :: i
       character(len=ESMF_MAXSTR) :: expected_name, found_name
       
-      subfields = make_subfields(this%field, this%num_subgrids, rc=status)
-      @assert_that(status, is(0))
-      call ESMF_FieldGet(this%field, name=expected_name, rc=status)
-      @assert_that(status, is(0))
+      subfields = make_subfields(this%field, this%num_subgrids, _RC)
+      call ESMF_FieldGet(this%field, name=expected_name, _RC)
+      
       do i = 1, this%num_subgrids
-         call ESMF_FieldGet(subfields(i), name=found_name, rc=status)
-         @assert_that(status, is(0))
+         call ESMF_FieldGet(subfields(i), name=found_name, _RC)
          @assertEqual(expected_name, found_name)
       end do
     end subroutine test_subField_name
