@@ -1,0 +1,247 @@
+#define I_AM_PFUNIT
+#include "MAPL_ErrLog.h"
+
+! Tests
+!   - name
+!   - num DEs
+!   - shape/extents
+!   - coordinates
+!   - attribute
+
+! vary:
+!   - name
+!   - attributes
+!   - # subgrids
+
+module newTest_SubGrid
+   use ESMF
+   use pfunit
+   use ESMF_TestMethod_mod
+   use ESMF_TestParameter_mod
+   use ESMF_TestCase_mod
+   use MAPL_new_OpenMP_Support
+   use MAPL_CubedSphereGridFactoryMod, only: CubedSphereGridFactory
+   use MAPL_MaplGrid
+   implicit none
+
+   @testParameter
+   type, extends(ESMF_TestParameter) :: GridSpec
+      character(:), allocatable :: grid_name
+      integer :: im
+      integer :: nx, ny
+      integer :: num_subgrids
+      character(:), allocatable :: atts
+   contains
+      procedure :: toString
+   end type GridSpec
+
+   @testCase(constructor=SubGridTest, testParameters={make_parameters()})
+   type, extends(ESMF_TestCase) :: SubGridTest
+      character(:), allocatable :: grid_name
+      integer :: im
+      integer :: nx, ny
+      integer :: num_subgrids
+      character(:), allocatable :: atts
+
+      type(ESMF_Grid) :: grid
+      real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
+   contains
+      procedure :: setup
+      procedure :: teardown
+   end type SubGridTest
+
+   interface SubGridTest
+      module procedure new_SubGridTest
+   end interface SubGridTest
+
+   interface GridSpec
+      module procedure new_GridSpec
+   end interface GridSpec
+
+
+contains
+
+   function make_parameters() result(params)
+      type(GridSpec), allocatable :: params(:)
+
+      params = [ &
+           GridSpec(grid_name='A', im=5, nx=1, ny=1, num_subgrids=1), &
+           GridSpec(grid_name='B', im=5, nx=1, ny=1, num_subgrids=2, atts='A'), &
+           GridSpec(grid_name='C', im=7, nx=1, ny=1, num_subgrids=3, atts='B'), &
+           GridSpec(grid_name='D', im=7, nx=2, ny=1, num_subgrids=2), &
+           GridSpec(grid_name='E', im=7, nx=1, ny=2, num_subgrids=3) &
+           ]
+   end function make_parameters
+
+   function new_GridSpec(grid_name, im, nx, ny, num_subgrids, atts) result(spec)
+      type(GridSpec) :: spec
+      character(*), intent(in) :: grid_name
+      integer, intent(in) :: im
+      integer, intent(in) :: nx, ny
+      integer, intent(in) :: num_subgrids
+      character(*), optional, intent(in) :: atts
+
+      spec%grid_name = grid_name
+      spec%im = im
+      spec%nx = nx
+      spec%ny = ny
+      spec%num_subgrids = num_subgrids
+
+      if (present(atts)) then
+         spec%atts = atts
+      else
+         spec%atts = 'none'
+      end if
+
+      call spec%setNumPETsRequested(nx*ny*6)
+
+   end function new_GridSpec
+
+   function new_SubGridTest(test_parameter) result(a_test)
+      type(SubGridTest) :: a_test
+      class(GridSpec), intent(in) :: test_parameter
+
+   end function new_SubGridTest
+
+   subroutine setup(this)
+      class(SubGridTest), intent(inout) :: this
+
+      integer :: status
+      integer :: i, j
+      integer :: local_count(3)
+      type(CubedSphereGridFactory) :: cs_factory
+
+      ! unpack params
+      select type (p => this%testParameter)
+      type is (GridSpec)
+
+         this%grid_name = p%grid_name
+         this%im = p%im
+         this%nx = p%nx
+         this%ny = p%ny
+         this%num_subgrids = p%num_subgrids
+         this%atts = p%atts
+
+      end select
+
+      cs_factory = CubedSphereGridFactory(im_world=this%im, nx=this%nx, ny=this%ny, lm=1, _RC)
+      this%grid = cs_factory%make_grid(_RC)
+
+      call ESMF_GridGetCoord(this%grid, coordDim=1, localDE=0, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=this%lons, _RC)
+
+      call ESMF_GridGetCoord(this%grid, coordDim=2, localDE=0, &
+           staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=this%lats, _RC)
+
+      call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, _RC)
+
+      ! Set the coordinates to synthetic values that are easier to 
+      ! test
+      do j = 1, local_count(2) 
+         do i = 1, local_count(1)
+            this%lons(i,j) = j
+            this%lats(i,j) = i
+         end do
+      end do
+
+
+   end subroutine setup
+
+   subroutine teardown(this)
+      class(SubGridTest), intent(inout) :: this
+   end subroutine teardown
+
+   @test
+   subroutine test_numDEs(this)
+      class(SubGridTest), intent(inout) :: this
+
+      type(SubGridBuilder) :: builder
+      integer :: status
+      integer :: i, de_count
+      type(ESMF_Grid), allocatable :: subgrids(:)
+
+!!$      builder = SubGridBuilder(this%num_subgrids)
+!!$      subgrids = builder%get_subgrids(this%grid, _RC)
+!!$
+!!$      do i = 1, this%num_subgrids
+!!$         call ESMF_GridGet(subgrids(i), localDeCount=de_count, _RC)
+!!$         @assert_that(de_count, is(1))
+!!$      end do
+
+   end subroutine test_numDEs
+
+   @test
+   subroutine test_tilecount(this)
+      class(SubGridTest), intent(inout) :: this
+
+      type(SubGridBuilder) :: builder
+      integer :: status
+      integer :: i, tile_count
+      type(ESMF_Grid), allocatable :: subgrids(:)
+
+!!$      builder = SubGridBuilder(this%num_subgrids)
+!!$      subgrids = builder%get_subgrids(this%grid, _RC)
+!!$
+!!$      do i = 1, this%num_subgrids
+!!$         call ESMF_GridGet(subgrids(i), tilecount=tile_count, _RC)
+!!$         @assert_that(tile_count, is(1))
+!!$      end do
+
+      print*,__FILE__,__LINE__
+
+   end subroutine test_tilecount
+
+
+
+!!$   @test
+!!$   subroutine test_corner_coordinates()
+!!$      class(SubGridTest), intent(inout) :: this
+!!$
+!!$      type(SubGridBuilder) :: builder
+!!$      integer :: status
+!!$      integer :: i, j
+!!$
+!!$      type(ESMF_Grid) :: subgrid
+!!$      real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+!!$
+!!$      integer, paramater :: y0 = 2, y1 = 4
+!!$
+!!$      builder = SubGridBuilder(num_subgrids)
+!!$      subgrid = builder%get_subgrid(this%grid, y_interval=Interval(y0,y1), _RC)
+!!$      
+!!$      call ESMF_GridGetCoord(grid=subgrids(1), coordDim=1, localDE=0, &
+!!$           staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublons, _RC)
+!!$      call ESMF_GridGetCoord(grid=subgrids(1), coordDim=2, localDE=0, &
+!!$           staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublats, _RC)
+!!$
+!!$      @assertEqual(lons(:,y0:y1), sublons)
+!!$      @assertEqual(lats(:,y0:y1), sublats)
+!!$
+!!$   end subroutine test_corner_coordinates
+!!$
+
+   function toString(this) result(string)
+      character(len=:), allocatable :: string
+      class (GridSpec), intent(in) :: this
+      character(len=2) :: buf
+
+      string = '{name:'//this%grid_name
+      string = string //',ATTR:'//this%atts
+
+      write(buf,'(i2.0)') this%im
+      string = string // ',IM:'//buf
+
+      write(buf,'(i2.0)') this%num_subgrids
+      string = string // ',n_grids:'//buf
+
+      write(buf,'(i2.0)') this%nx
+      string = string // ',nx:'//buf
+
+      write(buf,'(i2.0)') this%ny
+      string = string // ',nx:'//buf
+
+      string = string // '}'
+
+   end function toString
+
+end module newTest_SubGrid
