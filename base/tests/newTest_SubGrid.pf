@@ -160,14 +160,14 @@ contains
       integer :: i, de_count
       type(ESMF_Grid), allocatable :: subgrids(:)
 
-!!$      builder = SubGridBuilder(this%num_subgrids)
-!!$      subgrids = builder%get_subgrids(this%grid, _RC)
-!!$
-!!$      do i = 1, this%num_subgrids
-!!$         call ESMF_GridGet(subgrids(i), localDeCount=de_count, _RC)
-!!$         @assert_that(de_count, is(1))
-!!$      end do
+      builder = SubGridBuilder(this%num_subgrids)
+      subgrids = builder%get_subgrids(this%grid, _RC)
 
+      do i = 1, this%num_subgrids
+         call ESMF_GridGet(subgrids(i), localDeCount=de_count, _RC)
+         @assert_that(de_count, is(1))
+      end do
+      
    end subroutine test_numDEs
 
    @test
@@ -177,48 +177,67 @@ contains
       type(SubGridBuilder) :: builder
       integer :: status
       integer :: i, tile_count
-      type(ESMF_Grid), allocatable :: subgrids(:)
+      type(ESMF_Grid), allocatable :: subgrids(:)     
 
-!!$      builder = SubGridBuilder(this%num_subgrids)
-!!$      subgrids = builder%get_subgrids(this%grid, _RC)
-!!$
-!!$      do i = 1, this%num_subgrids
-!!$         call ESMF_GridGet(subgrids(i), tilecount=tile_count, _RC)
-!!$         @assert_that(tile_count, is(1))
-!!$      end do
+      builder = SubGridBuilder(this%num_subgrids)
+      subgrids = builder%get_subgrids(this%grid, _RC)
 
-      print*,__FILE__,__LINE__
+      do i = 1, this%num_subgrids
+         call ESMF_GridGet(subgrids(i), tilecount=tile_count, _RC)
+         @assert_that(tile_count, is(1))
+      end do
 
    end subroutine test_tilecount
 
+   !@test
+   subroutine test_extent(this)
+     class(SubGridTest), intent(inout) :: this
 
+     type(SubGridBuilder) :: builder
+     integer :: status
+     integer :: i
+     type(ESMF_Grid), allocatable :: subgrids(:) 
+     real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+     integer :: local_count(3)
+     type(Interval), allocatable :: bounds(:)
+     builder = SubGridBuilder(this%num_subgrids)
+     subgrids = builder%get_subgrids(this%grid, _RC)
 
-!!$   @test
-!!$   subroutine test_corner_coordinates()
-!!$      class(SubGridTest), intent(inout) :: this
-!!$
-!!$      type(SubGridBuilder) :: builder
-!!$      integer :: status
-!!$      integer :: i, j
-!!$
-!!$      type(ESMF_Grid) :: subgrid
-!!$      real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
-!!$
-!!$      integer, paramater :: y0 = 2, y1 = 4
-!!$
-!!$      builder = SubGridBuilder(num_subgrids)
-!!$      subgrid = builder%get_subgrid(this%grid, y_interval=Interval(y0,y1), _RC)
-!!$      
-!!$      call ESMF_GridGetCoord(grid=subgrids(1), coordDim=1, localDE=0, &
-!!$           staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublons, _RC)
-!!$      call ESMF_GridGetCoord(grid=subgrids(1), coordDim=2, localDE=0, &
-!!$           staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublats, _RC)
-!!$
-!!$      @assertEqual(lons(:,y0:y1), sublons)
-!!$      @assertEqual(lats(:,y0:y1), sublats)
-!!$
-!!$   end subroutine test_corner_coordinates
-!!$
+     do i = 1, this%num_subgrids
+        call ESMF_GridGetCoord(grid=subgrids(i),  coordDim=1, localDE=0, &
+             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=sublons, _RC)
+        call ESMF_GridGetCoord(grid=subgrids(i), coordDim=2, localDE=0, &
+             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=sublats, _RC)
+
+        @assertEqual(this%lons(:,bounds(i)%min:bounds(i)%max), sublons)
+        @assertEqual(this%lats(:,bounds(i)%min:bounds(i)%max), sublats)
+     end do
+   end subroutine test_extent
+   
+   !@test
+   subroutine test_corner_coordinates(this)
+     class(SubGridTest), intent(inout) :: this
+
+     type(SubGridBuilder) :: builder
+     integer :: status
+
+     type(ESMF_Grid) :: subgrid
+     real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+
+     integer, parameter :: y0 = 2, y1 = 4
+
+     builder = SubGridBuilder(this%num_subgrids)
+     subgrid = builder%get_subgrid(this%grid, bounds=Interval(y0,y1), _RC)
+
+     call ESMF_GridGetCoord(grid=subgrid, coordDim=1, localDE=0, &
+          staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublons, _RC)
+     call ESMF_GridGetCoord(grid=subgrid, coordDim=2, localDE=0, &
+          staggerloc=ESMF_STAGGERLOC_CORNER, farrayPtr=sublats, _RC)
+
+     @assertEqual(this%lons(:,y0:y1), sublons)
+     @assertEqual(this%lats(:,y0:y1), sublats)
+   end subroutine test_corner_coordinates
+
 
    function toString(this) result(string)
       character(len=:), allocatable :: string
