@@ -151,7 +151,7 @@ contains
       character(ESMF_MAXSTR) :: name
       integer :: i, status
 
-!!$      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
+      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
 
       do i = 1, this%num_subgrids
          call ESMF_StateGet(substates(i), name=name, _RC)
@@ -169,7 +169,7 @@ contains
       integer :: i, status
       integer:: item_count
 
-!!$      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
+      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
 
       do i = 1, this%num_subgrids
          call ESMF_StateGet(substates(i), itemcount=item_count, _RC)
@@ -194,7 +194,7 @@ contains
       integer :: i, status
       integer:: item_count
 
-!!$      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
+      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
 
       do i = 1, this%num_subgrids
          call ESMF_StateGet(substates(i), itemcount=item_count, nestedFlag=.true., _RC)
@@ -222,7 +222,7 @@ contains
       integer :: i
       type(ESMF_StateItem_Flag) :: item_type
 
-!!$      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
+      substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
 
       do i = 1, this%num_subgrids
          if (this%state_name == 'one_field' .or. this%state_name == 'nested') then
