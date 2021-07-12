@@ -47,6 +47,10 @@ module MAPL_OpenMP_Support
        module procedure make_subfieldBundles_ordinary
     end interface
 
+    interface make_substates
+       module procedure make_substates_from_num_grids
+    end interface make_substates
+
     CONTAINS 
 
     function make_subgrids_from_num_grids(primary_grid, num_grids, rc) result(subgrids)
@@ -76,6 +80,9 @@ module MAPL_OpenMP_Support
         type(ESMF_VM) :: vm
         real(kind=ESMF_KIND_R8), pointer :: new_lats(:,:), new_lons(:,:)
         real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
+        character(len=ESMF_MAXPATHLEN) :: name
+
+        call ESMF_GridGet(primary_grid, name=name, __RC__)
 
         allocate(subgrids(size(bounds)))
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
@@ -93,8 +100,10 @@ module MAPL_OpenMP_Support
                   coordDep2=[1,2], &
                   coordSys=ESMF_COORDSYS_SPH_RAD, &
                   petMap = petMap, &
+                  name = name, &
                   __RC__)
             call ESMF_GridAddCoord(grid=subgrids(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
+            call ESMF_AttributeCopy(primary_grid, subgrids(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
          end do
 
          call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
@@ -336,6 +345,43 @@ module MAPL_OpenMP_Support
        _RETURN(ESMF_SUCCESS)
     end function make_subFieldBundles_ordinary
 
+    function  make_substates_from_num_grids(state, num_subgrids, unusable, rc) result(substates)
+      type(ESMF_State), allocatable :: substates(:)
+      type(ESMF_State), intent(in) :: state
+      integer, intent(in) :: num_subgrids
+      class(KeywordEnforcer), optional, intent(in) :: unusable
+      integer, optional, intent(out) :: rc
+      character(len=ESMF_MAXPATHLEN) :: name
+      integer :: count, status, i
+      character(len=ESMF_MAXPATHLEN) :: item_names(:)
+      type(ESMF_StateItem_Flag) :: item_types(:)
+      type(ESMF_Field), allocatable :: subfields
+      type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
+      type(ESMF_State), allocatable :: sub_nested_states(:)
 
+      allocate(substates(num_subgrids))
+      ! get information about state contents in order they were added
+      call  ESMF_StateGet(state, itemOrderFlag=ESMF_ITEMORDER_ADDORDER, itemCount=count, &
+           itemNameList=item_names, itemTypeList=item_types, name=name, __RC__)
+
+      do i = 1, num_subgrids
+         substates(i) = ESMF_StateCreate(name=name, __RC__)
+         call ESMF_AttributeCopy(state, substates(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+      end do
+      do i = 1, count
+         call ESMF_StateGet(state, itemName=item_names(i), __RC__)
+
+         if (item_types(i) == ESMF_STATEITEM_FIELD) then
+            subfields = make_subfields(item_names(i), num_subgrids, __RC__)
+            ! add subfields to appropriate substate
+         else if (item_types(i) == ESMF_STATEITEM_FIELDBUNLE) then
+            sub_bundles = make_subFieldBundles(item_names(i), num_subgrids, __RC__)
+            ! add sub_bundles to appropriate substate
+         else if (item_types(i) == ESMF_STATEITEM_STATE) then
+            sub_nested_states = make_substates(item_names(i), num_subgrids, __RC__)
+            ! add the nested substates to appropriate larger substate
+         end if
+      end do
+    end function make_substates_from_num_grids
 
 end module MAPL_OpenMP_Support 
