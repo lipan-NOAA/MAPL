@@ -44,7 +44,6 @@ module MAPL_OpenMP_Support
     end interface make_subfields
 
     interface make_subfieldBundles
-       module procedure make_subfieldBundles_base
        module procedure make_subfieldBundles_ordinary
     end interface
 
@@ -304,11 +303,10 @@ module MAPL_OpenMP_Support
 
     end function
 
-    function make_subFieldBundles_base(bundle, num_grids, make, unusable, rc) result(sub_bundles)
+    function make_subFieldBundles_ordinary(bundle, num_grids, unusable, rc) result(sub_bundles)
        type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
        type(ESMF_FieldBundle), intent(in) :: bundle
        integer, intent(in) :: num_grids
-       procedure(i_make_subFields) :: make
        class(KeywordEnforcer), optional, intent(in) :: unusable
        integer, optional, intent(out) :: rc
        integer :: i, j, num_fields, status
@@ -329,25 +327,14 @@ module MAPL_OpenMP_Support
           call ESMF_AttributeCopy(bundle, sub_bundles(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
        end do
        do i = 1, size(field_list)
-          subfields = make(field_list(i), num_grids, __RC__)
+          subfields = make_subfields(field_list(i), num_grids, __RC__)
           do j = 1, size(subfields)
              call ESMF_FieldBundleAdd(sub_bundles(j), subfields(j:j), __RC__)
           end do
        end do
 
        _RETURN(ESMF_SUCCESS)
-    end function make_subFieldBundles_base
-
-    function  make_subfieldBundles_ordinary(bundle,num_grids,unusable, rc) result(sub_bundles)
-       type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
-       type(ESMF_FieldBundle), intent(in) :: bundle
-       integer, intent(in) :: num_grids
-       class(KeywordEnforcer), optional, intent(in) :: unusable
-       integer, optional, intent(out) :: rc
-       integer :: status
-       sub_bundles = make_subFieldBundles_base(bundle,num_grids,make_subFields_from_num_grids, __RC__)
-       _RETURN(ESMF_SUCCESS)
-    end function make_subfieldBundles_ordinary
+    end function make_subFieldBundles_ordinary
 
 
 

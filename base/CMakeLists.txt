@@ -48,7 +48,7 @@ set (srcs
   regex_F.c
   c_mapl_locstream_F.c  getrss.c  memuse.c
   Base/Base.F90 Base/Base_implementation.F90
-  OpenMP_Support.F90 new_OpenMP_Support.F90
+  OpenMP_Support.F90
 
   # Orphaned program: should not be in this library.
   # tstqsat.F90

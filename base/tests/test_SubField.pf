@@ -117,6 +117,30 @@ contains
       type(SubFieldTest) :: a_test
       class(FieldSpec), intent(in) :: test_parameter
 
+      associate(p => test_parameter)
+        a_test%field_name = p%field_name
+        a_test%im = p%im
+        a_test%tk_str = p%tk_str
+        a_test%rank = p%rank
+        a_test%num_subgrids = p%num_subgrids
+        a_test%nx = p%nx
+        a_test%ny = p%ny
+        
+        select case (p%tk_str)
+        case ('R4')
+           a_test%typekind = ESMF_TYPEKIND_R4
+        case ('R8')
+           a_test%typekind = ESMF_TYPEKIND_R8
+        case ('I4')
+           a_test%typekind = ESMF_TYPEKIND_I4
+        case ('I8')
+           a_test%typekind = ESMF_TYPEKIND_I8
+        end select
+        
+        a_test%atts = p%atts
+        
+      end associate
+
    end function new_SubFieldTest
 
    subroutine setup(this)
@@ -139,7 +163,6 @@ contains
 
       integer, allocatable :: data(:,:,:)
 
-      call copy_params()
       call build_grid_subgrids()
 
       call MAPL_GridGet(this%grid,localcellcountPerDim=local_count, _RC)
@@ -206,35 +229,6 @@ contains
       end select
 
    contains
-
-      subroutine copy_params()
-         ! unpack params
-         select type (p => this%testParameter)
-         type is (FieldSpec)
-
-            this%field_name = p%field_name
-            this%im = p%im
-            this%tk_str = p%tk_str
-            this%rank = p%rank
-            this%num_subgrids = p%num_subgrids
-            this%nx = p%nx
-            this%ny = p%ny
-
-            select case (p%tk_str)
-            case ('R4')
-               this%typekind = ESMF_TYPEKIND_R4
-            case ('R8')
-               this%typekind = ESMF_TYPEKIND_R8
-            case ('I4')
-               this%typekind = ESMF_TYPEKIND_I4
-            case ('I8')
-               this%typekind = ESMF_TYPEKIND_I8
-            end select
-
-            this%atts = p%atts
-
-         end select
-      end subroutine copy_params
 
       subroutine build_grid_subgrids()
 

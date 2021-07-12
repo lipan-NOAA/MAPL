@@ -27,13 +27,20 @@ contains
       type(ESMF_Field) :: f_list(num_fields)
       character(len=2) :: field_name
       integer :: i
+      type(CubedSphereGridFactory) :: cs_factory
+      type(ESMF_Grid) :: grid
+
+      cs_factory = CubedSphereGridFactory(im_world=7,nx=1,ny=1,lm=1,_RC)
+      grid = cs_factory%make_grid(_RC)
 
       trivial_bundle = ESMF_FieldBundleCreate(fieldList=empty_list, &
            & name='trivial', _RC)
-           do i=1,num_fields
+
+      ! populated bundle
+      do i=1,num_fields
          write(field_name,'(a1,i1)')"f",i
-         f_list(i) = ESMF_FieldEmptyCreate(name=field_name, _RC)
-              enddo
+         f_list(i) = ESMF_FieldCreate(grid, name=field_name, typekind=ESMF_TYPEKIND_R4, _RC)
+      enddo
       populated_bundle = ESMF_FieldBundleCreate(fieldList=f_list,name="foo", _RC)
      
       call ESMF_AttributeSet(populated_bundle, name='A1', value=7)
@@ -131,7 +138,7 @@ contains
       character(ESMF_MAXSTR) :: fname,sub_fname
       character(ESMF_MAXSTR) :: bname,sub_bname
 
-      sub_bundles = make_subFieldbundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, _RC)
+      sub_bundles = make_subFieldbundles(populated_bundle, num_grids=num_grids, _RC)
       @assert_that(size(sub_bundles),is(num_grids))
 
       call ESMF_FieldBundleGet(populated_bundle, fieldcount=expected_field_count, name=bname, _RC)
@@ -157,34 +164,6 @@ contains
 
   end subroutine test_populated_bundle
 
-  @test(npes=[6],type=newESMF_TestMethod)
-   subroutine test_subFieldBundle_name(this)
-     class(ESMF_TestMethod), intent(inout) :: this
-     integer :: status
-     type(ESMF_FieldBundle), allocatable :: sub_bundles(:)
-     integer :: i
-     character(len=ESMF_MAXSTR) :: expected_name, found_name
-     
-     ! trivial bundle
-     sub_bundles = make_subFieldBundles(trivial_bundle, num_grids=num_grids, make=mock_make_subfields, _RC)
-     call ESMF_FieldBundleGet(trivial_bundle, name=expected_name, _RC)
-     do i = 1, num_grids
-        call ESMF_FieldBundleGet(sub_bundles(i), name=found_name, _RC)
-        @assertEqual(expected_name, found_name)
-     end do
-       
-
-     ! populated bundle
-     sub_bundles = make_subFieldBundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, _RC)
-     call ESMF_FieldBundleGet(populated_bundle, name=expected_name, _RC)
-     do i = 1, num_grids
-        call ESMF_FieldBundleGet(sub_bundles(i), name=found_name, _RC)
-        @assertEqual(expected_name, found_name)
-     end do
-
-   end subroutine test_subFieldBundle_name
-
-   
    @test(npes=[6],type=newESMF_TestMethod)
    subroutine test_subFieldBundle_attributes(this)
      class(ESMF_TestMethod), intent(inout) :: this
@@ -198,7 +177,7 @@ contains
      real(kind=ESMF_KIND_R8) :: r8_val
      logical :: bool_val
      
-     sub_bundles = make_subFieldBundles(populated_bundle, num_grids=num_grids, make=mock_make_subfields, _RC)
+     sub_bundles = make_subFieldBundles(populated_bundle, num_grids=num_grids, _RC)
 
      do i = 1, size(sub_bundles)
         ! check attribute count
@@ -245,7 +224,7 @@ contains
         call ESMF_AttributeGet(sub_bundles(i), name='A6', value=bool_val, _RC)
         @assert_that(bool_val, is(false()))
      end do
-
      
    end subroutine test_subFieldBundle_attributes
+
 end module test_SubFieldBundle
