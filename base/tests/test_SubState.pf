@@ -17,6 +17,7 @@ module test_subState
    type, extends(ESMF_TestParameter) :: StateSpec
       character(:), allocatable :: state_name
       integer :: num_subgrids
+      character(:), allocatable :: atts
    contains
       procedure :: toString
    end type StateSpec
@@ -26,6 +27,7 @@ module test_subState
       character(:), allocatable :: state_name
       integer :: num_subgrids
       type(ESMF_State) :: state
+      character(:), allocatable :: atts
    contains
       procedure :: setup
       procedure :: teardown
@@ -46,14 +48,14 @@ contains
 
       params = [ &
            StateSpec(name='empty',      num_subgrids=1), &
-           StateSpec(name='empty',      num_subgrids=2), &
+           StateSpec(name='empty',      num_subgrids=2, atts = 'A'), &
            StateSpec(name='one_field',  num_subgrids=1), &
-           StateSpec(name='one_field',  num_subgrids=2), &
+           StateSpec(name='one_field',  num_subgrids=2, atts = 'B'), &
            StateSpec(name='one_bundle', num_subgrids=1), &
            StateSpec(name='one_bundle', num_subgrids=2), &
            StateSpec(name='one_state',  num_subgrids=1), &
            StateSpec(name='one_state',  num_subgrids=2),  &
-           StateSpec(name='nested',     num_subgrids=1), &
+           StateSpec(name='nested',     num_subgrids=1, atts = 'C'), &
            StateSpec(name='nested',     num_subgrids=3)  &
            ]
    end function make_parameters
@@ -66,18 +68,25 @@ contains
       associate( p => test_parameter)
         a_test%state_name = p%state_name
         a_test%num_subgrids = p%num_subgrids
+        a_test%atts = p%atts
       end associate
 
    end function new_SubStateTest
 
-   function new_StateSpec(name, num_subgrids) result(spec)
+   function new_StateSpec(name, num_subgrids, atts) result(spec)
       type(StateSpec) :: spec
 
       character(*), intent(in) :: name
       integer, intent(in) :: num_subgrids
+      character(*), intent(in), optional :: atts
 
       spec%state_name = name
       spec%num_subgrids = num_subgrids
+      if (present(atts)) then
+         spec%atts = atts
+      else
+         spec%atts = 'none'
+      end if
 
       call spec%setNumPETsRequested(6)
 
@@ -136,7 +145,19 @@ contains
          call ESMF_StateAdd(state_1, [state_2], _RC)
       end if
          
-      
+     
+         select case (this%atts)
+         case ('A')
+            call ESMF_AttributeSet(this%state, name='A', value=1)
+         case ('B')
+            call ESMF_AttributeSet(this%state, name='B1', value=int(2, kind=ESMF_KIND_I4))
+            call ESMF_AttributeSet(this%state, name='B2', value=real(3.,kind=ESMF_KIND_R4))
+         case ('C')
+            call ESMF_AttributeSet(this%state, name='C1', value=real(3., kind=ESMF_KIND_R8))
+            call ESMF_AttributeSet(this%state, name='C2', value=int(2,kind=ESMF_KIND_I4))
+            call ESMF_AttributeSet(this%state, name='C3', value=.true.)
+         end select
+     
    end subroutine setup
 
    subroutine teardown(this)
@@ -255,6 +276,189 @@ contains
          end if
       end do
    end subroutine test_subfield
+
+
+   @test
+   subroutine test_attribute_count(this)
+      class(SubStateTest), intent(inout) :: this
+      integer :: status
+      type(ESMF_State), allocatable :: substates(:)
+      integer :: i
+      integer :: count
+      
+      substates = make_substates(this%state, this%num_subgrids, _RC)
+      
+      do i = 1, size(substates)
+         call ESMF_AttributeGet(substates(i), count=count, _RC)
+         
+         select case (this%atts)
+         case ('none')
+            @assert_that(count, is(0))
+         case ('A')
+            @assert_that(count, is(1))
+         case ('B')
+            @assert_that(count, is(2))
+         case('C')
+            @assert_that(count,is(3))
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_attribute_count
+         
+
+   @test
+   subroutine test_attribute_typekind(this)
+      class(SubStateTest), intent(inout) :: this
+      integer :: status
+      type(ESMF_State), allocatable :: substates(:)
+      integer :: i
+      type(ESMF_TYPEKIND_FLAG) :: typekind
+      
+      substates = make_substates(this%state, this%num_subgrids, _RC)
+      
+      do i = 1, size(substates)
+
+         select case (this%atts)
+         case ('none')
+         case ('A')
+            call ESMF_AttributeGet(substates(i), name='A', typekind=typekind, _RC)
+             @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+         case ('B')
+            call ESMF_AttributeGet(substates(i), name='B1', typekind=typekind, _RC)
+             @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+            call ESMF_AttributeGet(substates(i), name='B2', typekind=typekind, _RC)
+            @assertTrue(typekind == ESMF_TYPEKIND_R4)
+
+         case ('C')
+            call ESMF_AttributeGet(substates(i), name='C1', typekind=typekind, _RC)
+            @assertTrue(typekind == ESMF_TYPEKIND_R8)
+
+            call ESMF_AttributeGet(substates(i), name='C2', typekind=typekind, _RC)
+            @assertTrue(typekind == ESMF_TYPEKIND_I4)
+
+            call ESMF_AttributeGet(substates(i), name='C3', typekind=typekind, _RC)
+            @assertTrue(typekind == ESMF_TYPEKIND_LOGICAL)
+
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_attribute_typekind
+         
+
+   @test
+   subroutine test_attribute_values(this)
+      class(SubStateTest), intent(inout) :: this
+      integer :: status
+      type(ESMF_State), allocatable :: substates(:)
+      integer :: i
+
+      integer(kind=ESMF_KIND_I4) :: i_value
+      real(kind=ESMF_KIND_R4) :: x_value
+      real(kind=ESMF_KIND_R8) :: y_value
+      logical :: flag
+      
+      substates = make_substates(this%state, num_subgrids=this%num_subgrids, _RC)
+      
+      do i = 1, size(substates)
+
+         select case (this%atts)
+         case ('none')
+         case ('A')
+            call ESMF_AttributeGet(substates(i), name='A', value=i_value, _RC)
+            @assert_that(i_value, is(1))
+
+         case ('B')
+            call ESMF_AttributeGet(substates(i), name='B1', value=i_value, _RC)
+             @assert_that(i_value, is(2))
+
+            call ESMF_AttributeGet(substates(i), name='B2', value=x_value, _RC)
+             @assert_that(x_value, is(3._ESMF_KIND_R4))
+
+         case ('C')
+            call ESMF_AttributeGet(substates(i), name='C1', value=y_value, _RC)
+             @assert_that(y_value, is(3._ESMF_KIND_R8))
+
+            call ESMF_AttributeGet(substates(i), name='C2', value=i_value, _RC)
+             @assert_that(i_value, is(2))
+
+            call ESMF_AttributeGet(substates(i), name='C3', value=flag, _RC)
+             @assert_that(flag, is(true()))
+
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_attribute_values
+         
+   ! This test verifies the expected behavior that the
+   ! attributes in subfields are actually just references
+   ! to the attributes in the main field.     We do this
+   ! by changing an attribute value after creation and checking
+   ! the new value on the subfields.
+   @test
+   subroutine test_attribute_reference(this)
+      class(SubStateTest), intent(inout) :: this
+
+      integer :: status
+      type(ESMF_State), allocatable :: substates(:)
+      integer :: i
+
+      integer(kind=ESMF_KIND_I4) :: i_value
+      real(kind=ESMF_KIND_R4) :: x_value
+      real(kind=ESMF_KIND_R8) :: y_value
+      logical :: flag
+      
+      substates = make_substates(this%state, this%num_subgrids, _RC)
+
+      do i = 1, size(substates)
+
+         select case (this%atts)
+         case ('none')
+         case ('A')
+            call ESMF_AttributeSet(this%state, name='A', value=7_ESMF_KIND_I4, _RC)
+            call ESMF_AttributeGet(substates(i), name='A', value=i_value, _RC)
+            @assert_that(i_value, is(7))
+
+         case ('B')
+            call ESMF_AttributeSet(this%state, name='B1', value=7_ESMF_KIND_I4, _RC)
+            call ESMF_AttributeGet(substates(i), name='B1', value=i_value, _RC)
+            @assert_that(i_value, is(7))
+
+            call ESMF_AttributeSet(this%state, name='B2', value=7._ESMF_KIND_R4, _RC)
+            call ESMF_AttributeGet(substates(i), name='B2', value=x_value, _RC)
+            @assert_that(x_value, is(7._ESMF_KIND_R4))
+
+         case ('C')
+            call ESMF_AttributeSet(this%state, name='C1', value=7._ESMF_KIND_R8, _RC)
+            call ESMF_AttributeGet(substates(i), name='C1', value=y_value, _RC)
+            @assert_that(y_value, is(7._ESMF_KIND_R8))
+
+            call ESMF_AttributeSet(this%state, name='C2', value=7_ESMF_KIND_I4, _RC)
+            call ESMF_AttributeGet(substates(i), name='C2', value=i_value, _RC)
+            @assert_that(i_value, is(7))
+
+            call ESMF_AttributeSet(this%state, name='C3', value=.false., _RC)
+            call ESMF_AttributeGet(substates(i), name='C3', value=flag, _RC)
+            @assert_that(flag, is(false()))
+
+         case default
+            ! should not reach here
+            @assert_that(1, is(0))
+         end select
+      end do
+
+   end subroutine test_attribute_reference
+  
       
    function toString(this) result(string)
       character(len=:), allocatable :: string
