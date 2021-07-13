@@ -122,8 +122,6 @@ contains
          ! add field to inner bundle 'bundle_1'
          field_2 = ESMF_FieldCreate(grid, name='field_2', typekind=ESMF_TYPEKIND_I4, _RC)
          call ESMF_FieldBundleAdd(bundle_1, [field_2], _RC)
-         ! I think when the substates are not updating bundle_1 to contain field_2
-         ! when the call above is commented out, the item count is the same
 
          ! add field to inner state 'state_1'
          field_3 = ESMF_FieldCreate(grid, name='field_3', typekind=ESMF_TYPEKIND_I4, _RC)
@@ -207,7 +205,7 @@ contains
             @assert_that(item_count, is(1))
          case ('nested')
             ! field_1, field_2, field_3, bundle_1, bundle_2, state_1, state_2
-            @assert_that(item_count, is(7))
+            @assert_that(item_count, is(6))
          end select
       end do
 
@@ -222,6 +220,9 @@ contains
       integer :: status
       integer :: i
       type(ESMF_StateItem_Flag) :: item_type
+      type(ESMF_State) :: nested_state
+      type(ESMF_FieldBundle) :: bundle
+      logical :: isPresent
 
       substates = make_SubStates(this%state, num_subgrids=this%num_subgrids, _RC)
 
@@ -239,14 +240,17 @@ contains
             @assertTrue(item_type == ESMF_STATEITEM_STATE)
          end if
          if (this%state_name == 'nested') then
-            call ESMF_StateGet(substates(i), itemname='state_1/field_3', itemtype=item_type,_RC)
+            call ESMF_StateGet(substates(i), 'state_1', nested_state, _RC)
+            call ESMF_StateGet(substates(i), 'bundle_1', bundle, _RC)
+
+            call ESMF_StateGet(nested_state, itemname='field_3', itemtype=item_type, _RC)
             @assertTrue(item_type == ESMF_STATEITEM_FIELD)
-            call ESMF_StateGet(substates(i), itemname='state_1/bundle_2', itemtype=item_type, _RC)
+            call ESMF_StateGet(nested_state, itemname='bundle_2', itemtype=item_type, _RC)
             @assertTrue(item_type == ESMF_STATEITEM_FIELDBUNDLE)
-            call ESMF_StateGet(substates(i), itemname='state_1/state_2', itemtype=item_type, _RC)
+            call ESMF_StateGet(nested_state, itemname='state_2', itemtype=item_type, _RC)
             @assertTrue(item_type == ESMF_STATEITEM_STATE)
-            call ESMF_StateGet(substates(i), itemname='bundle_1/field_2', itemtype=item_type, _RC)
-            @assertTrue(item_type == ESMF_STATEITEM_FIELD)
+            call ESMF_FieldBundleGet(bundle, fieldname='field_2', isPresent=isPresent, _RC)
+            @assertTrue(isPresent == .TRUE.)
 
          end if
       end do
