@@ -14,11 +14,6 @@ set (TEST_SRCS
     Test_MAPL_Config.pf
     test_DirPath.pf
     Test_VarSpec.pf
-    test_OpenMP_Support.pf
-    test_SubGrid.pf
-    test_SubField.pf
-    test_SubFieldBundle.pf
-    test_SubState.pf
   )
 
 # SRCS are mostly mocks to facilitate tests

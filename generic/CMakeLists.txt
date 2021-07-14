@@ -28,6 +28,8 @@ set (srcs
   MaplGrid.F90
   
   MaplGeneric.F90
+
+  OpenMP_Support.F90
   )
 if (BUILD_WITH_PFLOGGER)
   find_package(PFLOGGER REQUIRED)

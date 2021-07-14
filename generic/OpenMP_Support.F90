@@ -3,7 +3,7 @@
 
 module MAPL_OpenMP_Support
     use ESMF
-    use MAPL_BaseMod
+    use MAPL_maplgrid
     use MAPL_ExceptionHandling
     use mapl_KeywordEnforcerMod
 
