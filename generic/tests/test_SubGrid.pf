@@ -22,7 +22,9 @@ contains
         type(ESMF_Grid) :: primary_grid
         type(ESMF_Grid), allocatable :: subgrids(:) 
         real(kind=ESMF_KIND_R8), pointer :: lons(:,:), lats(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: corner_lons(:,:), corner_lats(:,:)
         real(kind=ESMF_KIND_R8), pointer :: sublons(:,:), sublats(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: corner_sublons(:,:), corner_sublats(:,:)
         integer :: local_count(3)
         type(Interval), allocatable :: bounds(:)
         integer :: tileCount, localDECount
@@ -52,6 +54,12 @@ contains
             end do
         end do
 
+        associate(im => local_count(1), jm => local_counts(2))
+        allocate(corner_lons(im+1,jm+1),corner_lats(im+1,jm+1))
+
+        call MAPL_GridGetCorners(primary_grid,corner_lons,corner_lats,rc=status)
+        @assertEqual(0,status) 
+
         ! Synthetic bounds to choose a small subregion in the primary grid
         allocate(bounds(1))
         bounds%min = 2
@@ -76,6 +84,13 @@ contains
 
         @assertEqual(lons(:,2:4), sublons)
         @assertEqual(lats(:,2:4), sublats)
+
+        allocate(corner_sublons(4,4),corner_sublats(4,4))
+        call MAPL_GridGetCorners(subgrids(1),corner_sublons,corner_sublats,rc=status)
+        @assertEqual(0,status)
+
+        @assertEqual(corner_lons(:,2:5), corner_sublons)
+        @assertEqual(corner_lats(:,2:5), corner_sublats)
 
     end subroutine test_make_subGrid
 
