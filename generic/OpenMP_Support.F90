@@ -81,6 +81,8 @@ module MAPL_OpenMP_Support
         type(ESMF_VM) :: vm
         real(kind=ESMF_KIND_R8), pointer :: new_lats(:,:), new_lons(:,:)
         real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
+        real(kind=ESMF_KIND_R8), allocatable :: corner_new_lats(:,:), corner_new_lons(:,:)
+        real(kind=ESMF_KIND_R8), allocatable :: coners_lats(:,:), corner_lons(:,:)
         character(len=ESMF_MAXSTR) :: name
 
         call ESMF_GridGet(primary_grid, name=name, __RC__)
@@ -89,6 +91,8 @@ module MAPL_OpenMP_Support
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         call ESMF_VMGetCurrent(vm, __RC__)
         call ESMF_VMGet(vm, localPET=myPET, __RC__)
+
+        call MAPL_GetGridCorners(primary_grid,corner_lons,corner_lats,__RC__)
 
         petMap(1,1,1) = myPet
         do i = 1, size(bounds)
@@ -106,6 +110,7 @@ module MAPL_OpenMP_Support
             call ESMF_GridAddCoord(grid=subgrids(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
             call ESMF_AttributeCopy(primary_grid, subgrids(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
          end do
+         ! delete cornerlon/lat atttributes in the subgrid
 
          call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, __RC__)
@@ -125,6 +130,12 @@ module MAPL_OpenMP_Support
                 farrayPtr=new_lats, __RC__)
             new_lats = subset_array(lats, bounds(i))
          end do
+
+        ! get new_corner_lats by subsetting corner_lats based on the bounds
+
+        ! translate the 2d arrays into 1D arrays, lines 2462 to 2468 in base/Base/Base_implementation.F90
+
+        ! add the these arrays as attributes in the subgrids
         
         _RETURN(ESMF_SUCCESS)
     end function make_subgrids_from_bounds
