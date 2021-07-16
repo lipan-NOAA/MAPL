@@ -27,7 +27,6 @@ module MAPL_Base
   public MAPL_FieldCreateEmpty
   public MAPL_FieldGetTime
   public MAPL_FieldSetTime
-  public MAPL_GRID_INTERIOR
   public MAPL_IncYMD
   public MAPL_Interp_Fac
   public MAPL_LatLonGridCreate   ! Creates regular Lat/Lon ESMF Grids
@@ -58,8 +57,6 @@ module MAPL_Base
   public MAPL_BundleCreate
   public MAPL_FieldCopy
   public MAPL_Leap
-  public MAPL_GridGetCorners
-  public MAPL_GridGetInterior
   public MAPL_TrimString
   public MAPL_FieldSplit
   public MAPL_GetCorrectedPhase
@@ -588,36 +585,6 @@ module MAPL_Base
      end function MAPL_LatLonGridCreate
 
      !............................................................................
-
-     module subroutine MAPL_GRID_INTERIOR(GRID,I1,IN,J1,JN)
-       use ESMF, only: ESMF_Grid
-       type (ESMF_Grid), intent(IN) :: grid
-       integer, intent(OUT)         :: I1, IN, J1, JN
-     end subroutine MAPL_GRID_INTERIOR
-
-     module subroutine MAPL_GridGetCorners(grid,gridCornerLons, gridCornerLats, RC)
-       use ESMF, only: ESMF_Grid, ESMF_KIND_R8
-       type (ESMF_Grid), intent(INOUT) :: GRID
-       real(ESMF_KIND_R8), intent(INOUT) :: gridCornerLons(:,:)
-       real(ESMF_KIND_R8), intent(INOUT) :: gridCornerLats(:,:)
-       integer, optional, intent(  OUT) :: RC
-
-     end subroutine MAPL_GridGetCorners
-
-     !............................................................................
-
-
-     !
-     ! Note: The routine below came from ESMFL; it has been moved here to
-     !       avoid circular dependencies (Arlindo).
-     !
-     module subroutine MAPL_GridGetInterior(GRID,I1,IN,J1,JN)
-       use ESMF, only: ESMF_Grid
-       type (ESMF_Grid), intent(IN) :: grid
-       integer, intent(OUT)         :: I1, IN, J1, JN
-     end subroutine MAPL_GridGetInterior
-
-     !.......................................................................
 
      module function MAPL_RmQualifier(str, del) result(new)
 

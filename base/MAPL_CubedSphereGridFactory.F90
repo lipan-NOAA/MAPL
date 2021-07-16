@@ -1011,7 +1011,7 @@ contains
    ! "equator" of face 1.
    function get_fake_longitudes(this, unusable, rc) result(longitudes)
       use mpi
-      use MAPL_BaseMod, only: MAPL_Grid_Interior
+      use MAPL_MaplGrid
       real (kind=REAL64), allocatable :: longitudes(:)
       class (CubedSphereGridFactory), intent(inout) :: this
       class (KeywordEnforcer), optional, intent(in) :: unusable
@@ -1083,7 +1083,7 @@ contains
 
    function get_fake_latitudes(this, unusable, rc) result(latitudes)
       use mpi
-      use MAPL_BaseMod, only: MAPL_Grid_Interior
+      use MAPL_MaplGrid
       real (kind=REAL64), allocatable :: latitudes(:)
       class (CubedSphereGridFactory), intent(inout) :: this
       class (KeywordEnforcer), optional, intent(in) :: unusable
@@ -1154,7 +1154,7 @@ contains
    end function get_fake_latitudes
 
    subroutine generate_file_bounds(this,grid,local_start,global_start,global_count,rc)
-      use MAPL_BaseMod
+      use MAPL_MaplGrid
       class(CubedSphereGridFactory), intent(inout) :: this
       type(ESMF_Grid),      intent(inout) :: grid
       integer, allocatable, intent(out) :: local_start(:)
@@ -1180,7 +1180,7 @@ contains
    end subroutine generate_file_bounds
 
    subroutine generate_file_corner_bounds(this,grid,local_start,global_start,global_count,rc)
-      use MAPL_BaseMod
+      use MAPL_MaplGrid
       class(CubedSphereGridFactory), intent(inout) :: this
       type(ESMF_Grid),      intent(inout) :: grid
       integer, allocatable, intent(out) :: local_start(:)

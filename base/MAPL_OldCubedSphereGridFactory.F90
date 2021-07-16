@@ -898,7 +898,7 @@ contains
    end subroutine append_variable_metadata
 
    subroutine generate_file_bounds(this,grid,local_start,global_start,global_count,rc)
-      use MAPL_BaseMod
+      use MAPL_MaplGrid
       class(OldCubedSphereGridFactory), intent(inout) :: this
       type(ESMF_Grid),      intent(inout) :: grid
       integer, allocatable, intent(out) :: local_start(:)

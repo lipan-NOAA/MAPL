@@ -17,7 +17,7 @@ contains
     @test(npes=[6],type=newESMF_TestMethod)
     subroutine test_make_subGrid(this)
        class(ESMF_TestMethod), intent(inout) :: this
-        integer :: im, nx, status, i, j
+        integer :: im, jm, nx, status, i, j
         type(CubedSphereGridFactory) :: primary_factory
         type(ESMF_Grid) :: primary_grid
         type(ESMF_Grid), allocatable :: subgrids(:) 
@@ -54,8 +54,10 @@ contains
             end do
         end do
 
-        associate(im => local_count(1), jm => local_counts(2))
-        allocate(corner_lons(im+1,jm+1),corner_lats(im+1,jm+1))
+        associate(im => local_count(1), jm => local_count(2))
+        end associate
+
+        !allocate(corner_lons(im+1,jm+1),corner_lats(im+1,jm+1))
 
         call MAPL_GridGetCorners(primary_grid,corner_lons,corner_lats,rc=status)
         @assertEqual(0,status) 
@@ -85,7 +87,7 @@ contains
         @assertEqual(lons(:,2:4), sublons)
         @assertEqual(lats(:,2:4), sublats)
 
-        allocate(corner_sublons(4,4),corner_sublats(4,4))
+        allocate(corner_sublons(im+1,4),corner_sublats(im+1,4))
         call MAPL_GridGetCorners(subgrids(1),corner_sublons,corner_sublats,rc=status)
         @assertEqual(0,status)
 

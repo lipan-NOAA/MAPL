@@ -12,6 +12,7 @@ module mapl_MaplGenericComponent
    use mapl_MaplComponent
    use mapl_ErrorHandlingMod
    use pFlogger
+   use mapl_OpenMP_Support
    implicit none
    private
 
@@ -22,6 +23,10 @@ module mapl_MaplGenericComponent
       type(ESMF_GridComp) :: gridcomp
       type(ESMF_State) :: import_state
       type(ESMF_State) :: export_state
+      logical :: threading_active = .FALSE.
+      type(ESMF_State), allocatable :: import_substates(:)
+      type(ESMF_State), allocatable :: export_substates(:)
+
    contains
       procedure :: initialize => stub
       procedure :: run => stub
@@ -38,6 +43,10 @@ module mapl_MaplGenericComponent
 
       procedure :: get_logger
       procedure :: set_logger
+      procedure :: is_threading_active
+
+      procedure :: activate_threading
+      procedure :: deactivate_threading
    end type MaplGenericComponent
 
 contains
@@ -166,5 +175,42 @@ contains
       call component%set_logger(lgr)
       
    end subroutine set_logger
+
+   function is_threading_active(this) result(threading_active)
+     class(MaplGenericComponent), intent(in) :: this
+     logical :: threading_active
+     
+     threading_active = this%threading_active
+   end function is_threading_active
+
+
+   recursive subroutine activate_threading(this, names, num_threads) 
+     class(MaplGenericComponent), intent(inout) :: this
+     character(*), intent(in) :: names(:)
+     integer, intent(in) :: num_threads
+     class(AbstractFrameworkComponent), pointer :: child
+     integer :: num_children, i, rc
+      
+     this%threading_active = .TRUE.
+     num_children = this%get_num_children()
+
+     this%import_substates = make_substates(this%import_state, num_threads) ! number for num_grids argument?
+     do i = 1, num_children
+        child => this%get_child(names(i)) 
+        SELECT TYPE (child)
+        TYPE IS (MaplGenericComponent)
+           call child%activate_threading(names, num_threads)
+        CLASS DEFAULT
+           _FAIL('illegal type for child')
+        END SELECT
+     end do
+
+   end subroutine activate_threading
+
+   subroutine deactivate_threading(this)
+     class(MaplGenericComponent), intent(inout) :: this
+
+     this%threading_active = .FALSE.
+   end subroutine deactivate_threading
 
 end module mapl_MaplGenericComponent

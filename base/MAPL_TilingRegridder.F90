@@ -492,7 +492,7 @@ contains
    ! the tiles that correspond to the local cells on the grid.
    ! ------------------------------------------------------------------------
    subroutine copy_global_to_local(this)
-      use MAPL_BaseMod, only: MAPL_Grid_interior
+      use MAPL_MaplGrid
       use pFIO
       class (TilingRegridder), intent(inout) :: this
 

@@ -56,7 +56,7 @@ module MAPL_OpenMP_Support
 
     function make_subgrids_from_num_grids(primary_grid, num_grids, rc) result(subgrids)
         type(ESMF_Grid), allocatable :: subgrids(:)
-        type(ESMF_Grid), intent(in) :: primary_grid
+        type(ESMF_Grid), intent(inout) :: primary_grid
         integer, intent(in) :: num_grids
         integer, optional, intent(out) :: rc
         integer :: local_count(3)
@@ -71,7 +71,7 @@ module MAPL_OpenMP_Support
 
     function make_subgrids_from_bounds(primary_grid, bounds, rc) result(subgrids)
         type(ESMF_Grid), allocatable :: subgrids(:)
-        type(ESMF_Grid), intent(in) :: primary_grid
+        type(ESMF_Grid), intent(inout) :: primary_grid ! inout to use MAPL_GridGetCorners
         type(Interval), intent(in) :: bounds(:)
         integer, optional, intent(out) :: rc
         integer :: local_count(3)
@@ -81,18 +81,16 @@ module MAPL_OpenMP_Support
         type(ESMF_VM) :: vm
         real(kind=ESMF_KIND_R8), pointer :: new_lats(:,:), new_lons(:,:)
         real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
-        real(kind=ESMF_KIND_R8), allocatable :: corner_new_lats(:,:), corner_new_lons(:,:)
-        real(kind=ESMF_KIND_R8), allocatable :: coners_lats(:,:), corner_lons(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: new_corner_lats(:,:), new_corner_lons(:,:)
+        real(kind=ESMF_KIND_R8), pointer :: corner_lats(:,:), corner_lons(:,:)
         character(len=ESMF_MAXSTR) :: name
-
+   
         call ESMF_GridGet(primary_grid, name=name, __RC__)
 
         allocate(subgrids(size(bounds)))
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
         call ESMF_VMGetCurrent(vm, __RC__)
         call ESMF_VMGet(vm, localPET=myPET, __RC__)
-
-        call MAPL_GetGridCorners(primary_grid,corner_lons,corner_lats,__RC__)
 
         petMap(1,1,1) = myPet
         do i = 1, size(bounds)
@@ -109,19 +107,26 @@ module MAPL_OpenMP_Support
                   __RC__)
             call ESMF_GridAddCoord(grid=subgrids(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
             call ESMF_AttributeCopy(primary_grid, subgrids(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+            ! delete cornerlon/lat atttributes in the subgrid
+            call ESMF_AttributeRemove(subgrids(i), name='?') ! requires name of attribute to remove
          end do
-         ! delete cornerlon/lat atttributes in the subgrid
+
 
          call ESMF_GridGetCoord(grid=primary_grid, coordDim=1, localDE=0, &
             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lons, __RC__)
          call ESMF_GridGetCoord(grid=primary_grid, coordDim=2, localDE=0, &
             staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=lats, __RC__)
+         ! it is not recognizing this call and use statements for it
+         call MAPL_GridGetCorners(primary_grid, corner_lons, corner_lats, __RC__)
 
          do i = 1, size(bounds)
             call ESMF_GridGetCoord(grid=subgrids(i), coordDim=1, localDE=0, &
                 staggerloc=ESMF_STAGGERLOC_CENTER, &
                 farrayPtr=new_lons, __RC__)
             new_lons = subset_array(lons, bounds(i))
+            call MAPL_GridGetCorners(subgrids(i), new_corner_lons, new_corner_lats, __RC__)
+            !new_corner_lons = subset_array(corner_lons, bounds(i))
+            !new_corner_lats = subset_array(corner_lats, bounds(i))
          end do
          
          do i = 1, size(bounds) 
@@ -131,8 +136,7 @@ module MAPL_OpenMP_Support
             new_lats = subset_array(lats, bounds(i))
          end do
 
-        ! get new_corner_lats by subsetting corner_lats based on the bounds
-
+      
         ! translate the 2d arrays into 1D arrays, lines 2462 to 2468 in base/Base/Base_implementation.F90
 
         ! add the these arrays as attributes in the subgrids

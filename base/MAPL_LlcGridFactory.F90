@@ -195,7 +195,7 @@ contains
    end function create_basic_grid
 
    subroutine add_horz_coordinates(this, grid, unusable, rc)
-      use MAPL_BaseMod, only: MAPL_grid_interior, MAPL_gridget
+      use MAPL_MaplGrid
       use MAPL_CommsMod
       use MAPL_IOMod
       use MAPL_ConstantsMod
@@ -929,7 +929,7 @@ contains
    end subroutine append_variable_metadata
 
    subroutine generate_file_bounds(this,grid,local_start,global_start,global_count,rc)
-      use MAPL_BaseMod
+      use MAPL_MaplGrid
       class(LlcGridFactory), intent(inout) :: this
       type(ESMF_Grid),      intent(inout) :: grid
       integer, allocatable, intent(out) :: local_start(:)

@@ -24,6 +24,7 @@ use MAPL_CommsMod
 use MAPL_HashMod
 use MAPL_ShmemMod
 use MAPL_ExceptionHandling
+use MAPL_MaplGrid
 use, intrinsic :: iso_fortran_env, only: REAL64, INT64
 
 implicit none

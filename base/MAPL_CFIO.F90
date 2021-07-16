@@ -44,6 +44,7 @@ module MAPL_CFIOMod
   use PFIO
   use gFTL_IntegerVector
   use MAPL_StringTemplate
+  use MAPL_MaplGrid
 
   use, intrinsic :: ISO_C_BINDING
 

@@ -578,7 +578,7 @@ contains
 
 
    subroutine add_horz_coordinates(this, grid, unusable, rc)
-      use MAPL_BaseMod, only: MAPL_grid_interior
+      use MAPL_MaplGrid
       class (LatLonGridFactory), intent(in) :: this
       type (ESMF_Grid), intent(inout) :: grid
       class (KeywordEnforcer), optional, intent(in) :: unusable
@@ -1769,7 +1769,7 @@ contains
    end subroutine append_variable_metadata
 
    subroutine generate_file_bounds(this,grid,local_start,global_start,global_count,rc)
-      use MAPL_BaseMod
+      use MAPL_MaplGrid
       class(LatLonGridFactory), intent(inout) :: this
       type(ESMF_Grid),      intent(inout) :: grid
       integer, allocatable, intent(out) :: local_start(:)

@@ -826,7 +826,7 @@ contains
    function ComputeGridBasis(grid,unusable,rc) result(basis) 
       use esmf
       use MAPL_KeywordEnforcerMod
-      use MAPL_BaseMod, only : MAPL_GridGetCorners,MAPL_GridGet
+      use MAPL_MaplGrid
 
       type(ESMF_Grid), intent(inout) :: grid
       real(REAL64), allocatable :: basis(:,:,:,:)  

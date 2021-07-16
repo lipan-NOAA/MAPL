@@ -6,6 +6,7 @@ module mapl_MaplGrid
    use pFlogger, only: logging, Logger, WrapArray
    use MAPL_ErrorHandlingMod
    use MAPL_KeywordEnforcerMod
+   use MAPL_ConstantsMod, only: MAPL_DEGREES_TO_RADIANS
    implicit none
    private
 
@@ -14,6 +15,9 @@ module mapl_MaplGrid
    public :: MAPL_DistGridGet
    public :: MAPL_GetImsJms
    public :: MAPL_GridHasDE
+   public :: MAPL_Grid_Interior
+   public :: MAPL_GridGetInterior
+   public :: MAPL_GridGetCorners
 
    type :: MaplGrid
       type(ESMF_Grid)                          :: ESMFGRID
@@ -330,7 +334,7 @@ contains
 
  end subroutine MAPL_DistGridGet
 
-  subroutine MAPL_GetImsJms(Imins,Imaxs,Jmins,Jmaxs,Ims,Jms,rc)
+ subroutine MAPL_GetImsJms(Imins,Imaxs,Jmins,Jmaxs,Ims,Jms,rc)
 
 !  Given lists of the min and max Is and Js in each processor
 !  in a rectangular layout, it computes the number of elements
@@ -425,6 +429,219 @@ contains
 
   end function MAPL_GridHasDE
 
+  subroutine MAPL_GRID_INTERIOR(GRID,I1,IN,J1,JN)
+    type (ESMF_Grid), intent(IN) :: grid
+    integer, intent(OUT)         :: I1, IN, J1, JN
 
+    ! local vars
+    integer                               :: status
+    !    character(len=ESMF_MAXSTR)            :: IAm='MAPL_Grid_Interior'
+
+    type (ESMF_DistGrid)                  :: distGrid
+    type(ESMF_DELayout)                   :: LAYOUT
+    integer,               allocatable    :: AL(:,:)
+    integer,               allocatable    :: AU(:,:)
+    integer                               :: nDEs,localDECount
+    integer                               :: deId
+    integer                               :: gridRank
+    integer,               allocatable    :: localDeToDeMap(:)
+
+    i1=-1
+    j1=-1
+    in=-1
+    jn=-1
+    call ESMF_GridGet    (GRID, dimCount=gridRank, distGrid=distGrid, rc=STATUS)
+    call ESMF_DistGridGet(distGRID, delayout=layout, rc=STATUS)
+    call ESMF_DELayoutGet(layout, deCount = nDEs, localDeCount=localDeCount,rc=status)
+    if (localDeCount > 0) then
+       allocate(localDeToDeMap(localDeCount),stat=status)
+       call ESMF_DELayoutGet(layout, localDEtoDeMap=localDeToDeMap,rc=status)
+       deId=localDeToDeMap(1)
+
+       allocate (AL(gridRank,0:nDEs-1),  stat=status)
+       allocate (AU(gridRank,0:nDEs-1),  stat=status)
+
+       call MAPl_DistGridGet(distgrid, &
+            minIndex=AL, maxIndex=AU, rc=status)
+
+       I1 = AL(1, deId)
+       IN = AU(1, deId)
+       !    _ASSERT(gridRank > 1, 'tilegrid is 1d (without RC this only for info')
+       J1 = AL(2, deId)
+       JN = AU(2, deId)
+       deallocate(AU, AL, localDeToDeMap)
+    end if
+
+  end subroutine MAPL_GRID_INTERIOR
+
+
+  ! Note: The routine below came from ESMFL; it has been moved here to
+  !       avoid circular dependencies (Arlindo).
+  !
+  subroutine MAPL_GridGetInterior(GRID,I1,IN,J1,JN)
+    type (ESMF_Grid), intent(IN) :: grid
+    integer, intent(OUT)         :: I1, IN, J1, JN
+
+    ! local vars
+    integer                               :: status
+    !    character(len=ESMF_MAXSTR)            :: IAm='MAPL_GridGetInterior'
+
+    type (ESMF_DistGrid)                  :: distGrid
+    type(ESMF_DELayout)                   :: LAYOUT
+    type (ESMF_VM)                        :: vm
+    integer,               allocatable    :: AL(:,:)
+    integer,               allocatable    :: AU(:,:)
+    integer                               :: nDEs
+    integer                               :: deId
+    integer                               :: gridRank
+
+    call ESMF_GridGet    (GRID, dimCount=gridRank, distGrid=distGrid, rc=STATUS)
+    call ESMF_DistGridGet(distGRID, delayout=layout, rc=STATUS)
+    call ESMF_DELayoutGet(layout, vm=vm, rc=status)
+    call ESMF_VmGet(vm, localPet=deId, petCount=nDEs, rc=status)
+
+    allocate (AL(gridRank,0:nDEs-1),  stat=status)
+    allocate (AU(gridRank,0:nDEs-1),  stat=status)
+
+    call MAPL_DistGridGet(distgrid, &
+         minIndex=AL, maxIndex=AU, rc=status)
+
+    I1 = AL(1, deId)
+    IN = AU(1, deId)
+    !    _ASSERT(gridRank > 1, 'tilegrid is 1d (without RC this only for info')
+    J1 = AL(2, deId)
+    JN = AU(2, deId)
+    deallocate(AU, AL)
+
+  end subroutine MAPL_GridGetInterior
+
+  subroutine MAPL_GridGetCorners(grid,gridCornerLons, gridCornerLats, RC)
+    type (ESMF_Grid), intent(INOUT) :: GRID
+    real(ESMF_KIND_R8), intent(INOUT) :: gridCornerLons(:,:)
+    real(ESMF_KIND_R8), intent(INOUT) :: gridCornerLats(:,:)
+    integer, optional, intent(  OUT) :: RC
+    integer :: status
+
+    type(ESMF_RouteHandle) :: rh
+    type(ESMF_Field) :: field
+    integer :: counts(3),lsz
+    real(ESMF_KIND_R8), pointer :: ptr(:,:)
+    real(ESMF_KIND_R8), pointer :: corner(:,:)
+    integer :: im,jm,imc,jmc,idx,i,j
+    logical :: hasLons,hasLats
+    real(ESMF_KIND_R8), allocatable :: r8ptr(:),lons1d(:),lats1d(:)
+    type(ESMF_CoordSys_Flag) :: coordSys
+
+    call MAPL_GridGet(grid,localCellCountPerDim=counts,rc=status)
+    _VERIFY(status)
+    im=counts(1)
+    jm=counts(2)
+    ! check if we have corners
+    call ESMF_AttributeGet(grid,  NAME='GridCornerLons:', &
+         isPresent=hasLons, RC=STATUS)
+    _VERIFY(status)
+    call ESMF_AttributeGet(grid,  NAME='GridCornerLats:', &
+         isPresent=hasLats, RC=STATUS)
+    _VERIFY(status)
+    if (hasLons .and. hasLats) then
+       call ESMF_AttributeGet(grid,  NAME='GridCornerLons:', &
+            itemcount=lsz, RC=STATUS)
+       _VERIFY(STATUS)
+       _ASSERT(size(gridCornerLons,1)*size(gridCornerLons,2)==lsz,"stored corner sizes to not match grid")
+       call ESMF_AttributeGet(grid,  NAME='GridCornerLats:', &
+            itemcount=lsz, RC=STATUS)
+       _VERIFY(STATUS)
+       _ASSERT(size(gridCornerLats,1)*size(gridCornerLats,2)==lsz,"stored corner sizes to not match grid")
+       allocate(r8ptr(lsz),stat=status)
+       _VERIFY(status)
+
+       call ESMF_AttributeGet(grid,  NAME='GridCornerLons:', &
+            VALUELIST=r8ptr, RC=STATUS)
+       _VERIFY(STATUS)
+
+       idx = 0
+       do j = 1, size(gridCornerLons,2)
+          do i = 1, size(gridCornerLons,1)
+             idx = idx+1
+             gridCornerLons(i,j) = r8ptr(idx)
+          end do
+       end do
+
+       call ESMF_AttributeGet(grid,  NAME='GridCornerLats:', &
+            VALUELIST=r8ptr, RC=STATUS)
+       _VERIFY(STATUS)
+
+       idx = 0
+       do j = 1, size(gridCornerLons,2)
+          do i = 1, size(gridCornerLons,1)
+             idx = idx+1
+             gridCornerLats(i,j) = r8ptr(idx)
+          end do
+       end do
+       deallocate(r8ptr)
+    else
+
+       call ESMF_GridGetCoord(grid,localDE=0,coordDim=1,staggerloc=ESMF_STAGGERLOC_CORNER, &
+            farrayPtr=corner, rc=status)
+       imc=size(corner,1)
+       jmc=size(corner,2)
+       allocate(ptr(0:imc+1,0:jmc+1),source=0.0d0,stat=status)
+       _VERIFY(status)
+       field = ESMF_FieldCreate(grid,ptr,staggerLoc=ESMF_STAGGERLOC_CORNER,totalLWidth=[1,1],totalUWidth=[1,1],rc=status)
+       _VERIFY(status)
+       call ESMF_FieldHaloStore(field,rh,rc=status)
+       _VERIFY(status)
+
+       ptr(1:imc,1:jmc)=corner
+       call ESMF_FieldHalo(field,rh,rc=status)
+       _VERIFY(status)
+       gridCornerLons=ptr(1:im+1,1:jm+1)
+
+       call ESMF_GridGetCoord(grid,localDE=0,coordDim=2,staggerloc=ESMF_STAGGERLOC_CORNER, &
+            farrayPtr=corner, rc=status)
+       _VERIFY(status)
+       ptr(1:imc,1:jmc)=corner
+       call ESMF_FieldHalo(field,rh,rc=status)
+       _VERIFY(status)
+       gridCornerLats=ptr(1:im+1,1:jm+1)
+
+       deallocate(ptr)
+       call ESMF_FieldDestroy(field,rc=status) 
+       _VERIFY(status)
+       call ESMF_FieldHaloRelease(rh,rc=status)
+       _VERIFY(status)
+
+       call ESMF_GridGet(grid,coordSys=coordSys,rc=status)
+       _VERIFY(status)
+       if (coordSys==ESMF_COORDSYS_SPH_DEG) then
+          gridCornerLons=gridCornerLons*MAPL_DEGREES_TO_RADIANS
+          gridCornerLats=gridCornerLats*MAPL_DEGREES_TO_RADIANS
+       else if (coordSys==ESMF_COORDSYS_CART) then
+          _FAIL('Unsupported coordinate system:  ESMF_COORDSYS_CART')
+       end if
+       allocate(lons1d(size(gridCornerLons,1)*size(gridCornerLons,2)),stat=status)
+       _VERIFY(status)
+       allocate(lats1d(size(gridCornerLons,1)*size(gridCornerLons,2)),stat=status)
+       _VERIFY(status)
+       idx = 0
+       do j=1,size(gridCornerLons,2)
+          do i=1,size(gridCornerLons,1)
+             idx=idx+1
+             lons1d(idx)=gridCornerLons(i,j)
+             lats1d(idx)=gridCornerLats(i,j)
+          enddo
+       enddo
+       call ESMF_AttributeSet(grid, name='GridCornerLons:', &
+            itemCount = idx, valueList=lons1d, rc=status)
+       _VERIFY(STATUS)
+       call ESMF_AttributeSet(grid, name='GridCornerLats:', &
+            itemCount = idx, valueList=lats1d, rc=status)
+       _VERIFY(STATUS)
+       deallocate(lons1d,lats1d)
+    end if
+
+    _RETURN(ESMF_SUCCESS)
+
+  end subroutine MAPL_GridGetCorners
 
 end module mapl_MaplGrid
