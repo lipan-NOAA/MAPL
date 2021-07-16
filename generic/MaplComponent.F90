@@ -8,6 +8,7 @@ module mapl_MaplComponent
    use mapl_BaseComponent
    use mapl_SurrogateFrameworkComponent
    use mapl_ErrorHandlingMod
+ 
    implicit none
    private
 
@@ -16,7 +17,6 @@ module mapl_MaplComponent
    type, abstract, extends(BaseComponent) :: MaplComponent
       private
       class(SurrogateFrameworkComponent), pointer :: framework => null()
-      type(ESMF_State) :: internal_state
       class(t_Logger), pointer :: logger => null()
    contains
       ! Accessors
@@ -26,8 +26,6 @@ module mapl_MaplComponent
       procedure :: get_logger
 
       procedure :: run_child
-
-      procedure :: get_internal_state
    end type MaplComponent
 
 contains
@@ -62,14 +60,6 @@ contains
 
       _RETURN(_SUCCESS)
    end subroutine run_child
-
-   function get_internal_state(this) result(internal_state)
-      class(MaplComponent), target, intent(in) :: this
-      type(ESMF_State), pointer :: internal_state
-
-      internal_state => this%internal_state
-   end function get_internal_state
-
 
    subroutine set_logger(this, logger)
       class(MaplComponent), intent(inout) :: this

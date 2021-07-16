@@ -54,10 +54,11 @@ contains
             end do
         end do
 
-        associate(im => local_count(1), jm => local_count(2))
-        end associate
+        !associate(im => local_count(1), jm => local_count(2))
+        !end associate
 
-        !allocate(corner_lons(im+1,jm+1),corner_lats(im+1,jm+1))
+        allocate(corner_lons(local_count(1)+1,local_count(2)+1))
+        allocate(corner_lats(local_count(1)+1,local_count(2)+1))
 
         call MAPL_GridGetCorners(primary_grid,corner_lons,corner_lats,rc=status)
         @assertEqual(0,status) 

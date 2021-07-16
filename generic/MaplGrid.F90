@@ -547,11 +547,11 @@ contains
        call ESMF_AttributeGet(grid,  NAME='GridCornerLons:', &
             itemcount=lsz, RC=STATUS)
        _VERIFY(STATUS)
-       _ASSERT(size(gridCornerLons,1)*size(gridCornerLons,2)==lsz,"stored corner sizes to not match grid")
+       _ASSERT(size(gridCornerLons,1)*size(gridCornerLons,2)==lsz,"stored corner sizes do not match grid")
        call ESMF_AttributeGet(grid,  NAME='GridCornerLats:', &
             itemcount=lsz, RC=STATUS)
        _VERIFY(STATUS)
-       _ASSERT(size(gridCornerLats,1)*size(gridCornerLats,2)==lsz,"stored corner sizes to not match grid")
+       _ASSERT(size(gridCornerLats,1)*size(gridCornerLats,2)==lsz,"stored corner sizes do not match grid")
        allocate(r8ptr(lsz),stat=status)
        _VERIFY(status)
 

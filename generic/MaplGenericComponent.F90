@@ -23,9 +23,11 @@ module mapl_MaplGenericComponent
       type(ESMF_GridComp) :: gridcomp
       type(ESMF_State) :: import_state
       type(ESMF_State) :: export_state
+      type(ESMF_State) :: internal_state
       logical :: threading_active = .FALSE.
       type(ESMF_State), allocatable :: import_substates(:)
       type(ESMF_State), allocatable :: export_substates(:)
+      
 
    contains
       procedure :: initialize => stub
@@ -37,16 +39,16 @@ module mapl_MaplGenericComponent
       procedure :: finalize_child => stub_child
 
       procedure :: add_child_component
-
+      
+      procedure :: activate_threading
+      procedure :: deactivate_threading
 
       ! accessors
 
       procedure :: get_logger
       procedure :: set_logger
       procedure :: is_threading_active
-
-      procedure :: activate_threading
-      procedure :: deactivate_threading
+      procedure :: get_internal_state
    end type MaplGenericComponent
 
 contains
@@ -182,6 +184,13 @@ contains
      
      threading_active = this%threading_active
    end function is_threading_active
+
+   function get_internal_state(this) result(internal_state)
+      class(MaplGenericComponent), target, intent(in) :: this
+      type(ESMF_State), pointer :: internal_state
+
+      internal_state => this%internal_state
+   end function get_internal_state
 
 
    recursive subroutine activate_threading(this, names, num_threads) 
