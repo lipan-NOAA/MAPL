@@ -28,7 +28,9 @@ module mapl_MaplGenericComponent
       logical :: threading_active = .FALSE.
       type(ESMF_State), allocatable :: import_substates(:)
       type(ESMF_State), allocatable :: export_substates(:)
+      type(ESMF_State), allocatable :: internal_substates(:)
       type(MaplGrid) :: grid
+      type(ESMF_Grid), allocatable :: subgrids(:)
       
 
    contains
@@ -193,58 +195,116 @@ contains
    function get_internal_state(this) result(internal_state)
       class(MaplGenericComponent), target, intent(in) :: this
       type(ESMF_State), pointer :: internal_state
+      integer :: thread 
 
-      internal_state => this%internal_state
+      if (.NOT. this%is_threading_active()) then
+        internal_state => this%internal_state
+     else
+        thread = 0
+        !$ thread = omp_get_thread_num()
+        internal_state => this%internal_substates(thread+1)
+     end if
    end function get_internal_state
 
    function get_import_state(this) result(import_state)
      class(MaplGenericComponent), target, intent(in) :: this
      type(ESMF_State), pointer :: import_state
+     integer :: thread
 
-     import_state => this%import_state
+     if (.NOT. this%is_threading_active()) then
+        import_state => this%import_state
+     else
+        thread = 0
+        !$ thread = omp_get_thread_num()
+        import_state => this%import_substates(thread+1)
+     end if
    end function get_import_state
 
    function get_export_state(this) result(export_state)
      class(MaplGenericComponent), target, intent(in) :: this
      type(ESMF_State), pointer :: export_state
+     integer :: thread
 
-     export_state => this%export_state
+     if (.NOT. this%is_threading_active()) then
+        export_state => this%export_state
+     else
+        thread = 0
+        !$ thread = omp_get_thread_num()
+        export_state => this%export_substates(thread+1)
+     end if
    end function get_export_state
 
    function get_grid(this) result(grid)
      class(MaplGenericComponent), target, intent(in) :: this
      type(MaplGrid), pointer :: grid
+     integer :: thread
 
-     grid => this%grid
+     if (.NOT. this%is_threading_active()) then
+        grid => this%grid
+     else
+        thread = 0
+        !$ thread = omp_get_thread_num()
+        grid%ESMFGrid = this%subgrids(thread+1) ! subgrids is of type ESMF_Grid because of the return type of make_subgrids
+     end if
    end function get_grid
 
 
-   recursive subroutine activate_threading(this, names, num_threads) 
+   recursive subroutine activate_threading(this, names) 
      class(MaplGenericComponent), intent(inout) :: this
      character(*), intent(in) :: names(:)
-     integer, intent(in) :: num_threads
      class(AbstractFrameworkComponent), pointer :: child
-     integer :: num_children, i, rc
+     integer :: num_children, i, rc, num_threads
       
+     !$ if(.NOT. omp_in_parallel()) then 
+        !$omp parallel
+     !$ end if
+
+     !$omp serial
      this%threading_active = .TRUE.
      num_children = this%get_num_children()
 
+     num_threads = 1
+     !$ num_threads = omp_get_num_threads()
+
      this%import_substates = make_substates(this%import_state, num_threads) ! number for num_grids argument?
+     this%export_substates = make_substates(this%export_state, num_threads)
+     this%internal_substates = make_substates(this%internal_state, num_threads)
+     this%subgrids = make_subgrids(this%grid%ESMFGrid, num_threads) ! make_subgrids requires grid of type ESMF_Grid
+
      do i = 1, num_children
         child => this%get_child(names(i)) 
         SELECT TYPE (child)
         TYPE IS (MaplGenericComponent)
-           call child%activate_threading(names, num_threads)
+           call child%activate_threading(names)
         CLASS DEFAULT
            _FAIL('illegal type for child')
         END SELECT
      end do
+     !$omp end serial
 
    end subroutine activate_threading
 
-   subroutine deactivate_threading(this)
+   subroutine deactivate_threading(this, names)
      class(MaplGenericComponent), intent(inout) :: this
+     character(*), intent(in) :: names(:)
+     class(AbstractFrameworkComponent), pointer :: child
+     integer :: num_children, i, rc
 
+     !$ if(omp_in_parallel()) then 
+        !$omp end parallel
+     !$ end if
+     
+     num_children = this%get_num_children()
+     do i = 1, num_children
+        child => this%get_child(names(i)) 
+        SELECT TYPE (child)
+        TYPE IS (MaplGenericComponent)
+           call child%deactivate_threading(names)
+        CLASS DEFAULT
+           _FAIL('illegal type for child')
+        END SELECT
+     end do
+     
      this%threading_active = .FALSE.
    end subroutine deactivate_threading
 
