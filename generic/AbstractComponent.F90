@@ -22,8 +22,6 @@ module mapl_AbstractComponent
       procedure(i_SetLogger), deferred :: set_logger
       procedure(i_GetLogger), deferred :: get_logger
 
-      procedure(i_GetState), deferred :: get_internal_state
-
    end type AbstractComponent
 
 
@@ -73,14 +71,6 @@ module mapl_AbstractComponent
          class(SurrogateFrameworkComponent), pointer :: framework
          class(AbstractComponent), intent(in) :: this
       end function i_GetFramework
-
-      function i_GetState(this) result(state)
-         use ESMF
-         import AbstractComponent
-         implicit none
-         type(ESMF_State), pointer :: state
-         class(AbstractComponent), target, intent(in) :: this
-      end function i_GetState
 
       subroutine i_RunChild(this, name, clock, phase, unusable, rc)
          use mapl_KeywordEnforcerMod
