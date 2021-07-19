@@ -13,6 +13,7 @@ module mapl_MaplGenericComponent
    use mapl_ErrorHandlingMod
    use pFlogger
    use mapl_OpenMP_Support
+   use mapl_MaplGrid
    implicit none
    private
 
@@ -27,6 +28,7 @@ module mapl_MaplGenericComponent
       logical :: threading_active = .FALSE.
       type(ESMF_State), allocatable :: import_substates(:)
       type(ESMF_State), allocatable :: export_substates(:)
+      type(MaplGrid) :: grid
       
 
    contains
@@ -49,6 +51,9 @@ module mapl_MaplGenericComponent
       procedure :: set_logger
       procedure :: is_threading_active
       procedure :: get_internal_state
+      procedure :: get_import_state
+      procedure :: get_export_state
+      procedure :: get_grid
    end type MaplGenericComponent
 
 contains
@@ -191,6 +196,27 @@ contains
 
       internal_state => this%internal_state
    end function get_internal_state
+
+   function get_import_state(this) result(import_state)
+     class(MaplGenericComponent), target, intent(in) :: this
+     type(ESMF_State), pointer :: import_state
+
+     import_state => this%import_state
+   end function get_import_state
+
+   function get_export_state(this) result(export_state)
+     class(MaplGenericComponent), target, intent(in) :: this
+     type(ESMF_State), pointer :: export_state
+
+     export_state => this%export_state
+   end function get_export_state
+
+   function get_grid(this) result(grid)
+     class(MaplGenericComponent), target, intent(in) :: this
+     type(MaplGrid), pointer :: grid
+
+     grid => this%grid
+   end function get_grid
 
 
    recursive subroutine activate_threading(this, names, num_threads) 
