@@ -77,12 +77,12 @@ module MAPL_OpenMP_Support
         integer :: local_count(3)
         integer :: status
         integer :: petMap(1,1,1)
-        integer :: myPet, section, i, j, k, count
+        integer :: myPet, section, i, j, k, count, size_
         type(ESMF_VM) :: vm
         real(kind=ESMF_KIND_R8), pointer :: new_lats(:,:), new_lons(:,:)
         real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
         real(kind=ESMF_KIND_R8), pointer :: new_corner_lats(:,:), new_corner_lons(:,:)
-        real(kind=ESMF_KIND_R8), pointer :: corner_lats(:,:), corner_lons(:,:)
+        real(kind=ESMF_KIND_R8), allocatable :: corner_lats(:,:), corner_lons(:,:)
         real(kind=ESMF_KIND_R8), allocatable :: lats1d(:), lons1d(:)
         character(len=ESMF_MAXSTR) :: name
    
@@ -138,13 +138,16 @@ module MAPL_OpenMP_Support
                 farrayPtr=new_lats, __RC__)
            new_lats = subset_array(lats, bounds(i))
 
-           allocate(new_corner_lons(local_count(1)+1, local_count(2)/size(bounds)+1))
-           allocate(new_corner_lats(local_count(1)+1, local_count(2)/size(bounds)+1))
-           ! MAPL_GridGetCorners(subgrids(i), new_corner_lons, new_corner_lats, __RC__)
-           new_corner_lons = subset_array(corner_lons, bounds(i))
-           new_corner_lats = subset_array(corner_lats, bounds(i))
+           allocate(new_corner_lons(size(new_lons,1)+1,size(new_lons,2)+1))
+           allocate(new_corner_lats(size(new_lats,1)+1,size(new_lats,2)+1))
+  
+           new_corner_lons = corner_lons(:,bounds(i)%min:bounds(i)%max+1) 
+           new_corner_lats = corner_lats(:,bounds(i)%min:bounds(i)%max+1)
 
            ! translate the 2d arrays into 1D arrays, lines 2462 to 2468 in base/Base/Base_implementation.F90
+           size_ = size(new_corner_lons, 1) * size(new_corner_lons, 2)
+           allocate(lons1d(size_))
+           allocate(lats1d(size_))
            count = 0
            do k=1,size(new_corner_lons,2)
               do j=1,size(new_corner_lons,1)
@@ -159,6 +162,9 @@ module MAPL_OpenMP_Support
                 itemCount = count, valueList=lons1d, __RC__)
            call ESMF_AttributeSet(subgrids(i), name='GridCornerLats:', &
                 itemCount = count, valueList=lats1d, __RC__)
+
+            deallocate(lons1d, lats1d)
+            deallocate(new_corner_lons, new_corner_lats)
         end do
 
     end function make_subgrids_from_bounds
