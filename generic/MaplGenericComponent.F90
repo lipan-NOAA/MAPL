@@ -18,6 +18,7 @@ module mapl_MaplGenericComponent
    private
 
    public :: MaplGenericComponent
+   public :: get_grid
 
    type, extends(BaseFrameworkComponent) :: MaplGenericComponent
 !!$      private
@@ -30,7 +31,7 @@ module mapl_MaplGenericComponent
       type(ESMF_State), allocatable :: export_substates(:)
       type(ESMF_State), allocatable :: internal_substates(:)
       type(MaplGrid) :: grid
-      type(ESMF_Grid), allocatable :: subgrids(:)
+      type(MaplGrid), allocatable :: subgrids(:)
       
 
    contains
@@ -46,6 +47,8 @@ module mapl_MaplGenericComponent
       
       procedure :: activate_threading
       procedure :: deactivate_threading
+
+      procedure :: create_subobjects
 
       ! accessors
 
@@ -244,14 +247,13 @@ contains
      else
         thread = 0
         !$ thread = omp_get_thread_num()
-        grid%ESMFGrid = this%subgrids(thread+1) ! subgrids is of type ESMF_Grid because of the return type of make_subgrids
+        grid => this%subgrids(thread+1) ! subgrids is of type ESMF_Grid because of the return type of make_subgrids
      end if
    end function get_grid
 
 
-   recursive subroutine activate_threading(this, names) 
+   recursive subroutine activate_threading(this) 
      class(MaplGenericComponent), intent(inout) :: this
-     character(*), intent(in) :: names(:)
      class(AbstractFrameworkComponent), pointer :: child
      integer :: num_children, i, rc, num_threads
       
@@ -266,16 +268,15 @@ contains
      num_threads = 1
      !$ num_threads = omp_get_num_threads()
 
-     this%import_substates = make_substates(this%import_state, num_threads) ! number for num_grids argument?
-     this%export_substates = make_substates(this%export_state, num_threads)
-     this%internal_substates = make_substates(this%internal_state, num_threads)
-     this%subgrids = make_subgrids(this%grid%ESMFGrid, num_threads) ! make_subgrids requires grid of type ESMF_Grid
+     if (.NOT. allocated(this%import_substates)) then
+        call this%create_subobjects(num_threads)
+     end if
 
      do i = 1, num_children
-        child => this%get_child(names(i)) 
+        child => this%get_child(i) 
         SELECT TYPE (child)
         TYPE IS (MaplGenericComponent)
-           call child%activate_threading(names)
+           call child%activate_threading()
         CLASS DEFAULT
            _FAIL('illegal type for child')
         END SELECT
@@ -284,9 +285,26 @@ contains
 
    end subroutine activate_threading
 
-   subroutine deactivate_threading(this, names)
+   subroutine create_subobjects(this, num_threads)
      class(MaplGenericComponent), intent(inout) :: this
-     character(*), intent(in) :: names(:)
+     integer, intent(in) :: num_threads
+     integer :: i, rc, status
+     type(ESMF_Grid), allocatable :: subgrids(:)
+
+     this%import_substates = make_substates(this%import_state, num_threads) ! number for num_grids argument?
+     this%export_substates = make_substates(this%export_state, num_threads)
+     this%internal_substates = make_substates(this%internal_state, num_threads)
+     subgrids = make_subgrids(this%grid%ESMFGrid, num_threads) ! make_subgrids requires grid of type ESMF_Grid
+
+     allocate(this%subgrids(size(subgrids)))
+     do i = 1, size(subgrids)
+        call this%subgrids(i)%set(subgrids(i), __RC__)
+     end do
+     deallocate(subgrids)
+   end subroutine create_subobjects
+
+   subroutine deactivate_threading(this)
+     class(MaplGenericComponent), intent(inout) :: this
      class(AbstractFrameworkComponent), pointer :: child
      integer :: num_children, i, rc
 
@@ -296,10 +314,10 @@ contains
      
      num_children = this%get_num_children()
      do i = 1, num_children
-        child => this%get_child(names(i)) 
+        child => this%get_child(i) 
         SELECT TYPE (child)
         TYPE IS (MaplGenericComponent)
-           call child%deactivate_threading(names)
+           call child%deactivate_threading()
         CLASS DEFAULT
            _FAIL('illegal type for child')
         END SELECT

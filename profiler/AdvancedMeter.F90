@@ -83,6 +83,7 @@ contains
    subroutine start(this)
       class(AdvancedMeter), intent(inout) :: this
 
+      !$omp master
       if (this%active) then
          this%status = MAPL_METER_START_ACTIVE
          return
@@ -91,6 +92,7 @@ contains
       this%active = .true.
 
       this%start_value = this%gauge%get_measurement()
+      !$omp end master
 
    end subroutine start
 
@@ -100,6 +102,7 @@ contains
 
       real(kind=REAL64) :: increment
       
+      !$omp master
       if (.not. this%active) then
          this%status = MAPL_METER_STOP_INACTIVE
          return
@@ -108,6 +111,7 @@ contains
       this%active = .false.
       increment = this%gauge%get_measurement() - this%start_value
       call this%add_cycle(increment)
+      !$omp end master
 
    end subroutine stop
 

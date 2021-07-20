@@ -124,6 +124,8 @@ module MAPL_GenericMod
   use MAPL_ExceptionHandling
   use MAPL_KeywordEnforcerMod
   use MAPL_StringTemplate
+  use MAPL_MaplGenericComponent
+  use MAPL_MaplGrid
   use mpi
   use netcdf
   use pFlogger, only: logging, Logger
@@ -3795,10 +3797,10 @@ end subroutine MAPL_DateStampGet
   ! !IIROUTINE: MAPL_GenericStateGet
 
   !INTERFACE:
-  subroutine MAPL_GenericStateGet (STATE, IM, JM, LM, VERTDIM,                &
+  subroutine MAPL_GenericStateGet (STATE, IM, JM, LM, VERTDIM,          &
                                    NX, NY, NX0, NY0, LAYOUT,                  &
                                    GCNames,                                   &
-                                   LONS, LATS, ORBIT, RUNALARM,               &
+                                   LONS, LATS, grid, ORBIT, RUNALARM,         &
                                    IMPORTspec, EXPORTspec, INTERNALspec,      &
                                    INTERNAL_ESMF_STATE,                       &
                                    TILETYPES, TILEKIND,                       &
@@ -3811,8 +3813,7 @@ end subroutine MAPL_DateStampGet
                                    childrens_names, childrens_gridcomps,      &
                                    childrens_import_states, childrens_export_states, &
                                    RC )
-
-
+    
     !ARGUMENTS:
     type (MAPL_MetaComp), target,   intent(INOUT) :: STATE
     type (ESMF_Alarm),    optional, intent(  OUT) :: RUNALARM
@@ -3823,6 +3824,7 @@ end subroutine MAPL_DateStampGet
     type (ESMF_DELayout), optional, intent(  OUT) :: LAYOUT
     real, pointer,        optional                :: LONS(:,:)
     real, pointer,        optional                :: LATS(:,:)
+    type(ESMF_Grid),      optional                :: grid
     integer,              optional, intent(  OUT) :: RC     ! Error code:
     type (MAPL_VarSpec),  optional, pointer       :: IMPORTspec(:)
     type (MAPL_VarSpec),  optional, pointer       :: EXPORTspec(:)
@@ -3910,6 +3912,7 @@ end subroutine MAPL_DateStampGet
       ORB2B_ECC_REF, ORB2B_ECC_RATE, &
       ORB2B_OBQ_REF, ORB2B_OBQ_RATE, &
       ORB2B_LAMBDAP_REF, ORB2B_LAMBDAP_RATE
+    type(MaplGrid), pointer :: temp_grid
 
      if(present(IM)) then
       IM=STATE%GRID%IM
@@ -4097,11 +4100,18 @@ end subroutine MAPL_DateStampGet
      endif
 
      if(present(LONS    )) then
-      LONS   =>STATE%GRID%LONS
+        temp_grid => STATE%get_grid()
+        LONS   => temp_grid%LONS
      endif
 
      if(present(LATS    )) then
-      LATS   =>STATE%GRID%LATS
+        temp_grid => STATE%get_grid()
+        LATS   => temp_grid%LATS
+     endif
+
+     if(present(grid)) then
+        temp_grid => STATE%get_grid()
+        grid = temp_grid%ESMFGrid
      endif
 
      if(present(IMPORTspec)) then
