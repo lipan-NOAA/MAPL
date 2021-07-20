@@ -6,10 +6,13 @@ module mapl_AbstractComposite
 
    type, abstract :: AbstractComposite
    contains
-      procedure(i_GetChild), deferred :: get_child
+      procedure(i_GetChild), deferred :: get_child_by_name
+      procedure(i_GetIthChild), deferred :: get_child_by_index
+      generic :: get_child => get_child_by_name, get_child_by_index
       procedure(i_AddChild), deferred :: add_child
       procedure(i_GetParent), deferred :: get_parent
       procedure(i_GetNum), deferred :: get_num_children
+      
 !!$      procedure :: is_leaf
 !!$      procedure :: is_root
 !!$      procedure :: get_height
@@ -20,9 +23,16 @@ module mapl_AbstractComposite
       function i_GetChild(this, name) result(child)
          import AbstractComposite
          class(AbstractComposite), pointer :: child
-         class(AbstractComposite), intent(in) :: this
+         class(AbstractComposite), target, intent(in) :: this
          character(*), intent(in) :: name
       end function i_GetChild
+
+      function i_GetIthChild(this, i) result(child)
+         import AbstractComposite
+         class(AbstractComposite), pointer :: child
+         class(AbstractComposite), target, intent(in) :: this
+         integer, intent(in) :: i
+      end function i_GetIthChild
 
       function i_AddChild(this, name, composite) result(child)
          import AbstractComposite

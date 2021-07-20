@@ -14,7 +14,7 @@ module mapl_ConcreteComposite
       class(ConcreteComposite), pointer :: parent => null()
    contains
       procedure :: add_child
-      procedure :: get_child
+      procedure :: get_child_by_name, get_child_by_index
       procedure :: get_parent
       procedure :: get_component
       procedure :: set_component
@@ -67,14 +67,40 @@ contains
 
    end function new_placeholder
 
-   function get_child(this, name) result(child)
+   function get_child_by_name(this, name) result(child)
       class(AbstractComposite), pointer :: child
-      class(ConcreteComposite), intent(in) :: this
+      class(ConcreteComposite), target, intent(in) :: this
       character(*), intent(in) :: name
 
       child => this%children%at(name)
 
-   end function get_child
+   end function get_child_by_name
+
+   function get_child_by_index(this, i) result(child)
+      class(AbstractComposite), pointer :: child
+      class(ConcreteComposite), target, intent(in) :: this
+      integer, intent(in) :: i
+      
+      type(StringCompositeMapIterator) :: iter
+      integer :: n
+      
+      child => null() ! safety
+      
+      n = 1
+      associate (b => this%children%begin(), e => this%children%end())
+        
+        iter = b
+        do while (iter /= e)
+           if (n == i) then
+              child => iter%value()
+              return
+           end if
+           n = n + 1
+           call iter%next()
+        end do
+      end associate
+      
+   end function get_child_by_index
 
 
    function add_child(this, name, composite) result(child)
