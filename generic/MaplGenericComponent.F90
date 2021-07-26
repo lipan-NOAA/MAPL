@@ -14,6 +14,7 @@ module mapl_MaplGenericComponent
    use pFlogger
    use mapl_OpenMP_Support
    use mapl_MaplGrid
+
    implicit none
    private
 
@@ -199,6 +200,7 @@ contains
       class(MaplGenericComponent), target, intent(in) :: this
       type(ESMF_State), pointer :: internal_state
       integer :: thread 
+      integer :: omp_get_thread_num
 
       if (.NOT. this%is_threading_active()) then
         internal_state => this%internal_state
@@ -213,6 +215,7 @@ contains
      class(MaplGenericComponent), target, intent(in) :: this
      type(ESMF_State), pointer :: import_state
      integer :: thread
+     integer :: omp_get_thread_num
 
      if (.NOT. this%is_threading_active()) then
         import_state => this%import_state
@@ -227,6 +230,7 @@ contains
      class(MaplGenericComponent), target, intent(in) :: this
      type(ESMF_State), pointer :: export_state
      integer :: thread
+     integer :: omp_get_thread_num
 
      if (.NOT. this%is_threading_active()) then
         export_state => this%export_state
@@ -241,6 +245,7 @@ contains
      class(MaplGenericComponent), target, intent(in) :: this
      type(MaplGrid), pointer :: grid
      integer :: thread
+     integer :: omp_get_thread_num
 
      if (.NOT. this%is_threading_active()) then
         grid => this%grid
@@ -256,12 +261,11 @@ contains
      class(MaplGenericComponent), intent(inout) :: this
      class(AbstractFrameworkComponent), pointer :: child
      integer :: num_children, i, rc, num_threads
+     integer :: omp_get_num_threads
+     logical :: omp_in_parallel
       
-     !$ if(.NOT. omp_in_parallel()) then 
-        !$omp parallel
-     !$ end if
-
-     !$omp serial
+   
+     !$omp single
      this%threading_active = .TRUE.
      num_children = this%get_num_children()
 
@@ -278,10 +282,10 @@ contains
         TYPE IS (MaplGenericComponent)
            call child%activate_threading()
         CLASS DEFAULT
-           _FAIL('illegal type for child')
+           !_FAIL('illegal type for child')
         END SELECT
      end do
-     !$omp end serial
+     !$omp end single
 
    end subroutine activate_threading
 
@@ -307,10 +311,8 @@ contains
      class(MaplGenericComponent), intent(inout) :: this
      class(AbstractFrameworkComponent), pointer :: child
      integer :: num_children, i, rc
+     logical :: omp_in_parallel
 
-     !$ if(omp_in_parallel()) then 
-        !$omp end parallel
-     !$ end if
      
      num_children = this%get_num_children()
      do i = 1, num_children

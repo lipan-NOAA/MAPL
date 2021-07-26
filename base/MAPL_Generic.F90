@@ -129,6 +129,8 @@ module MAPL_GenericMod
   use mpi
   use netcdf
   use pFlogger, only: logging, Logger
+  use MAPL_AbstractGridFactoryMod
+  use MAPL_GridManagerMod, only: grid_manager,get_factory
   use, intrinsic :: ISO_C_BINDING
   use, intrinsic :: iso_fortran_env, only: REAL32, REAL64, int32, int64
   use, intrinsic :: iso_fortran_env, only: OUTPUT_UNIT
@@ -5662,6 +5664,9 @@ end function MAPL_AddChildFromDSO
     character(len=ESMF_MAXSTR)            :: FileType
     integer                               :: isNC4
     logical                               :: isPresent
+    logical                               :: is_tile
+    class(AbstractGridFactory), pointer :: app_factory
+    class (AbstractGridFactory), allocatable :: file_factory
 
     _UNUSED_DUMMY(CLOCK)
 
@@ -5903,6 +5908,9 @@ end function MAPL_AddChildFromDSO
           call ArrDescrSetNCPar(arrdes,MPL,tile=.TRUE.,num_readers=mpl%grid%num_readers,RC=STATUS)
           _VERIFY(STATUS)
        else
+          app_factory => get_factory(MPL%GRID%ESMFGRID)
+          allocate(file_factory,source=grid_manager%make_factory(trim(filename)))
+          _ASSERT(file_factory%physical_params_are_equal(app_factory),"Factories not equal")
           call ArrDescrSetNCPar(arrdes,MPL,num_readers=mpl%grid%num_readers,RC=STATUS)
           _VERIFY(STATUS)
        end if PNC4_TILE
@@ -9931,7 +9939,6 @@ end subroutine MAPL_READFORCINGX
 
   
   subroutine MAPL_GridCreate(GC, MAPLOBJ, ESMFGRID, srcGC, rc)
-    use MAPL_GridManagerMod, only: grid_manager
     type(ESMF_GridComp), optional,         intent(INOUT) :: GC
     type (MAPL_MetaComp),optional, target, intent(INOUT) :: MAPLOBJ
     type (ESMF_Grid),    optional,         intent(  OUT) :: ESMFGRID
