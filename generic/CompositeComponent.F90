@@ -49,6 +49,10 @@ contains
       class(AbstractComposite), pointer :: child_node
 
       child_node => this%composite%get_child(i)
+      select type (child_node)
+      class is (ConcreteComposite)
+         child => child_node%get_component()
+      end select
       
    end function get_child_by_index
 

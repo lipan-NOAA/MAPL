@@ -257,68 +257,67 @@ contains
    end function get_grid
 
 
-   recursive subroutine activate_threading(this) 
+   recursive subroutine activate_threading(this, num_threads, unusable, rc) 
      class(MaplGenericComponent), intent(inout) :: this
+     integer, intent(in) :: num_threads
+     class(KeywordEnforcer), optional :: unusable
+     integer, optional, intent(out) :: rc
      class(AbstractFrameworkComponent), pointer :: child
-     integer :: num_children, i, rc, num_threads
-     integer :: omp_get_num_threads
-     logical :: omp_in_parallel
+     integer :: num_children, i, status
       
-   
-     !$omp single
      this%threading_active = .TRUE.
      num_children = this%get_num_children()
 
-     num_threads = 1
-     !$ num_threads = omp_get_num_threads()
-
      if (.NOT. allocated(this%import_substates)) then
-        call this%create_subobjects(num_threads)
+        call this%create_subobjects(num_threads, __RC__)
      end if
 
      do i = 1, num_children
         child => this%get_child(i) 
         SELECT TYPE (child)
-        TYPE IS (MaplGenericComponent)
-           call child%activate_threading()
+        CLASS IS (MaplGenericComponent)
+           call child%activate_threading(num_threads)
         CLASS DEFAULT
-           !_FAIL('illegal type for child')
+           _FAIL('illegal type for child')
         END SELECT
      end do
-     !$omp end single
-
+     _RETURN(0)
    end subroutine activate_threading
 
-   subroutine create_subobjects(this, num_threads)
+   subroutine create_subobjects(this, num_threads, unusable, rc)
      class(MaplGenericComponent), intent(inout) :: this
      integer, intent(in) :: num_threads
-     integer :: i, rc, status
+     class(KeywordEnforcer), optional, intent(in) :: unusable
+     integer, optional, intent(out) :: rc
+     integer :: i, status
      type(ESMF_Grid), allocatable :: subgrids(:)
+     real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
 
-     this%import_substates = make_substates(this%import_state, num_threads) ! number for num_grids argument?
-     this%export_substates = make_substates(this%export_state, num_threads)
-     this%internal_substates = make_substates(this%internal_state, num_threads)
-     subgrids = make_subgrids(this%grid%ESMFGrid, num_threads) ! make_subgrids requires grid of type ESMF_Grid
+     this%import_substates = make_substates(this%import_state, num_threads, __RC__) ! number for num_grids argument?
+     this%export_substates = make_substates(this%export_state, num_threads, __RC__)
+     this%internal_substates = make_substates(this%internal_state, num_threads, __RC__)
+     subgrids = make_subgrids(this%grid%ESMFGrid, num_threads, __RC__) ! make_subgrids requires grid of type ESMF_Grid
 
      allocate(this%subgrids(size(subgrids)))
      do i = 1, size(subgrids)
         call this%subgrids(i)%set(subgrids(i), __RC__)
      end do
      deallocate(subgrids)
+     _RETURN(0)
    end subroutine create_subobjects
 
-   subroutine deactivate_threading(this)
+   subroutine deactivate_threading(this, unusable, rc)
      class(MaplGenericComponent), intent(inout) :: this
+     class(KeywordEnforcer), optional :: unusable
+     integer, optional, intent(out) :: rc
      class(AbstractFrameworkComponent), pointer :: child
-     integer :: num_children, i, rc
-     logical :: omp_in_parallel
-
+     integer :: num_children, i
      
      num_children = this%get_num_children()
      do i = 1, num_children
         child => this%get_child(i) 
         SELECT TYPE (child)
-        TYPE IS (MaplGenericComponent)
+        CLASS IS (MaplGenericComponent)
            call child%deactivate_threading()
         CLASS DEFAULT
            _FAIL('illegal type for child')
@@ -326,6 +325,7 @@ contains
      end do
      
      this%threading_active = .FALSE.
+     _RETURN(0)
    end subroutine deactivate_threading
 
 end module mapl_MaplGenericComponent

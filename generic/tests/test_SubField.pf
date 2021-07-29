@@ -81,6 +81,8 @@ contains
            FieldSpec(field_name='B', im=5, tk_str='R8', rank=2, num_subgrids=2, nxy=[1,1], atts='A'), &
            FieldSpec(field_name='C', im=7, tk_str='I4', rank=3, num_subgrids=3, nxy=[1,1], atts='B'), &
            FieldSpec(field_name='D', im=7, tk_str='I8', rank=3, num_subgrids=3, nxy=[1,1], atts='C') &
+           FieldSpec(field_name='E', im=7, tk_str='I4', rank=4, num_subgrids=2, nxy=[1,1]), &
+           FieldSpec(field_name='F', im=7, tk_str='R4', rank=4, num_subgrids=3, nxy=[1,1]), &
            ]
 
    end function make_parameters
@@ -147,7 +149,7 @@ contains
       class(SubFieldTest), intent(inout) :: this
       type(CubedSphereGridFactory) :: cs_factory
 
-      integer :: status, i, j
+      integer :: status, i, j, k
       integer :: local_count(3)
       real(kind=ESMF_KIND_R8), pointer :: lats(:,:), lons(:,:)
 
@@ -161,7 +163,13 @@ contains
       integer(kind=ESMF_KIND_I4), pointer :: ptr_3d_i4(:,:,:)
       integer(kind=ESMF_KIND_I8), pointer :: ptr_3d_i8(:,:,:)
 
+      real(kind=ESMF_KIND_R4), pointer :: ptr_4d_r4(:,:,:,:)
+      real(kind=ESMF_KIND_R8), pointer :: ptr_4d_r8(:,:,:,:)
+      integer(kind=ESMF_KIND_I4), pointer :: ptr_4d_i4(:,:,:,:)
+      integer(kind=ESMF_KIND_I8), pointer :: ptr_4d_i8(:,:,:,:)
+
       integer, allocatable :: data(:,:,:)
+      integer, allocatable :: data_4d(:,:,:,:)
 
       call build_grid_subgrids()
 
@@ -181,6 +189,13 @@ contains
               indexflag=ESMF_INDEX_DELOCAL, &
               ungriddedLBound=[1], ungriddedUBound=[LM], &
               staggerloc=ESMF_STAGGERLOC_CENTER, _RC)
+
+      case (4)
+         this%field = ESMF_FieldCreate(grid=this%grid, typekind=this%typekind, &
+              name=this%field_name, &
+              indexflag=ESMF_INDEX_DELOCAL, &
+              ungriddedLBound=[1], ungriddedUBound=[LM], &
+              staggerloc=ESMF_STAGGERLOC_CENTER, _RC)
          
       end select
 
@@ -192,15 +207,27 @@ contains
          end do
       end do
 
+      allocate(data(local_count(1), local_count(2), local_count(3), LM))
+      do k = 1, local_count(3)
+         do j = 1, local_count(2)
+            do i = 1, local_count(1)
+               data(i,j,k,:) = f(i,j)
+            end do
+         end do
+      end do
+
       select case(this%tk_str)
       case ('R4')
          if (this%rank == 2) then
             call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_2d_r4, _RC)
             ptr_2d_r4 = data(:,:,1)
-         else ! rank 3
+         else if (this%rank == 3) ! rank 3
             call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_3d_r4, _RC)
             
             ptr_3d_r4 = data
+         else
+            call ESMF_FieldGet(this%field, localDe=0, farrayPtr=ptr_4d_r4, _RC)
+            
          end if
       case ('R8')
          if (this%rank == 2) then 

@@ -54,10 +54,11 @@ module MAPL_OpenMP_Support
 
     CONTAINS 
 
-    function make_subgrids_from_num_grids(primary_grid, num_grids, rc) result(subgrids)
+    function make_subgrids_from_num_grids(primary_grid, num_grids, unusable, rc) result(subgrids)
         type(ESMF_Grid), allocatable :: subgrids(:)
         type(ESMF_Grid), intent(inout) :: primary_grid
         integer, intent(in) :: num_grids
+        class(KeywordEnforcer), optional, intent(in) :: unusable
         integer, optional, intent(out) :: rc
         integer :: local_count(3)
         integer :: status
@@ -69,10 +70,11 @@ module MAPL_OpenMP_Support
         _RETURN(ESMF_SUCCESS)
     end function make_subgrids_from_num_grids
 
-    function make_subgrids_from_bounds(primary_grid, bounds, rc) result(subgrids)
+    function make_subgrids_from_bounds(primary_grid, bounds, unusable, rc) result(subgrids)
         type(ESMF_Grid), allocatable :: subgrids(:)
         type(ESMF_Grid), intent(inout) :: primary_grid ! inout to use MAPL_GridGetCorners
         type(Interval), intent(in) :: bounds(:)
+        class(KeywordEnforcer), optional, intent(in) :: unusable
         integer, optional, intent(out) :: rc
         integer :: local_count(3)
         integer :: status
@@ -87,6 +89,10 @@ module MAPL_OpenMP_Support
         character(len=ESMF_MAXSTR) :: name
    
         call ESMF_GridGet(primary_grid, name=name, __RC__)
+         !print*, 'Printing bounds for ', trim(name)
+        !do i = 1, size(bounds)
+        !   print*, trim(name), ',', i, ':', 'Bounds min:', bounds(i)%min, 'Bounds max:', bounds(i)%max
+        !end do
 
         allocate(subgrids(size(bounds)))
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
@@ -166,7 +172,7 @@ module MAPL_OpenMP_Support
             deallocate(lons1d, lats1d)
             deallocate(new_corner_lons, new_corner_lats)
         end do
-
+        _RETURN(ESMF_SUCCESS)
     end function make_subgrids_from_bounds
         
 
@@ -188,10 +194,11 @@ module MAPL_OpenMP_Support
    !     _RETURN(ESMF_SUCCESS)
    ! end function make_subfields_from_num_grids
 
-    function make_subfields_from_num_grids(primary_field, num_subgrids, rc) result(subfields)
+    function make_subfields_from_num_grids(primary_field, num_subgrids, unusable, rc) result(subfields)
         type(ESMF_Field), allocatable :: subfields(:)
         type(ESMF_Field), intent(in) :: primary_field
         integer, intent(in) :: num_subgrids
+        class(KeywordEnforcer), optional, intent(in) :: unusable
         integer, optional, intent(out) :: rc
         integer :: status, i
         real(kind=ESMF_KIND_R4), pointer :: old_ptr_2d_r4(:,:)
@@ -202,14 +209,22 @@ module MAPL_OpenMP_Support
         real(kind=ESMF_KIND_R4), pointer :: new_ptr_3d_r4(:,:,:)
         real(kind=ESMF_KIND_R8), pointer :: old_ptr_3d_r8(:,:,:)
         real(kind=ESMF_KIND_R8), pointer :: new_ptr_3d_r8(:,:,:)
+        real(kind=ESMF_KIND_R4), pointer :: old_ptr_4d_r4(:,:,:,:)
+        real(kind=ESMF_KIND_R4), pointer :: new_ptr_4d_r4(:,:,:,:)
+        real(kind=ESMF_KIND_R8), pointer :: old_ptr_4d_r8(:,:,:,:)
+        real(kind=ESMF_KIND_R8), pointer :: new_ptr_4d_r8(:,:,:,:)
         integer(kind=ESMF_KIND_I4), pointer :: old_ptr_2d_i4(:,:)
         integer(kind=ESMF_KIND_I4), pointer :: new_ptr_2d_i4(:,:)
         integer(kind=ESMF_KIND_I4), pointer :: old_ptr_3d_i4(:,:,:)
         integer(kind=ESMF_KIND_I4), pointer :: new_ptr_3d_i4(:,:,:)
+        integer(kind=ESMF_KIND_I4), pointer :: old_ptr_4d_i4(:,:,:,:)
+        integer(kind=ESMF_KIND_I4), pointer :: new_ptr_4d_i4(:,:,:,:)
         integer(kind=ESMF_KIND_I8), pointer :: old_ptr_2d_i8(:,:)
         integer(kind=ESMF_KIND_I8), pointer :: new_ptr_2d_i8(:,:)
         integer(kind=ESMF_KIND_I8), pointer :: old_ptr_3d_i8(:,:,:)
         integer(kind=ESMF_KIND_I8), pointer :: new_ptr_3d_i8(:,:,:)
+        integer(kind=ESMF_KIND_I4), pointer :: old_ptr_4d_i8(:,:,:,:)
+        integer(kind=ESMF_KIND_I4), pointer :: new_ptr_4d_i8(:,:,:,:)
         type(ESMF_TypeKind_Flag) :: typekind
         integer :: rank
         integer :: local_count(3)
@@ -217,12 +232,14 @@ module MAPL_OpenMP_Support
         type(ESMF_Grid), allocatable :: subgrids(:)
         type(Interval), allocatable :: bounds(:)
         type(ESMF_Grid) :: primary_grid
+         
 
         call ESMF_FieldGet(primary_field, grid=primary_grid, typekind=typekind, rank=rank, name=name,  __RC__)
+        !print*, 'No failure with field named:', name
         call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
        
         bounds = find_bounds(local_count(2), num_subgrids)
-        subgrids = make_subgrids(primary_grid, num_subgrids)
+        subgrids = make_subgrids(primary_grid, num_subgrids, __RC__)
         allocate(subfields(size(bounds)))
         
         ! 2d, r4
@@ -261,6 +278,24 @@ module MAPL_OpenMP_Support
               call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
            end do
 
+        ! 4d, r4
+        else if (typekind == ESMF_TYPEKIND_R4 .AND. rank == 4) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_4d_r4,  __RC__)
+           do i = 1, size(bounds)
+              new_ptr_4d_r4 => old_ptr_4d_r4(:,bounds(i)%min:bounds(i)%max,:,:)
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_r4, name=name,  __RC__) 
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+           end do
+
+        ! 4d, r8
+        else if (typekind == ESMF_TYPEKIND_R8 .AND. rank == 4) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_4d_r8,  __RC__)
+           do i = 1, size(bounds)
+              new_ptr_4d_r8 => old_ptr_4d_r8(:,bounds(i)%min:bounds(i)%max,:,:)
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_r8, name=name,  __RC__) 
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+           end do
+
         ! 2d, i4
         else if (typekind == ESMF_TYPEKIND_I4 .AND. rank == 2) then
            call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_2d_i4, __RC__)
@@ -279,6 +314,15 @@ module MAPL_OpenMP_Support
               call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
            end do
 
+        ! 4d, i4
+        else if (typekind == ESMF_TYPEKIND_I4 .AND. rank == 4) then
+           call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_4d_i4,  __RC__)
+           do i = 1, size(bounds)
+              new_ptr_4d_i4 => old_ptr_4d_i4(:,bounds(i)%min:bounds(i)%max,:,:) 
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_i4, name=name, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+           end do
+
         ! 2d, i8
         else if (typekind == ESMF_TYPEKIND_I8 .AND. rank == 2) then
             call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_2d_i8,  __RC__)
@@ -294,6 +338,15 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_3d_i8 => old_ptr_3d_i8(:,bounds(i)%min:bounds(i)%max,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_i8, name=name, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+           end do
+
+        ! 4d, i8
+        else if (typekind == ESMF_TYPEKIND_I8 .AND. rank == 4) then
+            call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_4d_i8,  __RC__)
+           do i = 1, size(bounds)
+              new_ptr_4d_i8 => old_ptr_4d_i8(:,bounds(i)%min:bounds(i)%max,:,:) 
+              subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_i8, name=name, __RC__)
               call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
            end do
         
@@ -402,6 +455,7 @@ module MAPL_OpenMP_Support
       type(ESMF_Field) :: field
       type(ESMF_FieldBundle) :: bundle
       type(ESMF_State) :: nested_state
+      type (ESMF_FieldStatus_Flag) :: fieldStatus
 
       allocate(substates(num_subgrids))
       ! get information about state contents in order they were added
@@ -420,6 +474,9 @@ module MAPL_OpenMP_Support
       do i = 1, count
          if (item_types(i) == ESMF_STATEITEM_FIELD) then
             call ESMF_StateGet(state, item_names(i), field, __RC__)
+            call ESMF_FieldGet(field, status=fieldStatus, __RC__)
+            if (fieldStatus /= ESMF_FIELDSTATUS_COMPLETE) cycle
+
             subfields = make_subfields(field, num_subgrids, __RC__)
             ! add subfields to appropriate substate
             do j = 1, size(subfields)
