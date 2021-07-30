@@ -11100,7 +11100,7 @@ end subroutine MAPL_GenericStateRestore
       class(MaplGenericComponent), pointer :: child
       
       child => this%get_ith_child(i)
-      state => child%import_state
+      state => child%get_import_state()
 
    end function get_child_import_state
 
@@ -11112,7 +11112,7 @@ end subroutine MAPL_GenericStateRestore
       class(MaplGenericComponent), pointer :: child
       
       child => this%get_ith_child(i)
-      state => child%export_state
+      state => child%get_export_state()
 
    end function get_child_export_state
 

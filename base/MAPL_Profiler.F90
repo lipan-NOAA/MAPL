@@ -63,8 +63,9 @@
 
 !********************************************************
     logical function MAPL_ProfIsDisabled()
+      !$omp master
       MAPL_ProfIsDisabled = DISABLED
-
+      !$omp end master
     end function MAPL_ProfIsDisabled
 
 !********************************************************
@@ -78,9 +79,8 @@
 
       integer :: I, NN
       integer :: status
-
+      !$omp master
       if(.not.DISABLED) then
-
          NN = size(TIMES)
 
          I=1
@@ -90,11 +90,11 @@
             endif
             I=I+1
          enddo
-
          if(I>NN) then
             print *, 'ERROR: Timer '//trim(NAME)//' needs to be set first'
-            _RETURN(ESMF_FAILURE)
-         end if
+            !_RETURN(ESMF_FAILURE)
+         else
+         
      
 #ifdef _CUDA
          status = cudaDeviceSynchronize()
@@ -103,9 +103,10 @@
             call ESMF_VMBarrier(VM, rc=status)
          end if
          call SYSTEM_CLOCK(TIMES(I)%START_TIME)  
+         end if
 
       end if
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
     
     end subroutine MAPL_ProfClockOn
@@ -122,8 +123,9 @@
       integer(kind=INT64) :: COUNTS
       integer :: I, NN
       integer :: status
-
+      !$omp master
       if(.not.DISABLED) then
+         
 
          NN = size(TIMES)
 
@@ -134,12 +136,12 @@
             endif
             I=I+1
          enddo
-
+         
          if(I>NN) then
             print *, 'ERROR: Timer '//trim(NAME)//' needs to be set first'
-            _RETURN(ESMF_FAILURE)
-         end if
-
+            !_RETURN(ESMF_FAILURE)
+         
+         else
 #ifdef _CUDA
          status = cudaDeviceSynchronize()
 #endif
@@ -155,12 +157,10 @@
          endif
 
          TIMES(I)%CUMM_TIME = TIMES(I)%CUMM_TIME + real(COUNTS,kind=REAL64)*CRI
-
+      endif
       end if
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
-
-      
     end subroutine MAPL_ProfClockOff
 
 !********************************************************
@@ -174,6 +174,7 @@
       type (MAPL_Prof), pointer :: TMP(:)
       integer :: I, STATUS
 
+      !$omp master
       if (FIRSTTIME) then
          FIRSTTIME = .false.
          call ESMF_VMGetCurrent(VM, rc=STATUS)
@@ -195,9 +196,8 @@
       endif
       TMP(I+1) = MAPL_Prof(trim(NAME),0,0.D0)
       TIMES => TMP
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
-      
     end subroutine MAPL_ProfSet
 
 !********************************************************
@@ -219,6 +219,7 @@
       real(kind=REAL64), allocatable :: TEMP_TIME(:)
       integer :: nPet 
 
+      !$omp master
       amIroot = MAPL_AM_I_Root(vm)
       call ESMF_VMGet(VM,petCount=nPet,rc=status)
       _VERIFY(STATUS)
@@ -311,7 +312,7 @@
             if (timerMode == MAPL_TimerModeMinMax) deallocate(MEAN_CUMM_TIME)
          end if
       end if
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
       
     end subroutine MAPL_ProfWrite
@@ -322,9 +323,9 @@
       integer, optional, intent(OUT)   :: RC
 
       character(len=ESMF_MAXSTR), parameter :: IAm="MAPL_ProfDisable"
-
+      !$omp master
       DISABLED = .true.
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
       
     end subroutine MAPL_ProfDisable
@@ -335,9 +336,9 @@
       integer, optional, intent(OUT)   :: RC
 
       character(len=ESMF_MAXSTR), parameter :: IAm="MAPL_ProfEnable"
-
+      !$omp master
       DISABLED = .false.
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
       
     end subroutine MAPL_ProfEnable
@@ -350,10 +351,11 @@
 
       character(len=ESMF_MAXSTR), parameter :: IAm="MAPL_ProfModeSet"
 
+      !$omp master
       ! Sanity check
       timerMode = mode
       _ASSERT(timerMode >= MAPL_TimerModeOld .and. timerMode <= MAPL_TimerModeMinMax,'needs informative message')
-
+      !$omp end master
       _RETURN(ESMF_SUCCESS)
       
     end subroutine MAPL_TimerModeSet
