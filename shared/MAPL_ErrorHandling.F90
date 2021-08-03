@@ -78,9 +78,9 @@ contains
       fail = .not. condition
 
       if (fail) then
-         !$omp critical
+         !$omp critical (MAPL_ErrorHandling1)
          call MAPL_throw_exception(filename, line, message=message)
-         !$omp end critical
+         !$omp end critical (MAPL_ErrorHandling1)
          if (present(rc)) rc = return_code
       end if
 
@@ -99,9 +99,9 @@ contains
 
       if (fail) then
          message = get_error_message(return_code)
-         !$omp critical
+         !$omp critical (MAPL_ErrorHandling2)
          call MAPL_throw_exception(filename, line, message=message)
-         !$omp end critical
+         !$omp end critical (MAPL_ErrorHandling2)
          if (present(rc)) rc = return_code
       end if
 
@@ -124,9 +124,9 @@ contains
       if (fail) then
          write(status_string,'(i0)') status
          message = 'status=' // status_string
-         !$omp critical
+         !$omp critical (MAPL_ErrorHandling3)
          call MAPL_throw_exception(filename, line, message=message)
-         !$omp end critical
+         !$omp end critical (MAPL_ErrorHandling3)
          if (present(rc)) rc = status
       end if
       
@@ -147,9 +147,9 @@ contains
 
       if (fail) then
          message = get_error_message(status)
-         !$omp critical
+         !$omp critical (MAPL_ErrorHandling4)
          call MAPL_throw_exception(filename, line, message=message)
-         !$omp end critical
+         !$omp end critical (MAPL_ErrorHandling4)
       end if
       ! Regardless of error:
       if (present(rc)) rc = status 
@@ -163,9 +163,9 @@ contains
       integer, optional, intent(OUT) :: RC
 
         MAPL_RTRN = .true.
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling5)
         if(A/=0) print '(A40,I10)',Iam,line
-        !$omp end critical
+        !$omp end critical (MAPL_ErrorHandling5)
         if(present(RC)) RC=A
    end function MAPL_RTRN
 
@@ -177,9 +177,9 @@ contains
         MAPL_VRFY = A/=0
         if(MAPL_VRFY)then
           if(present(RC)) then
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling6)
             print '(A40,I10)',Iam,line
-            !$omp end critical
+            !$omp end critical (MAPL_ErrorHandling6)
             RC=A
           endif
         endif
@@ -193,9 +193,9 @@ contains
         MAPL_ASRT = .not.A
         if(MAPL_ASRT)then
           if(present(RC))then
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling7)
             print '(A40,I10)',Iam,LINE
-            !$omp end critical
+            !$omp end critical (MAPL_ErrorHandling7)
             RC=1
           endif
         endif
@@ -207,9 +207,9 @@ contains
       integer,           intent(IN ) :: line
       integer, optional, intent(OUT) :: RC
         MAPL_ASRTt =   MAPL_ASRT(A,iam,line,rc)
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling8)
         if(MAPL_ASRTt) print *, text
-        !$omp end critical
+        !$omp end critical (MAPL_ErrorHandling8)
    end function MAPL_ASRTT
 
    logical function MAPL_RTRNt(A,text,iam,line,rc)
@@ -220,10 +220,10 @@ contains
 
         MAPL_RTRNt = .true.
         if(A/=0)then
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling9)
            print '(A40,I10)',Iam,line
            print *, text
-           !$omp end critical
+           !$omp end critical (MAPL_ErrorHandling9)
         end if
         if(present(RC)) RC=A
 
@@ -235,9 +235,9 @@ contains
       integer,           intent(IN ) :: line
       integer, optional, intent(OUT) :: RC
         MAPL_VRFYt =  MAPL_VRFY(A,iam,line,rc)
-        !$omp critical
+        !$omp critical (MAPL_ErrorHandling10)
         if(MAPL_VRFYt) print *, text
-        !$omp end critical
+        !$omp end critical (MAPL_ErrorHandling10)
    end function MAPL_VRFYT
 
    subroutine MAPL_abort
