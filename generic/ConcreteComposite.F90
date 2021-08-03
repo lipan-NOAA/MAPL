@@ -2,6 +2,7 @@ module mapl_ConcreteComposite
    use mapl_AbstractFrameworkComponent
    use mapl_AbstractComposite
    use mapl_StringCompositeMap
+   use gFTL_StringVector
    implicit none
    private
 
@@ -11,6 +12,7 @@ module mapl_ConcreteComposite
       private
       class(AbstractFrameworkComponent), allocatable :: component
       type(StringCompositeMap) :: children
+      type(StringVector) :: children_names
       class(ConcreteComposite), pointer :: parent => null()
    contains
       procedure :: add_child
@@ -81,24 +83,10 @@ contains
       class(ConcreteComposite), target, intent(in) :: this
       integer, intent(in) :: i
       
-      type(StringCompositeMapIterator) :: iter
-      integer :: n
+      character(:), pointer :: child_name
       
-      child => null() ! safety
-      
-      n = 1
-      associate (b => this%children%begin(), e => this%children%end())
-        
-        iter = b
-        do while (iter /= e)
-           if (n == i) then
-              child => iter%value()
-              return
-           end if
-           n = n + 1
-           call iter%next()
-        end do
-      end associate
+      child_name => this%children_names%of(i)
+      child => this%get_child(child_name)
       
    end function get_child_by_index
 
@@ -109,6 +97,7 @@ contains
       character(*), intent(in) :: name
       class(AbstractComposite), intent(in) :: composite
 
+      call this%children_names%push_back(name)
       call this%children%insert(name, composite)
       child => this%children%at(name)
 

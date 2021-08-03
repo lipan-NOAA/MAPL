@@ -30,6 +30,9 @@ set (srcs
     )
 
 esma_add_library (${this} SRCS ${srcs} DEPENDENCIES GFTL_SHARED::gftl-shared MPI::MPI_Fortran PFLOGGER::pflogger TYPE ${MAPL_LIBRARY_TYPE})
+if (OMP) 
+  target_link_libraries(${this} PRIVATE OpenMP::OpenMP_Fortran)
+endif()
 
 target_include_directories (${this} PUBLIC $<BUILD_INTERFACE:${MAPL_SOURCE_DIR}/include>)
 

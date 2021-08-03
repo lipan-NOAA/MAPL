@@ -475,9 +475,11 @@ module MAPL_OpenMP_Support
          if (item_types(i) == ESMF_STATEITEM_FIELD) then
             call ESMF_StateGet(state, item_names(i), field, __RC__)
             call ESMF_FieldGet(field, status=fieldStatus, __RC__)
-            if (fieldStatus /= ESMF_FIELDSTATUS_COMPLETE) cycle
-
-            subfields = make_subfields(field, num_subgrids, __RC__)
+            if (fieldStatus /= ESMF_FIELDSTATUS_COMPLETE) then
+               subfields = spread(field, dim=1, ncopies=num_subgrids)
+            else
+               subfields = make_subfields(field, num_subgrids, __RC__)
+            end if
             ! add subfields to appropriate substate
             do j = 1, size(subfields)
                call ESMF_StateAdd(substates(j), subfields(j:j), __RC__)

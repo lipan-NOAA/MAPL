@@ -41,8 +41,9 @@ esma_add_library(${this} SRCS ${srcs} DEPENDENCIES MAPL.shared PFLOGGER::pflogge
 target_include_directories (${this} PUBLIC
   $<BUILD_INTERFACE:${MAPL_SOURCE_DIR}/include>)
 target_link_libraries (${this} PUBLIC esmf NetCDF::NetCDF_Fortran)
-target_link_libraries (${this} PRIVATE OpenMP::OpenMP_Fortran)
-#target_compile_options (${this} PRIVATE OpenMP::OpenMP_Fortran)
+#if (OMP) 
+#target_link_libraries (${this} PRIVATE OpenMP::OpenMP_Fortran)
+#endif()
 
 if (PFUNIT_FOUND)
   add_subdirectory(tests EXCLUDE_FROM_ALL)
