@@ -100,6 +100,9 @@ target_link_libraries (Split_Grid.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBR
 if (NOT CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
    target_link_libraries(Split_Grid.x PRIVATE OpenMP::OpenMP_Fortran)
 endif ()
+if (OMP)                                                                               
+   target_link_libraries (${this} PRIVATE OpenMP::OpenMP_Fortran)                     
+endif()              
 
 ecbuild_add_executable (TARGET Regrid_Util.x SOURCES Regrid_Util.F90 DEPENDS esmf)
 target_link_libraries (Regrid_Util.x PRIVATE ${this} MAPL.pfio ${MPI_Fortran_LIBRARIES})

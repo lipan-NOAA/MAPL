@@ -242,8 +242,11 @@ module MAPL_OpenMP_Support
         subgrids = make_subgrids(primary_grid, num_subgrids, __RC__)
         allocate(subfields(size(bounds)))
         
+        ! 1d, r4 or r8
+        if (rank == 1) then
+           subfields = spread(primary_field, dim=1, ncopies=num_subgrids)
         ! 2d, r4
-        if (typekind == ESMF_TYPEKIND_R4 .AND. rank == 2) then
+        else if (typekind == ESMF_TYPEKIND_R4 .AND. rank == 2) then
            call ESMF_FieldGet(field=primary_field, localDe=0, farrayPtr=old_ptr_2d_r4,  __RC__)
            do i = 1, size(bounds)
               new_ptr_2d_r4 => old_ptr_2d_r4(:,bounds(i)%min:bounds(i)%max)
