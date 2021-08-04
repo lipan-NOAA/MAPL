@@ -115,7 +115,7 @@ module MAPL_OpenMP_Support
                 __RC__)
 
            call ESMF_GridAddCoord(grid=subgrids(i), staggerloc=ESMF_STAGGERLOC_CENTER, __RC__)
-           call ESMF_AttributeCopy(primary_grid, subgrids(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+           call ESMF_AttributeCopy(primary_grid, subgrids(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
 
            ! delete corner lon/lat atttributes in the subgrid
            call ESMF_AttributeRemove(subgrids(i), name='GridCornerLons:') 
