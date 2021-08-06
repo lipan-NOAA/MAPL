@@ -3695,6 +3695,10 @@ end subroutine MAPL_DateStampGet
        phase = MAPL_AddMethod(META%phase_init, RC=STATUS)
     else if (registeredMethod == ESMF_METHOD_RUN) then
        phase = MAPL_AddMethod(META%phase_run, RC=STATUS)
+       if (phase == MAPL_FirstPhase) then
+          META%run_entry_point => usersRoutine
+       end if
+
     else if (registeredMethod == ESMF_METHOD_FINALIZE) then
        phase = MAPL_AddMethod(META%phase_final, RC=STATUS)
     else if (registeredMethod == ESMF_METHOD_WRITERESTART) then
@@ -3906,6 +3910,7 @@ end subroutine MAPL_DateStampGet
     integer                               :: EQNX
     logical                               :: FIX_SUN
     character(len=ESMF_MAXSTR)            :: gname
+    integer :: i, nc
 
     logical :: EOT, ORBIT_ANAL2B
     integer :: ORB2B_REF_YYYYMMDD, ORB2B_REF_HHMMSS, &
@@ -4184,69 +4189,69 @@ end subroutine MAPL_DateStampGet
      endif
 
      if(present(GCS)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(GCS(nc))
           do i = 1, nc
              GCS(i) = STATE%get_child_gridcomp(i)
           end do
-        end block
+!!$        end block
      endif
 
      if(present(childrens_gridcomps)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(childrens_gridcomps(nc))
           do i = 1, nc
              childrens_gridcomps(i) = STATE%get_child_gridcomp(i)
           end do
-        end block
+!!$        end block
      endif
 
      if(present(GIM)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(GIM(nc))
           do i = 1, nc
              GIM(i) = state%get_child_import_state(i)
           end do
-        end block
+!!$        end block
      endif
 
      if(present(childrens_import_states)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(childrens_import_states(nc))
           do i = 1, nc
              childrens_import_states(i) = state%get_child_import_state(i)
           end do
-        end block
+!!$        end block
      endif
 
      if(present(GEX)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(GEX(nc))
           do i = 1, nc
              GEX(i) = state%get_child_export_state(i)
           end do
-        end block
+!!$        end block
      endif
 
      if(present(childrens_export_states)) then
-        block
-          integer i, nc
+!!$        block
+!!$          integer i, nc
           nc = STATE%get_num_children()
           allocate(childrens_export_states(nc))
           do i = 1, nc
              childrens_export_states(i) = state%get_child_export_state(i)
           end do
-        end block
+!!$        end block
      endif
      if(present(HEARTBEAT)) then
       HEARTBEAT = STATE%HEARTBEAT
@@ -4277,7 +4282,7 @@ end subroutine MAPL_DateStampGet
     use mapl_AbstractComposite
     use mapl_ConcreteComposite
     !ARGUMENTS:
-    type (MAPL_MetaComp),            intent(INOUT) :: STATE
+    type (MAPL_MetaComp), target,    intent(INOUT) :: STATE
     type (ESMF_Alarm),     optional, intent(IN   ) :: RUNALARM
     type (MAPL_SunOrbit),  optional, intent(IN   ) :: ORBIT
     integer,               optional, intent(IN   ) :: LM
@@ -4618,7 +4623,7 @@ end subroutine MAPL_DateStampGet
      
      META%GCNameList(I) = trim(FNAME)
 
-     gridcomp => child_meta%gridcomp
+     gridcomp => child_meta%get_gridcomp()
      if (present(configfile)) then
         gridcomp = ESMF_GridCompCreate   (     &
              NAME   = trim(FNAME),                 &
@@ -4813,7 +4818,7 @@ recursive integer function MAPL_AddChildFromDSO(NAME, userRoutine, grid, ParentG
 
         META%GCNameList(I) = trim(FNAME)
 
-        gridcomp => child_meta%gridcomp
+        gridcomp => child_meta%get_gridcomp()
         if (present(configfile)) then
            gridcomp = ESMF_GridCompCreate   (     &
                 NAME   = trim(FNAME),                 &
@@ -11088,7 +11093,7 @@ end subroutine MAPL_GenericStateRestore
       class(MaplGenericComponent), pointer :: child
       
       child => this%get_ith_child(i)
-      gridcomp => child%gridcomp
+      gridcomp => child%get_gridcomp()
       
    end function get_child_gridcomp
 

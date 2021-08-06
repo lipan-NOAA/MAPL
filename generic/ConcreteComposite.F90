@@ -57,7 +57,7 @@ contains
    subroutine initialize(this, component)
       class(ConcreteComposite), intent(inout) :: this
       class(AbstractFrameworkComponent), intent(in) :: component
-      this%component = component
+      allocate(this%component, source=component)
       this%parent => null()
    end subroutine initialize
 

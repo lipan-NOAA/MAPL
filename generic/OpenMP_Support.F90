@@ -29,16 +29,6 @@ module MAPL_OpenMP_Support
         module procedure make_subgrids_from_bounds
     end interface make_subgrids
 
-    interface
-       function i_make_subfields(primary_field, num_subgrids, rc) result(subfields)
-           use ESMF
-           implicit none
-           type(ESMF_Field), allocatable :: subfields(:)
-           type(ESMF_Field), intent(in) :: primary_field
-           integer, intent(in) :: num_subgrids
-           integer, optional, intent(out) :: rc
-       end function i_make_subfields
-    end interface
 
     interface  make_subfields
        module procedure make_subfields_from_num_grids
@@ -176,24 +166,6 @@ module MAPL_OpenMP_Support
     end function make_subgrids_from_bounds
         
 
-   ! function make_subfields_from_num_grids(primary_field, primary_grid, subgrids, num_grids, rc) result(subfields)
-   !     type(ESMF_Field), allocatable :: subfields(:)
-   !     type(ESMF_Field), intent(in) :: primary_field
-   !     type(ESMF_Grid), intent(in) :: primary_grid
-   !     type(ESMF_Grid), intent(in) :: subgrids(:)
-   !     integer, intent(in) :: num_grids
-   !     integer, optional, intent(out) :: rc
-   !     integer :: status
-   !     integer :: local_count(3)
-   !     type(Interval), allocatable :: bounds(:)
-
-   !     call MAPL_GridGet(primary_grid,localcellcountPerDim=local_count, __RC__)
-   !     bounds = find_bounds(local_count(2), num_grids)
-   !     subfields = make_subfields(primary_field, subgrids, bounds, __RC__)
-
-   !     _RETURN(ESMF_SUCCESS)
-   ! end function make_subfields_from_num_grids
-
     function make_subfields_from_num_grids(primary_field, num_subgrids, unusable, rc) result(subfields)
         type(ESMF_Field), allocatable :: subfields(:)
         type(ESMF_Field), intent(in) :: primary_field
@@ -251,7 +223,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_2d_r4 => old_ptr_2d_r4(:,bounds(i)%min:bounds(i)%max)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_r4, name=name,  __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
        
         ! 2d, r8
@@ -260,7 +232,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_2d_r8 => old_ptr_2d_r8(:,bounds(i)%min:bounds(i)%max)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_r8, name=name,  __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
         
         ! 3d, r4
@@ -269,7 +241,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_3d_r4 => old_ptr_3d_r4(:,bounds(i)%min:bounds(i)%max,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_r4, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
        
         ! 3d, r8
@@ -278,7 +250,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_3d_r8 => old_ptr_3d_r8(:,bounds(i)%min:bounds(i)%max,:)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_r8, name=name,  __RC__) 
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 4d, r4
@@ -287,7 +259,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_4d_r4 => old_ptr_4d_r4(:,bounds(i)%min:bounds(i)%max,:,:)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_r4, name=name,  __RC__) 
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 4d, r8
@@ -296,7 +268,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_4d_r8 => old_ptr_4d_r8(:,bounds(i)%min:bounds(i)%max,:,:)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_r8, name=name,  __RC__) 
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 2d, i4
@@ -305,7 +277,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_2d_i4 => old_ptr_2d_i4(:,bounds(i)%min:bounds(i)%max)
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_i4, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 3d, i4
@@ -314,7 +286,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_3d_i4 => old_ptr_3d_i4(:,bounds(i)%min:bounds(i)%max,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_i4, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 4d, i4
@@ -323,7 +295,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_4d_i4 => old_ptr_4d_i4(:,bounds(i)%min:bounds(i)%max,:,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_i4, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 2d, i8
@@ -332,7 +304,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_2d_i8 => old_ptr_2d_i8(:,bounds(i)%min:bounds(i)%max) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_2d_i8, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
            
         ! 3d, i8
@@ -341,7 +313,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_3d_i8 => old_ptr_3d_i8(:,bounds(i)%min:bounds(i)%max,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_3d_i8, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
 
         ! 4d, i8
@@ -350,7 +322,7 @@ module MAPL_OpenMP_Support
            do i = 1, size(bounds)
               new_ptr_4d_i8 => old_ptr_4d_i8(:,bounds(i)%min:bounds(i)%max,:,:) 
               subfields(i) = ESMF_FieldCreate(subgrids(i), new_ptr_4d_i8, name=name, __RC__)
-              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+              call ESMF_AttributeCopy(primary_field, subfields(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
            end do
         
         end if
@@ -430,7 +402,7 @@ module MAPL_OpenMP_Support
        ! make subfields for each field and add each subfield to corresponding field bundle
        do i = 1, num_grids
           sub_bundles(i) = ESMF_FieldBundleCreate(name=name, __RC__)
-          call ESMF_AttributeCopy(bundle, sub_bundles(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+          call ESMF_AttributeCopy(bundle, sub_bundles(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
        end do
        do i = 1, size(field_list)
           subfields = make_subfields(field_list(i), num_grids, __RC__)
@@ -471,7 +443,7 @@ module MAPL_OpenMP_Support
 
       do i = 1, num_subgrids
          substates(i) = ESMF_StateCreate(name=name, __RC__)
-         call ESMF_AttributeCopy(state, substates(i), attcopy=ESMF_ATTCOPY_REFERENCE, __RC__)
+         call ESMF_AttributeCopy(state, substates(i), attcopy=ESMF_ATTCOPY_VALUE, __RC__)
       end do
 
       do i = 1, count
@@ -505,5 +477,6 @@ module MAPL_OpenMP_Support
       end do
       _RETURN(0)
     end function make_substates_from_num_grids
+
 
 end module MAPL_OpenMP_Support 
