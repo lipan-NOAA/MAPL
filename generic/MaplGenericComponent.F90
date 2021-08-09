@@ -381,7 +381,7 @@ contains
       logical :: has_private_state
 
       type MAPL_GenericWrap
-         class(MaplGenericComponent), pointer :: maplobj
+         type(ESMF_Clock), pointer :: dummy
       end type MAPL_GenericWrap
 
       type (MAPL_GenericWrap) :: wrap, wrap_private

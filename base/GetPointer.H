@@ -28,9 +28,6 @@
    type(ESMF_FieldStatus_Flag)     :: fieldStatus
    type(ESMF_StateItem_Flag)       :: itemType
 
-#define IDENTITY(x)x
-#define concat(x,y) IDENTITY(x)IDENTITY(y)
-   !$omp critical (concat(GetPointer_)concat(RANK_))
    NULLIFY(ptr)
    if (present(notFoundOK)) then
       IsOk = notFoundOK
@@ -42,49 +39,48 @@
 
    loc = index(name,';;')
 
-   do
    if(loc/=0) then
       call ESMF_StateGet(state, name(:loc-1), itemType=itemType, rc=status)
-      if (status /= 0) exit
+      _VERIFY(STATUS)
       if (itemType /= ESMF_STATEITEM_FIELDBUNDLE .and. IsOk) then
-         exit
+         _RETURN(ESMF_SUCCESS)
       else
          call ESMF_StateGet(state, name(:loc-1), Bundle, rc=status)
          _VERIFY(STATUS)
       end if
 
       call ESMF_StateGet(state, name(loc+2:), itemType=itemType, rc=status)
-      if (status /= 0) exit
+      _VERIFY(STATUS)
       if (itemType /= ESMF_STATEITEM_FIELD .and. IsOk) then
-         exit
+         _RETURN(ESMF_SUCCESS)
       else
          call ESMF_StateGet(state, name(loc+2:), Field, rc=status)
-         if (status /= 0) exit
+         _VERIFY(STATUS)
       end if
    else
       call ESMF_StateGet(state, name, itemType=itemType, rc=status)
-      if (status /= 0) exit
+      _VERIFY(STATUS)
       if (itemType /= ESMF_STATEITEM_FIELD .and. IsOk) then
-         exit
+         _RETURN(ESMF_SUCCESS)
       else
          call ESMF_StateGet(state, name, Field, rc=status)
-         if (status /= 0) exit
+         _VERIFY(STATUS)
       end if
    end if
 
    call ESMF_FieldGet(field, status=fieldStatus, rc=status)
-   if (status /= 0) exit
+   _VERIFY(STATUS)
      if (fieldStatus == ESMF_FIELDSTATUS_COMPLETE) then
       call ESMF_FieldGet(field, 0, Ptr, rc=status)
-      if (status /= 0) exit
+      _VERIFY(STATUS)
    end if
 
    if (present(alloc)) then
       if (alloc .and. (.not. associated(PTR))) then
          call MAPL_AllocateCoupling(Field, rc=STATUS)
-         if (status /= 0) exit
+         _VERIFY(STATUS)
          call ESMF_FieldGet(field, 0, Ptr, rc=status)
-         if (status /= 0) exit
+         _VERIFY(STATUS)
       endif
    endif
 
@@ -104,10 +100,6 @@
      end if
    end block
 !#endif
-     exit
-   end do
-   !$omp end critical (concat(GetPointer_)concat(RANK_))
-
    
    _RETURN(ESMF_SUCCESS)
    
