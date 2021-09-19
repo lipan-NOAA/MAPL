@@ -3633,8 +3633,8 @@ ENDDO PARSER
              
                call shavebits(state_out, list(n), rc=status)
                _VERIFY(STATUS)
-               call shavebits(state_out, list(n), rc=status)
-               _VERIFY(STATUS)
+               !call shavebits(state_out, list(n), rc=status)
+               !_VERIFY(STATUS)
 
                do m=1,list(n)%field_set%nfields
                   call MAPL_VarWrite ( list(n)%unit, STATE=state_out, &
