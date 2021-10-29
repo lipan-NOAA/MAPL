@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 esma_set_this (OVERRIDE MAPL.extdata)
 
 set (srcs
