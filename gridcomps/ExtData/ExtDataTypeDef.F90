@@ -1,6 +1,6 @@
 module MAPL_ExtDataTypeDef
    use ESMF
-   use MAPL_newCFIOItemMod
+   use MAPL_GriddedIOItemMod
    use MAPL_ExtDataBracket
    use MAPL_ExtDataPointerUpdate
    use MAPL_ExtDataAbstractFileHandler
@@ -43,7 +43,7 @@ module MAPL_ExtDataTypeDef
      character(len=ESMF_MAXSTR)   :: vcomp1, vcomp2
      ! the corresponding names of the two vector components on file
      character(len=ESMF_MAXSTR)   :: fcomp1, fcomp2
-     type(newCFIOitem)            :: fileVars
+     type(GriddedIOitem)          :: fileVars
 
      integer                      :: pfioCollection_id
      integer                      :: iclient_collection_id

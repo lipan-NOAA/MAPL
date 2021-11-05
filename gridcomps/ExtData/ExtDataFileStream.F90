@@ -6,9 +6,9 @@ module MAPL_ExtDataFileStream
    use MAPL_KeywordEnforcerMod
    use MAPL_ExceptionHandling
    use MAPL_TimeStringConversion
-   use MAPL_ExtDataCollectionMod
+   use MAPL_DataCollectionMod
    use MAPL_CollectionVectorMod
-   use MAPL_ExtDataCollectionManagerMod
+   use MAPL_DataCollectionManagerMod
    use MAPL_FileMetadataUtilsMod
    use MAPL_StringTemplate
    implicit none
@@ -48,15 +48,15 @@ contains
       if (config%is_scalar()) then
 
       else if (config%is_mapping()) then
-         call config%get(this%file_template,"template",default='',is_present=is_present,rc=status)
-         _VERIFY(status)
+         is_present = config%has("template")
          _ASSERT(is_present,"no file template in the collection")
-         call config%get(file_frequency,"freq",default='',rc=status)
-         _VERIFY(status)
-         call config%get(file_reff_time,"ref_time",default='',rc=status)
-         _VERIFY(status)
-         call config%get(range_str,"valid_range",default='',rc=status)
-         _VERIFY(status)
+         if (is_present) then
+            call config%get(this%file_template,"template",rc=status)
+            _VERIFY(status)
+            file_frequency = get_string_with_default(config,"freq")
+            file_reff_time = get_string_with_default(config,"ref_time")
+            range_str = get_string_with_default(config,"valid_range")
+         end if
       end if
 
       if (file_frequency /= '') then
@@ -118,9 +118,24 @@ contains
          call ESMF_TimeGet(this%valid_range(1),yy=iyy,__RC__)
          call ESMF_TimeSet(this%reff_time,yy=iyy,mm=imm,dd=idd,h=ihh,m=imn,__RC__)
       end if
-      this%collection_id = MAPL_ExtDataAddCollection(this%file_template)
+      this%collection_id = MAPL_DataAddCollection(this%file_template)
 
       _RETURN(_SUCCESS)
+
+      contains
+
+         function get_string_with_default(config,selector) result(string)
+            type(Configuration), intent(in) :: config
+            character(len=*), intent(In) :: selector
+            character(len=:), allocatable :: string
+
+            if (config%has(selector)) then
+               string=config%of(selector)
+            else
+               string=''
+            end if
+         end function
+          
 
    end subroutine fill_from_yaml
 
@@ -132,7 +147,7 @@ contains
       integer, optional, intent(out) :: rc
 
       logical :: get_range_      
-      type(MAPLExtDataCollection), pointer :: collection
+      type(MAPLDataCollection), pointer :: collection
       type(FileMetadataUtils), pointer :: metadata
       type(ESMF_Time), allocatable :: time_series(:)
       integer :: status
@@ -144,7 +159,7 @@ contains
          get_range_ = .false.
       end if
 
-      collection => ExtDataCollections%at(this%collection_id)
+      collection => DataCollections%at(this%collection_id)
       if (get_range_ .and. (.not.allocated(this%valid_range))) then
          if (index('%',this%file_template) == 0) then
             metadata => collection%find(this%file_template)

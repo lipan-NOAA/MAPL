@@ -7,9 +7,9 @@ module MAPL_ExtdataSimpleFileHandler
    use MAPL_ExceptionHandling
    use MAPL_ExtDataFileStream
    use MAPL_ExtDataFileStreamMap
-   use MAPL_ExtDataCollectionMod
+   use MAPL_DataCollectionMod
    use MAPL_CollectionVectorMod
-   use MAPL_ExtDataCollectionManagerMod
+   use MAPL_DataCollectionManagerMod
    use MAPL_FileMetadataUtilsMod
    use MAPL_TimeStringConversion
    use MAPL_StringTemplate

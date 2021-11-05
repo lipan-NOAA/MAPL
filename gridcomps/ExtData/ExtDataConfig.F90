@@ -42,7 +42,7 @@ contains
       type(Parser)              :: p
       type(Configuration) :: config, subcfg, ds_config, rule_config, derived_config, sample_config
       type(ConfigurationIterator) :: iter
-      character(:), pointer :: key
+      character(len=:), allocatable :: key
       type(ExtDataFileStream) :: ds
       type(ExtDataDerived) :: derived
       type(ExtDataRule) :: rule,ucomp,vcomp
@@ -50,7 +50,8 @@ contains
       integer :: status, semi_pos
       character(len=:), allocatable :: uname,vname
       type(FileStream) :: fstream
-      type(StringVector) :: subconfigs
+      type(Configuration) :: subconfigs
+      character(len=:), allocatable :: sub_file
       integer :: i
 
       _UNUSED_DUMMY(unusable)
@@ -60,66 +61,80 @@ contains
       config = p%load(fstream)
       call fstream%close()
 
-      subconfigs = config%at("subconfigs")
-      do i=1,subconfigs%size()
-         call new_ExtDataConfig_from_yaml(ext_config,subconfigs%at(i),current_time,rc=status)
-         _VERIFY(status)
-      enddo
+      if (config%has("subconfigs")) then 
+         write(*,*)"bmaa 12"
+         subconfigs = config%at("subconfigs")
+         _ASSERT(subconfigs%is_sequence(),'subconfigs is not a sequence')
+         do i=1,subconfigs%size()
+           sub_file = subconfigs%of(i)
+            call new_ExtDataConfig_from_yaml(ext_config,sub_file,current_time,rc=status)
+            _VERIFY(status)
+         end do
+      end if
+         
+      if (config%has("Samplings")) then
+         write(*,*)"bmaa 13"
+         sample_config = config%of("Samplings")
+         iter = sample_config%begin()
+         do while (iter /= sample_config%end())
+            call iter%get_key(key)
+            call iter%get_value(subcfg)
+            call ts%set_defaults(rc=status)
+            call ts%append_from_yaml(subcfg,rc=status)
+            _VERIFY(status)
+            call ext_config%sample_map%insert(trim(key),ts)
+            call iter%next()
+         enddo
+      end if
 
-      ds_config = config%at("Collections")
-      rule_config = config%at("Exports")
-      derived_config = config%at("Derived")
-      sample_config = config%at("Samplings")
+      if (config%has("Collections")) then
+         write(*,*)"bmaa 14"
+         ds_config = config%of("Collections")
+         iter = ds_config%begin()
+         do while (iter /= ds_config%end())
+            call iter%get_key(key)
+            call iter%get_value(subcfg)
+            call ds%fill_from_yaml(subcfg,current_time,rc=status)
+            _VERIFY(status)
+            call ext_config%file_stream_map%insert(trim(key),ds)
+            call iter%next()
+         enddo
+      end if
 
-      iter = sample_config%begin()
-      do while (iter /= sample_config%end())
-         key => iter%key()
-         subcfg = iter%value()
-         call ts%set_defaults(rc=status)
-         call ts%append_from_yaml(subcfg,rc=status)
-         _VERIFY(status)
-         call ext_config%sample_map%insert(trim(key),ts)
-         call iter%next()
-      enddo
+      if (config%has("Exports")) then
+         write(*,*)"bmaa 15"
+         rule_config = config%of("Exports")
+         iter = rule_config%begin()
+         do while (iter /= rule_config%end())
+            call rule%set_defaults(rc=status)
+            _VERIFY(status)
+            call iter%get_key(key)
+            call iter%get_value(subcfg)
+            call rule%append_from_yaml(subcfg,ext_config%sample_map,key,rc=status)
+            _VERIFY(status)
+            semi_pos = index(key,";")
+            if (semi_pos > 0) then
+               call rule%split_vector(key,ucomp,vcomp,rc=status)
+               uname = key(1:semi_pos-1)
+               vname = key(semi_pos+1:len_trim(key))
+               call ext_config%rule_map%insert(trim(uname),ucomp)
+               call ext_config%rule_map%insert(trim(vname),vcomp)
+            else
+               call ext_config%rule_map%insert(trim(key),rule)
+            end if
+            call iter%next()
+         enddo
+      end if
 
-      iter = ds_config%begin()
-      do while (iter /= ds_config%end())
-         key => iter%key()
-         subcfg = iter%value()
-         call ds%fill_from_yaml(subcfg,current_time,rc=status)
-         _VERIFY(status)
-         call ext_config%file_stream_map%insert(trim(key),ds)
-         call iter%next()
-      enddo
-
-      iter = rule_config%begin()
-      do while (iter /= rule_config%end())
-         call rule%set_defaults(rc=status)
-         _VERIFY(status)
-         key => iter%key()
-         subcfg=iter%value()
-         call rule%append_from_yaml(subcfg,ext_config%sample_map,key,rc=status)
-         _VERIFY(status)
-         semi_pos = index(key,";")
-         if (semi_pos > 0) then
-            call rule%split_vector(key,ucomp,vcomp,rc=status)
-            uname = key(1:semi_pos-1)
-            vname = key(semi_pos+1:len_trim(key))
-            call ext_config%rule_map%insert(trim(uname),ucomp)
-            call ext_config%rule_map%insert(trim(vname),vcomp)
-         else
-            call ext_config%rule_map%insert(trim(key),rule)
-         end if
-         call iter%next()
-      enddo
-
-      if (.not.derived_config%is_none()) then
+      if (config%has("Derived")) then
+         write(*,*)"bmaa 16"
+         derived_config = config%at("Derived")
          iter = derived_config%begin()
          do while (iter /= derived_config%end())
             call derived%set_defaults(rc=status)
             _VERIFY(status)
-            key => iter%key()
-            subcfg=iter%value()
+            call iter%get_key(key)
+            call iter%get_value(subcfg)
              call derived%append_from_yaml(subcfg,key,rc=status) 
             _VERIFY(status)
             call ext_config%derived_map%insert(trim(key),derived)
@@ -127,8 +142,10 @@ contains
          enddo
       end if
 
-      call config%get(ext_config%debug,"debug",default=0,rc=status)
-      _VERIFY(status)
+      if (config%has("debug")) then
+         call config%get(ext_config%debug,"debug",rc=status)
+         _VERIFY(status)
+      end if
 
       _RETURN(_SUCCESS)
    end subroutine new_ExtDataConfig_from_yaml

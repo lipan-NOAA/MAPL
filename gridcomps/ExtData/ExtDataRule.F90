@@ -55,42 +55,45 @@ contains
       _UNUSED_DUMMY(unusable)
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"collection",is_present=is_present,rc=status)
-      _VERIFY(status)
+      is_present = config%has("collection")
       _ASSERT(is_present,"no collection present in ExtData export")
-      if (is_present) rule%collection=tempc
+      rule%collection = config%of("collection")
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"vname",is_present=is_present,rc=status)
-      _VERIFY(status)
+      is_present = config%has("vname")
       if (index(rule%collection,"/dev/null")==0) then
          _ASSERT(is_present,"no vname present in ExtData export")
       end if
-      if (is_present) rule%file_var=tempc
-
-      config1=config%at("sample")
-      if (config1%is_mapping()) then
-         call ts%set_defaults(rc=status)
-         call ts%append_from_yaml(config1,rc=status) 
-         _VERIFY(status)
-         call sample_map%insert(trim(key)//"_sample",ts)
-         rule%sample_key=trim(key)//"_sample"
-      else if (config1%is_scalar()) then
-         rule%sample_key=config1
+      if (is_present) then
+         tempc = config%of("vname")
+         rule%file_var=tempc
       end if
 
-      config1=config%at("linear_transformation")
+      if (config%has("sample")) then
+         config1=config%at("sample")
+         if (config1%is_mapping()) then
+            call ts%set_defaults(rc=status)
+            call ts%append_from_yaml(config1,rc=status) 
+            _VERIFY(status)
+            call sample_map%insert(trim(key)//"_sample",ts)
+            rule%sample_key=trim(key)//"_sample"
+         else if (config1%is_scalar()) then
+            rule%sample_key=config1
+         end if
+      end if
+
       if (allocated(rule%linear_trans)) deallocate(rule%linear_trans)
-      if (.not.config1%is_none()) then
-         rule%linear_trans=config1
+      if (config%has("linear_transformation")) then
+         call config%get(rule%linear_trans,"linear_transformation")
       else
          allocate(rule%linear_trans,source=[0.0,0.0])
       end if
     
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"regrid",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%regrid_method=tempc
+      if (config%has("regrid")) then
+         tempc = config%of("regrid")
+         rule%regrid_method=tempc
+      end if
 
       _RETURN(_SUCCESS)
    end subroutine append_from_yaml

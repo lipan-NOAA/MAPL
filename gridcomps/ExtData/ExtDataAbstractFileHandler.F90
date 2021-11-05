@@ -9,10 +9,10 @@ module MAPL_ExtdataAbstractFileHandler
    use MAPL_ExtDataBracket
    use MAPL_ExtDataFileStream
    use MAPL_ExtDataFileStreamMap
-   use MAPL_ExtDataCollectionMod
+   use MAPL_DataCollectionMod
    use MAPL_CollectionVectorMod
    use MAPL_ExtDataConstants
-   use MAPL_ExtDataCollectionManagerMod
+   use MAPL_DataCollectionManagerMod
    use MAPL_FileMetadataUtilsMod
    use MAPL_TimeStringConversion
    use MAPL_StringTemplate
@@ -154,9 +154,9 @@ contains
       character(len=*), intent(in   ) :: file
       type(FileMetadataUtils), pointer, intent(inout)   :: metadata
       integer, optional,          intent(out  ) :: rc
-      type(MAPLExtDataCollection), pointer :: collection => null()
+      type(MAPLDataCollection), pointer :: collection => null()
  
-      Collection => ExtDataCollections%at(this%collection_id)
+      Collection => DataCollections%at(this%collection_id)
       metadata => collection%find(file)
      _RETURN(_SUCCESS)
 

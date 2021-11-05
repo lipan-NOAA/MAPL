@@ -42,13 +42,13 @@
    use MAPL_ExtData_IOBundleMod
    use MAPL_ExtData_IOBundleVectorMod
    use MAPL_ExceptionHandling
-   use MAPL_ExtDataCollectionMod
+   use MAPL_DataCollectionMod
    use MAPL_CollectionVectorMod
-   use MAPL_ExtDataCollectionManagerMod
+   use MAPL_DataCollectionManagerMod
    use MAPL_FileMetadataUtilsMod
    use pFIO_ClientManagerMod, only : i_Clients
-   use MAPL_newCFIOItemMod
-   use MAPL_newCFIOItemVectorMod
+   use MAPL_GriddedIOItemMod
+   use MAPL_GriddedIOItemVectorMod
    use MAPL_ExtDataConfig
    use MAPL_ExtDataTypeDef
    use MAPL_ExtDataOldTypesCreator
@@ -433,7 +433,7 @@ CONTAINS
 
       item => self%primary%item(i)
 
-      item%pfioCollection_id = MAPL_ExtDataAddCollection(item%file)
+      item%pfioCollection_id = MAPL_DataAddCollection(item%file)
 
 !  Read the single step files (read interval equal to zero)
 !  --------------------------------------------------------
@@ -2270,7 +2270,7 @@ CONTAINS
      integer :: status
 
      type (ExtData_IOBundle) :: io_bundle
-     type (NewCFIOItemVector) :: items
+     type (GriddedIOItemVector) :: items
      logical :: update
      character(len=ESMF_MAXPATHLEN) :: file
      integer :: time_index

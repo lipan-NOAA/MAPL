@@ -42,15 +42,19 @@ contains
 
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"function",is_present=is_present,rc=status)
-      _VERIFY(status)
+      is_present = config%has("function")
       _ASSERT(is_present,"no expression found in derived entry") 
-      if (is_present) rule%expression=tempc
+      call config%get(tempc,"function",rc=status)
+      _VERIFY(status)
+      rule%expression=tempc
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"sample",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) rule%sample_key=tempc
+      is_present = config%has("sample")
+      if (is_present) then
+         call config%get(tempc,"sample",rc=status)
+         _VERIFY(status)
+         rule%sample_key=tempc
+      end if
 
       _RETURN(_SUCCESS)
    end subroutine append_from_yaml

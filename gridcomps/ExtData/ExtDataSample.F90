@@ -49,41 +49,37 @@ contains
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
-      logical :: is_present
       integer :: status
       character(len=:), allocatable :: source_str
       integer :: idx
       character(len=:), allocatable :: tempc
-      logical :: templ
       _UNUSED_DUMMY(unusable)
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"extrapolation",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) TimeSample%extrap_outside=tempc
+      tempc = get_string_with_default(config,"extrapolation") 
+      TimeSample%extrap_outside=tempc
 
-      call config%get(templ,"time_interpolation",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) TimeSample%time_interpolation=templ
-
-      if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"update_reference_time",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) TimeSample%refresh_time=tempc
+      if (config%has("time_interpolation")) then
+         TimeSample%time_interpolation = config%of("time_interpolation")
+      else
+         TimeSample%time_interpolation = .true.
+      end if
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"update_frequency",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) TimeSample%refresh_frequency=tempc
+      tempc = get_string_with_default(config,"update_reference_time") 
+      TimeSample%refresh_time=tempc
 
       if (allocated(tempc)) deallocate(tempc)
-      call config%get(tempc,"update_offset",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) TimeSample%refresh_offset=tempc
+      tempc = get_string_with_default(config,"update_frequency") 
+      TimeSample%refresh_frequency=tempc
 
-      call config%get(source_str,"source_time",is_present=is_present,rc=status)
-      _VERIFY(status)
-      if (is_present) then
+      if (allocated(tempc)) deallocate(tempc)
+      tempc = get_string_with_default(config,"update_offset") 
+      TimeSample%refresh_offset=tempc
+
+      if (config%has("source_time")) then
+         call config%get(source_str,"source_time",rc=status)
+         _VERIFY(status)
          if (allocated(TimeSample%source_time)) deallocate(TimeSample%source_time)
          idx = index(source_str,',')
          _ASSERT(idx/=0,'invalid specification of source_time')
@@ -95,6 +91,19 @@ contains
       end if
      
       _RETURN(_SUCCESS)
+
+      contains
+
+         function get_string_with_default(config,selector) result(string)
+            type(configuration), intent(in) :: config
+            character(len=*),intent(in) :: selector
+            character(len=:), allocatable :: string
+            if (config%has(selector)) then
+               string=config%of(selector)
+            else
+               string=''
+            end if
+         end function
    end subroutine append_from_yaml
 
 end module MAPL_ExtDataTimeSample

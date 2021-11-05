@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-esma_set_this (OVERRIDE MAPL.extdata)
+esma_set_this (OVERRIDE MAPL.ExtData)
 
 set (srcs
      ExtDataFileStream.F90
@@ -19,10 +18,12 @@ set (srcs
      ExtDataLgr.F90
      ExtDataConstants.F90
      ExtDataSample.F90
+     ExtData_IOBundleMod.F90
+     ExtData_IOBundleVectorMod.F90
     )
 
 
-esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base TYPE SHARED)
+esma_add_library (${this} SRCS ${srcs} DEPENDENCIES MAPL.shared MAPL.base MAPL.generic MAPL.griddedio TYPE SHARED)
 target_link_libraries (${this} PUBLIC GFTL::gftl GFTL_SHARED::gftl-shared esmf NetCDF::NetCDF_Fortran
                                PRIVATE MPI::MPI_Fortran)
 target_include_directories (${this} PUBLIC ${INC_ESMF} ${INC_NETCDF}
