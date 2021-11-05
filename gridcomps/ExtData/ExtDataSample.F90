@@ -52,12 +52,11 @@ contains
       integer :: status
       character(len=:), allocatable :: source_str
       integer :: idx
-      character(len=:), allocatable :: tempc
       _UNUSED_DUMMY(unusable)
 
-      if (allocated(tempc)) deallocate(tempc)
-      tempc = get_string_with_default(config,"extrapolation") 
-      TimeSample%extrap_outside=tempc
+      call TimeSample%set_defaults()
+
+      if (config%has("extrapolation")) TimeSample%extrap_outside=config%of("extrapolation")
 
       if (config%has("time_interpolation")) then
          TimeSample%time_interpolation = config%of("time_interpolation")
@@ -65,17 +64,11 @@ contains
          TimeSample%time_interpolation = .true.
       end if
 
-      if (allocated(tempc)) deallocate(tempc)
-      tempc = get_string_with_default(config,"update_reference_time") 
-      TimeSample%refresh_time=tempc
+      if (config%has("update_reference_time")) TimeSample%refresh_time=config%of("update_reference_time")
 
-      if (allocated(tempc)) deallocate(tempc)
-      tempc = get_string_with_default(config,"update_frequency") 
-      TimeSample%refresh_frequency=tempc
+      if (config%has("update_reference_time"))  TimeSample%refresh_frequency=config%of("update_frequency")
 
-      if (allocated(tempc)) deallocate(tempc)
-      tempc = get_string_with_default(config,"update_offset") 
-      TimeSample%refresh_offset=tempc
+      if (config%has("update_offset")) TimeSample%refresh_offset=config%of("update_offset")
 
       if (config%has("source_time")) then
          call config%get(source_str,"source_time",rc=status)
@@ -92,18 +85,6 @@ contains
      
       _RETURN(_SUCCESS)
 
-      contains
-
-         function get_string_with_default(config,selector) result(string)
-            type(configuration), intent(in) :: config
-            character(len=*),intent(in) :: selector
-            character(len=:), allocatable :: string
-            if (config%has(selector)) then
-               string=config%of(selector)
-            else
-               string=''
-            end if
-         end function
    end subroutine append_from_yaml
 
 end module MAPL_ExtDataTimeSample

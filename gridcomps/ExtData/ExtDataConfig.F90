@@ -62,7 +62,6 @@ contains
       call fstream%close()
 
       if (config%has("subconfigs")) then 
-         write(*,*)"bmaa 12"
          subconfigs = config%at("subconfigs")
          _ASSERT(subconfigs%is_sequence(),'subconfigs is not a sequence')
          do i=1,subconfigs%size()
@@ -73,7 +72,6 @@ contains
       end if
          
       if (config%has("Samplings")) then
-         write(*,*)"bmaa 13"
          sample_config = config%of("Samplings")
          iter = sample_config%begin()
          do while (iter /= sample_config%end())
@@ -88,7 +86,6 @@ contains
       end if
 
       if (config%has("Collections")) then
-         write(*,*)"bmaa 14"
          ds_config = config%of("Collections")
          iter = ds_config%begin()
          do while (iter /= ds_config%end())
@@ -102,7 +99,6 @@ contains
       end if
 
       if (config%has("Exports")) then
-         write(*,*)"bmaa 15"
          rule_config = config%of("Exports")
          iter = rule_config%begin()
          do while (iter /= rule_config%end())
@@ -127,7 +123,6 @@ contains
       end if
 
       if (config%has("Derived")) then
-         write(*,*)"bmaa 16"
          derived_config = config%at("Derived")
          iter = derived_config%begin()
          do while (iter /= derived_config%end())

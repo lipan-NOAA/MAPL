@@ -77,8 +77,10 @@ contains
             _VERIFY(status)
             call sample_map%insert(trim(key)//"_sample",ts)
             rule%sample_key=trim(key)//"_sample"
-         else if (config1%is_scalar()) then
+         else if (config1%is_string()) then
             rule%sample_key=config1
+         else
+            _ASSERT(.false.,"sample entry unsupported")
          end if
       end if
 
