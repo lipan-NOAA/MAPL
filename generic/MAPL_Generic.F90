@@ -861,210 +861,32 @@ contains
       ! -------------------------------------------
       call MAPL_InternalStateGet ( GC, STATE, __RC__)
 
-      ! Start my timer
-      !---------------
-!!$  call MAPL_TimerOn(STATE,"generic", __RC__)
+      call MAPL_TimerOn(STATE,"generic", __RC__)
 
-      ! Put the inherited grid in the generic state
-      !--------------------------------------------
-      MYGRID    =>  STATE%GRID
-
-      call ESMF_VmGetCurrent(VM, __RC__)
-      call ESMF_VmGet(VM, localPet=MYGRID%MYID, petCount=ndes, __RC__)
-      call ESMF_VmGet(VM, mpicommunicator=comm, __RC__)
-
-      ! TODO: esmfgrid should be obtained separately
-      isGridValid = grid_is_valid(gc, mygrid%esmfgrid, __RC__)
-
-      ! At this point, this component must have a valid grid!
-      !------------------------------------------------------
-      if (isGridValid) then
-         ! Check children's grid. If they don't have a valid grid yet, put this one in their GC
-         ! ------------------------------------------------------------------------------------
-         do I=1, STATE%get_num_children()
-            chldGridValid = .false.
-            gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
-
-            chldGridValid = grid_is_valid(gridcomp, ChlGrid, __RC__)
-
-            if (.not. chldGridValid) then
-               ! This child does not have a valid grid
-               call ESMF_GridCompSet( gridcomp, GRID = MYGRID%ESMFGRID, __RC__ )
-            end if
-         end do
-
-         ! We keep these in the component's grid  for convenience
-         !-------------------------------------------------------
-
-         call ESMF_GridGet(MYGRID%ESMFGRID, DistGrid=distgrid, dimCount=dimCount, __RC__)
-         call ESMF_DistGridGet(distGRID, deLayout=MYGRID%LAYOUT, __RC__)
-
-         ! Vertical coordinate must exist and be THE THIRD DIMENSION
-         ! ---------------------------------------------------------
-
-         MYGRID%VERTDIM = 3
-
-         call MAPL_GridGet(MYGRID%ESMFGRID, localCellCountPerDim=COUNTS, __RC__)
-
-#ifdef DEBUG
-         print *,'dbg:myId=',MYGRID%MYID,trim(Iam)
-         print *,'dbg:local gridcounts=',counts
-#endif
-
-         ! Local sizes of three dimensions
-         !--------------------------------
-
-         MYGRID%IM = COUNTS(1)
-         MYGRID%JM = COUNTS(2)
-         MYGRID%LM = COUNTS(3)
-
-         call MAPL_GridGet(MYGRID%ESMFGRID, globalCellCountPerDim=COUNTS, __RC__)
-
-         MYGRID%IM_WORLD = COUNTS(1)
-         MYGRID%JM_WORLD = COUNTS(2)
-
-         allocate(minindex(dimCount,ndes), maxindex(dimCount,ndes), __STAT__)
-
-         ! Processors in each direction
-         !-----------------------------
-
-         call MAPl_DistGridGet(distgrid, &
-              minIndex=minindex, &
-              maxIndex=maxindex, __RC__)
-
-         call MAPL_GetImsJms(Imins=minindex(1,:),Imaxs=maxindex(1,:),&
-              Jmins=minindex(2,:),Jmaxs=maxindex(2,:),Ims=ims,Jms=jms,__RC__)
-
-         MYGRID%NX = size(ims)
-         MYGRID%NY = size(jms)
-
-         allocate(mygrid%i1( MYGRID%nx), mygrid%in( MYGRID%nx))
-         allocate(mygrid%j1( MYGRID%ny), mygrid%jn( MYGRID%ny))
-
-         mygrid%i1 = minindex(1,:mygrid%nx)
-         mygrid%in = maxindex(1,:mygrid%nx)
-         mygrid%j1 = minindex(2,1:ndes: MYGRID%nx)
-         mygrid%jn = maxindex(2,1:ndes: MYGRID%nx)
-
-         deallocate(maxindex, minindex)
-
-         ! My processor coordinates
-         !-------------------------
-
-#if 0
-         call ESMF_DELayoutGetDELocalInfo(delayout=MYGRID%LAYOUT, de=MYGRID%MYID, coord=DECOUNT, __RC__)
-
-         MYGRID%NX0 = DECOUNT(1)
-         MYGRID%NY0 = DECOUNT(2)
-#else
-         MYGRID%NX0 = mod(MYGRID%MYID,MYGRID%NX) + 1
-         MYGRID%NY0 = MYGRID%MYID/MYGRID%NX + 1
-#endif
-
-         call handle_readers_and_writers(_RC)
-
-#ifdef DEBUG
-         print *,"dbg: grid global max=",counts
-         print *, "NX NY:", MYGRID%NX, MYGRID%NY
-         print *,'dbg:NX0 NY0=', MYGRID%NX0, MYGRID%NY0
-         print *, "dbg:ims=", ims
-         print *, "dbg:jms=", jms
-         print *,"========================="
-#endif
-
-         ! Clean up
-
-         deallocate(jms, ims)
-
-         ! Create and initialize factors saved as ESMF arrays in MYGRID
-         !-------------------------------------------------------------
-
-         call ESMFL_GridCoordGet(   MYGRID%ESMFGRID, MYGRID%LATS       , &
-              Name     = "Latitude"              , &
-              Location = ESMF_STAGGERLOC_CENTER  , &
-              Units    = ESMFL_UnitsRadians      , &
-              RC       = status                    )
-
-         call ESMFL_GridCoordGet(   MYGRID%ESMFGRID, MYGRID%LONS       , &
-              Name     = "Longitude"             , &
-              Location = ESMF_STAGGERLOC_CENTER  , &
-              Units    = ESMFL_UnitsRadians      , &
-              RC       = status                    )
-
-         gridTypeAttribute = ''
-         call ESMF_AttributeGet(MYGRID%ESMFGRID, name='GridType', isPresent=isPresent, __RC__)
-         if (isPresent) then
-            call ESMF_AttributeGet(MYGRID%ESMFGRID, name='GridType', value=gridTypeAttribute, __RC__)
-            if (gridTypeAttribute == 'Doubly-Periodic') then
-
-               ! this is special case: doubly periodic grid
-               ! we ignore ESMF grid coordinates and set LONS/LATS from resource
-               call MAPL_GetResource( STATE, fixedLons, Label="FIXED_LONS:", __RC__)
-               call MAPL_GetResource( STATE, fixedLats, Label="FIXED_LATS:", __RC__)
-               MYGRID%LONS = fixedLons * (MAPL_PI_R8/180._REAL64)
-               MYGRID%LATS = fixedLats * (MAPL_PI_R8/180._REAL64)
-            endif ! doubly-periodic
-         end if ! isPresent
-      end if ! isGridValid
-
-      ! set positive convention
-      call MAPL_GetResource( STATE, positive, Label="CHECKPOINT_POSITIVE:", &
-           default='down', __RC__)
-      positive = ESMF_UtilStringLowerCase(positive,__RC__)
-      _ASSERT(trim(positive)=="up".or.trim(positive)=="down","positive must be up or down")
-      ! Put the clock passed down in the generic state
-      !-----------------------------------------------
-
+      call handle_grid(__RC__)
       call handle_clock_and_main_alarm(clock, __RC__)
-
-      ! Create tiling for all gridded components with associated LocationStream
-      ! -----------------------------------------------------------------------
-
-      is_associated=MAPL_LocStreamIsAssociated(STATE%LOCSTREAM, __RC__)
-      if (is_associated) then
-         NSUBTILES = MAPL_GetNumSubtiles(STATE, __RC__)
-         call MAPL_LocStreamAdjustNsubtiles(STATE%LocStream, NSUBTILES, __RC__)
-         call MAPL_LocStreamGet(STATE%LocStream, TILEGRID=TILEGRID, __RC__)
-      endif
-
+      call handle_locstream(__RC__)
       call handle_record(__RC__)
 
-!!$   call MAPL_TimerOff(STATE,"generic",__RC__)
+      call MAPL_TimerOff(STATE,"generic",__RC__)
 
       call initialize_children_and_couplers(_RC)
+
       call MAPL_TimerOn(STATE,"generic")
-
       call create_import_and_initialize_state_variables(__RC__)
-
-      call ESMF_AttributeSet(import,'POSITIVE',trim(positive),__RC__)
-
       call create_internal_and_initialize_state_variables(__RC__)
-
       call create_export_state_variables(__RC__)
 
       ! Create forcing state
       STATE%FORCING = ESMF_StateCreate(name = trim(comp_name) // "_FORCING", &
            __RC__)
 
-      ! Put the Export state of each child into my export
-      ! -------------------------------------------------
-
-      !ALT: export might have to be declared ESMF_STATELIST
-      do i = 1, state%get_num_children()
-         child_export_state => state%get_child_export_state(i)
-         call ESMF_StateAdd(EXPORT, [child_export_state], __RC__)
-      end do
-
-      if (.not. associated(STATE%parentGC)) then
-         call MAPL_AdjustIsNeeded(GC, EXPORT, __RC__)
-      end if
-
+      call propagate_exports_up(__RC__)
       call handle_services(__RC__)
 
       ! Write Memory Use Statistics.
       ! -------------------------------------------
       call MAPL_MemUtilsWrite(VM, Iam, __RC__ )
-
       call MAPL_TimerOff(STATE,"generic", __RC__)
 
 
@@ -1298,6 +1120,8 @@ contains
          _RETURN(ESMF_SUCCESS)
       end subroutine initialize_children_and_couplers
 
+      ! Put the clock passed down in the generic state
+      !-----------------------------------------------
       subroutine handle_clock_and_main_alarm(clock, unusable, rc)
          type(ESMF_Clock), intent(in) :: clock
          class(KeywordEnforcer), optional, intent(in) :: unusable
@@ -1547,6 +1371,9 @@ contains
                end if
             endif
          end if
+         call ESMF_AttributeSet(import,'POSITIVE',trim(positive),__RC__)
+
+
          _RETURN(ESMF_SUCCESS)
       end subroutine create_import_and_initialize_state_variables
 
@@ -1662,6 +1489,190 @@ contains
 
          _RETURN(ESMF_SUCCESS)
       end subroutine handle_services
+
+      subroutine handle_grid(rc)
+         integer, optional, intent(out) :: rc
+         ! Put the inherited grid in the generic state
+         !--------------------------------------------
+         MYGRID    =>  STATE%GRID
+
+         call ESMF_VmGetCurrent(VM, __RC__)
+         call ESMF_VmGet(VM, localPet=MYGRID%MYID, petCount=ndes, __RC__)
+         call ESMF_VmGet(VM, mpicommunicator=comm, __RC__)
+
+         ! TODO: esmfgrid should be obtained separately
+         isGridValid = grid_is_valid(gc, mygrid%esmfgrid, __RC__)
+
+         ! At this point, this component must have a valid grid!
+         !------------------------------------------------------
+         if (isGridValid) then
+            ! Check children's grid. If they don't have a valid grid yet, put this one in their GC
+            ! ------------------------------------------------------------------------------------
+            do I=1, STATE%get_num_children()
+               chldGridValid = .false.
+               gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
+
+               chldGridValid = grid_is_valid(gridcomp, ChlGrid, __RC__)
+
+               if (.not. chldGridValid) then
+                  ! This child does not have a valid grid
+                  call ESMF_GridCompSet( gridcomp, GRID = MYGRID%ESMFGRID, __RC__ )
+               end if
+            end do
+
+            ! We keep these in the component's grid  for convenience
+            !-------------------------------------------------------
+
+            call ESMF_GridGet(MYGRID%ESMFGRID, DistGrid=distgrid, dimCount=dimCount, __RC__)
+            call ESMF_DistGridGet(distGRID, deLayout=MYGRID%LAYOUT, __RC__)
+
+            ! Vertical coordinate must exist and be THE THIRD DIMENSION
+            ! ---------------------------------------------------------
+
+            MYGRID%VERTDIM = 3
+
+            call MAPL_GridGet(MYGRID%ESMFGRID, localCellCountPerDim=COUNTS, __RC__)
+
+#ifdef DEBUG
+            print *,'dbg:myId=',MYGRID%MYID,trim(Iam)
+            print *,'dbg:local gridcounts=',counts
+#endif
+
+            ! Local sizes of three dimensions
+            !--------------------------------
+
+            MYGRID%IM = COUNTS(1)
+            MYGRID%JM = COUNTS(2)
+            MYGRID%LM = COUNTS(3)
+
+            call MAPL_GridGet(MYGRID%ESMFGRID, globalCellCountPerDim=COUNTS, __RC__)
+
+            MYGRID%IM_WORLD = COUNTS(1)
+            MYGRID%JM_WORLD = COUNTS(2)
+
+            allocate(minindex(dimCount,ndes), maxindex(dimCount,ndes), __STAT__)
+
+            ! Processors in each direction
+            !-----------------------------
+
+            call MAPl_DistGridGet(distgrid, &
+                 minIndex=minindex, &
+                 maxIndex=maxindex, __RC__)
+
+            call MAPL_GetImsJms(Imins=minindex(1,:),Imaxs=maxindex(1,:),&
+                 Jmins=minindex(2,:),Jmaxs=maxindex(2,:),Ims=ims,Jms=jms,__RC__)
+
+            MYGRID%NX = size(ims)
+            MYGRID%NY = size(jms)
+
+            allocate(mygrid%i1( MYGRID%nx), mygrid%in( MYGRID%nx))
+            allocate(mygrid%j1( MYGRID%ny), mygrid%jn( MYGRID%ny))
+
+            mygrid%i1 = minindex(1,:mygrid%nx)
+            mygrid%in = maxindex(1,:mygrid%nx)
+            mygrid%j1 = minindex(2,1:ndes: MYGRID%nx)
+            mygrid%jn = maxindex(2,1:ndes: MYGRID%nx)
+
+            deallocate(maxindex, minindex)
+
+            ! My processor coordinates
+            !-------------------------
+
+#if 0
+            call ESMF_DELayoutGetDELocalInfo(delayout=MYGRID%LAYOUT, de=MYGRID%MYID, coord=DECOUNT, __RC__)
+
+            MYGRID%NX0 = DECOUNT(1)
+            MYGRID%NY0 = DECOUNT(2)
+#else
+            MYGRID%NX0 = mod(MYGRID%MYID,MYGRID%NX) + 1
+            MYGRID%NY0 = MYGRID%MYID/MYGRID%NX + 1
+#endif
+
+            call handle_readers_and_writers(_RC)
+
+#ifdef DEBUG
+            print *,"dbg: grid global max=",counts
+            print *, "NX NY:", MYGRID%NX, MYGRID%NY
+            print *,'dbg:NX0 NY0=', MYGRID%NX0, MYGRID%NY0
+            print *, "dbg:ims=", ims
+            print *, "dbg:jms=", jms
+            print *,"========================="
+#endif
+
+            ! Clean up
+
+            deallocate(jms, ims)
+
+            ! Create and initialize factors saved as ESMF arrays in MYGRID
+            !-------------------------------------------------------------
+
+            call ESMFL_GridCoordGet(   MYGRID%ESMFGRID, MYGRID%LATS       , &
+                 Name     = "Latitude"              , &
+                 Location = ESMF_STAGGERLOC_CENTER  , &
+                 Units    = ESMFL_UnitsRadians      , &
+                 RC       = status                    )
+
+            call ESMFL_GridCoordGet(   MYGRID%ESMFGRID, MYGRID%LONS       , &
+                 Name     = "Longitude"             , &
+                 Location = ESMF_STAGGERLOC_CENTER  , &
+                 Units    = ESMFL_UnitsRadians      , &
+                 RC       = status                    )
+
+            gridTypeAttribute = ''
+            call ESMF_AttributeGet(MYGRID%ESMFGRID, name='GridType', isPresent=isPresent, __RC__)
+            if (isPresent) then
+               call ESMF_AttributeGet(MYGRID%ESMFGRID, name='GridType', value=gridTypeAttribute, __RC__)
+               if (gridTypeAttribute == 'Doubly-Periodic') then
+
+                  ! this is special case: doubly periodic grid
+                  ! we ignore ESMF grid coordinates and set LONS/LATS from resource
+                  call MAPL_GetResource( STATE, fixedLons, Label="FIXED_LONS:", __RC__)
+                  call MAPL_GetResource( STATE, fixedLats, Label="FIXED_LATS:", __RC__)
+                  MYGRID%LONS = fixedLons * (MAPL_PI_R8/180._REAL64)
+                  MYGRID%LATS = fixedLats * (MAPL_PI_R8/180._REAL64)
+               endif ! doubly-periodic
+            end if ! isPresent
+         end if ! isGridValid
+
+         ! set positive convention
+         call MAPL_GetResource( STATE, positive, Label="CHECKPOINT_POSITIVE:", &
+              default='down', __RC__)
+         positive = ESMF_UtilStringLowerCase(positive,__RC__)
+         _ASSERT(trim(positive)=="up".or.trim(positive)=="down","positive must be up or down")
+
+         _RETURN(ESMF_SUCCESS)
+      end subroutine handle_grid
+
+      subroutine handle_locstream(rc)
+         integer, optional, intent(out) :: rc
+         ! Create tiling for all gridded components with associated LocationStream
+         ! -----------------------------------------------------------------------
+         
+         is_associated=MAPL_LocStreamIsAssociated(STATE%LOCSTREAM, __RC__)
+         if (is_associated) then
+            NSUBTILES = MAPL_GetNumSubtiles(STATE, __RC__)
+            call MAPL_LocStreamAdjustNsubtiles(STATE%LocStream, NSUBTILES, __RC__)
+            call MAPL_LocStreamGet(STATE%LocStream, TILEGRID=TILEGRID, __RC__)
+         endif
+         _RETURN(ESMF_SUCCESS)
+      end subroutine handle_locstream
+
+      subroutine propagate_exports_up(rc)
+         integer, optional, intent(out) :: rc
+         ! Put the Export state of each child into my export
+         ! -------------------------------------------------
+         
+         !ALT: export might have to be declared ESMF_STATELIST
+         do i = 1, state%get_num_children()
+            child_export_state => state%get_child_export_state(i)
+            call ESMF_StateAdd(EXPORT, [child_export_state], __RC__)
+         end do
+         
+         if (.not. associated(STATE%parentGC)) then
+            call MAPL_AdjustIsNeeded(GC, EXPORT, __RC__)
+         end if
+         _RETURN(ESMF_SUCCESS)
+      end subroutine propagate_exports_up
 
    end subroutine MAPL_GenericInitialize
 
