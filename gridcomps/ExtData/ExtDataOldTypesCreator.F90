@@ -144,10 +144,12 @@ module MAPL_ExtDataOldTypesCreator
       if (index(rule%collection,"/dev/null")==0) then
          dataset => this%file_stream_map%at(trim(rule%collection))
          primary_item%file = dataset%file_template
+         write(*,*)"bmaa ",trim(primary_item%name)," ",trim(time_sample%extrap_outside)," ",trim(rule%collection)
          call dataset%detect_metadata(primary_item%file_metadata,time,get_range=(trim(time_sample%extrap_outside) /= "none"),__RC__)
       else
          primary_item%file = rule%collection
       end if
+
       if (index(rule%collection,'/dev/null') /= 0) then
          primary_item%isConst = .true.
          primary_item%const=rule%linear_trans(1)

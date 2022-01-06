@@ -2282,7 +2282,7 @@ CONTAINS
             item%pfioCollection_id,item%iclient_collection_id,items,rc=status)
         _VERIFY(status)
         call IOBundles%push_back(io_bundle)
-        call extdata_lgr%info('update L with with: %a %i1 ',file,time_index)
+        call extdata_lgr%info('%a update L with with: %a %i2 ',item%name, file, time_index)
      end if
      call item%modelGridFields%comp1%get_parameters('R',update=update,file=file,time_index=time_index)
      if (update) then    
@@ -2291,7 +2291,7 @@ CONTAINS
             item%pfioCollection_id,item%iclient_collection_id,items,rc=status)
         _VERIFY(status)
         call IOBundles%push_back(io_bundle)
-        call extdata_lgr%info('update R with with: %a %i1 ',file, time_index)
+        call extdata_lgr%info('%a update R with with: %a %i2 ',item%name,file, time_index)
      end if
 
      _RETURN(ESMF_SUCCESS)

@@ -17,38 +17,20 @@ module MAPL_ExtDataTimeSample
       character(:), allocatable :: refresh_offset
       contains
          procedure :: set_defaults
-         procedure :: append_from_yaml
    end type
+
+   interface ExtDataTimeSample
+      module procedure new_ExtDataTimeSample
+   end interface
 
 contains
 
-   subroutine set_defaults(this,unusable,rc)
-      class(ExtDataTimeSample), intent(inout), target :: this
-      class(KeywordEnforcer), optional, intent(in) :: unusable
-      integer, optional, intent(out) :: rc
-
-      integer :: status 
-      _UNUSED_DUMMY(unusable)
-      this%time_interpolation=.true.
-      this%extrap_outside='none'
-      this%refresh_time="00"
-      this%refresh_frequency="PT0S"
-      this%refresh_offset="PT0S"
-      if (allocated(this%source_time)) then 
-         deallocate(this%source_time,stat=status)
-         _VERIFY(status)
-      end if
-      allocate(this%source_time(0),stat=status)
-      _VERIFY(status)
-      _RETURN(_SUCCESS)
-   end subroutine set_defaults
-
-   subroutine append_from_yaml(TimeSample,config,unusable,rc)
-      class(ExtDataTimeSample), intent(inout), target :: TimeSample
+   function new_ExtDataTimeSample(config,unusable,rc) result(TimeSample)
       type(Configuration), intent(in) :: config
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
+      type(ExtDataTimeSample) :: TimeSample
       integer :: status
       character(len=:), allocatable :: source_str
       integer :: idx
@@ -85,7 +67,29 @@ contains
      
       _RETURN(_SUCCESS)
 
-   end subroutine append_from_yaml
+   end function new_ExtDataTimeSample
+
+
+   subroutine set_defaults(this,unusable,rc)
+      class(ExtDataTimeSample), intent(inout), target :: this
+      class(KeywordEnforcer), optional, intent(in) :: unusable
+      integer, optional, intent(out) :: rc
+
+      integer :: status 
+      _UNUSED_DUMMY(unusable)
+      this%time_interpolation=.true.
+      this%extrap_outside='none'
+      this%refresh_time="00"
+      this%refresh_frequency="PT0S"
+      this%refresh_offset="PT0S"
+      if (allocated(this%source_time)) then 
+         deallocate(this%source_time,stat=status)
+         _VERIFY(status)
+      end if
+      allocate(this%source_time(0),stat=status)
+      _VERIFY(status)
+      _RETURN(_SUCCESS)
+   end subroutine set_defaults
 
 end module MAPL_ExtDataTimeSample
 

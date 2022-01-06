@@ -22,31 +22,22 @@ module MAPL_ExtDataRule
       contains
          procedure :: set_defaults
          procedure :: split_vector
-         procedure :: append_from_yaml
    end type
+
+   interface ExtDataRule
+      module procedure new_ExtDataRule
+   end interface
 
 contains
 
-   subroutine set_defaults(this,unusable,rc)
-      class(ExtDataRule), intent(inout), target :: this
-      class(KeywordEnforcer), optional, intent(in) :: unusable
-      integer, optional, intent(out) :: rc
-
-      _UNUSED_DUMMY(unusable)
-      this%collection=''
-      this%file_var='missing_variable'
-      this%regrid_method='BILINEAR'
-      _RETURN(_SUCCESS)
-   end subroutine set_defaults
-
-   subroutine append_from_yaml(rule,config,sample_map,key,unusable,rc)
-      class(ExtDataRule), intent(inout), target :: rule
+   function new_ExtDataRule(config,sample_map,key,unusable,rc) result(rule)
       type(Configuration), intent(in) :: config
       character(len=*), intent(in) :: key
       type(ExtDataTimeSampleMap) :: sample_map
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
+      type(ExtDataRule) :: rule
       logical :: is_present
       integer :: status
       type(Configuration) ::config1
@@ -67,14 +58,14 @@ contains
       if (is_present) then
          tempc = config%of("vname")
          rule%file_var=tempc
+      else
+         _ASSERT(.false.,"no variable name in rule")
       end if
 
       if (config%has("sample")) then
          config1=config%at("sample")
          if (config1%is_mapping()) then
-            call ts%set_defaults(rc=status)
-            call ts%append_from_yaml(config1,rc=status) 
-            _VERIFY(status)
+            ts = ExtDataTimeSample(config1,_RC)
             call sample_map%insert(trim(key)//"_sample",ts)
             rule%sample_key=trim(key)//"_sample"
          else if (config1%is_string()) then
@@ -95,11 +86,24 @@ contains
       if (config%has("regrid")) then
          tempc = config%of("regrid")
          rule%regrid_method=tempc
+      else 
+         rule%regrid_method="BILINEAR"
       end if
 
       _RETURN(_SUCCESS)
-   end subroutine append_from_yaml
+   end function new_ExtDataRule
 
+   subroutine set_defaults(this,unusable,rc)
+      class(ExtDataRule), intent(inout), target :: this
+      class(KeywordEnforcer), optional, intent(in) :: unusable
+      integer, optional, intent(out) :: rc
+
+      _UNUSED_DUMMY(unusable)
+      this%collection=''
+      this%file_var='missing_variable'
+      this%regrid_method='BILINEAR'
+      _RETURN(_SUCCESS)
+   end subroutine set_defaults
 
    subroutine split_vector(this,original_key,ucomp,vcomp,unusable,rc)
       class(ExtDataRule), intent(in) :: this

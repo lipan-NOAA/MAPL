@@ -12,29 +12,21 @@ module MAPL_ExtDataDerived
       character(:), allocatable :: sample_key
       contains
          procedure :: display
-         procedure :: append_from_yaml
          procedure :: set_defaults
    end type
 
+   interface ExtDataDerived
+      module procedure new_ExtDataDerived
+   end interface
+
 contains
 
-   subroutine set_defaults(this,unusable,rc)
-      class(ExtDataDerived), intent(inout), target :: this
-      class(KeywordEnforcer), optional, intent(in) :: unusable
-      integer, optional, intent(out) :: rc
-
-      _UNUSED_DUMMY(unusable)
-      this%expression=''
-      _RETURN(_SUCCESS)
-   end subroutine set_defaults
-
-   recursive  subroutine append_from_yaml(rule,config,key,unusable,rc)
-      class(ExtDataDerived), intent(inout), target :: rule
+   function new_ExtDataDerived(config,unusable,rc) result(rule)
       type(Configuration), intent(in) :: config
-      character(len=*), intent(in) :: key
       class(KeywordEnforcer), optional, intent(in) :: unusable
       integer, optional, intent(out) :: rc
 
+      type(ExtDataDerived) :: rule
       logical :: is_present
       integer :: status
       character(len=:), allocatable :: tempc
@@ -57,7 +49,18 @@ contains
       end if
 
       _RETURN(_SUCCESS)
-   end subroutine append_from_yaml
+   end function new_ExtDataDerived
+
+
+   subroutine set_defaults(this,unusable,rc)
+      class(ExtDataDerived), intent(inout), target :: this
+      class(KeywordEnforcer), optional, intent(in) :: unusable
+      integer, optional, intent(out) :: rc
+
+      _UNUSED_DUMMY(unusable)
+      this%expression=''
+      _RETURN(_SUCCESS)
+   end subroutine set_defaults
 
    subroutine display(this)
       class(ExtDataDerived) :: this
