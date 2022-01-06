@@ -889,7 +889,6 @@ contains
       call MAPL_MemUtilsWrite(VM, Iam, __RC__ )
       call MAPL_TimerOff(STATE,"generic", __RC__)
 
-
       _RETURN(ESMF_SUCCESS)
 
    contains
@@ -2009,15 +2008,13 @@ contains
       _UNUSED_DUMMY(EXPORT)
 
       Iam = "MAPL_GenericFinalize"
-      call ESMF_GridCompGet(GC, name=comp_name, RC=status )
-      _VERIFY(status)
+      call ESMF_GridCompGet(GC, name=comp_name, __RC__)
       Iam = trim(comp_name) // Iam
 
 
       ! Retrieve the pointer to the state
       !----------------------------------
-      call MAPL_InternalStateRetrieve(GC, STATE, RC=status)
-      _VERIFY(status)
+      call MAPL_InternalStateRetrieve(GC, STATE, __RC__)
 
       ! Finalize the children
       ! ---------------------
@@ -2029,8 +2026,7 @@ contains
       MAXPHASES = 0
       do I=1,NC
          gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
-         call MAPL_GetObjectFromGC(gridcomp, CHLDMAPL(I)%PTR, RC=status)
-         _VERIFY(status)
+         call MAPL_GetObjectFromGC(gridcomp, CHLDMAPL(I)%PTR, __RC__)
          MAXPHASES = max(MAXPHASES, size(CHLDMAPL(I)%PTR%PHASE_FINAL))
       end do
 
@@ -2039,8 +2035,7 @@ contains
             NUMPHASES = size(CHLDMAPL(I)%PTR%PHASE_FINAL)
             if (PHASE .le. NUMPHASES) then
                gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
-               call ESMF_GridCompGet( gridcomp, NAME=CHILD_NAME, RC=status )
-               _VERIFY(status)
+               call ESMF_GridCompGet( gridcomp, NAME=CHILD_NAME, __RC__)
 
                call MAPL_TimerOn (STATE,trim(CHILD_NAME))
                child_import_state => STATE%get_child_import_state(i)
@@ -2070,10 +2065,8 @@ contains
          ! Checkpoint the internal state if required.
          !------------------------------------------
 
-         call ESMF_ClockGet (clock, currTime=currTime, rc=status)
-         _VERIFY(status)
-         call ESMF_TimeGet( currTime, YY = YEAR, MM = MONTH, DD = DAY, H=HH, M=MM, S=SS, rc = status  )
-         _VERIFY(status)
+         call ESMF_ClockGet (clock, currTime=currTime, __RC__)
+         call ESMF_TimeGet( currTime, YY = YEAR, MM = MONTH, DD = DAY, H=HH, M=MM, S=SS, __RC__)
 
          yyyymmdd = year*10000 + month*100 + day
          hhmmss   = HH*10000 + MM*100 + SS
@@ -2101,11 +2094,9 @@ contains
             call fill_grads_template(filename,trim(adjustl(filetpl)),experiment_id=trim(id_string), nymd=yyyymmdd,nhms=hhmmss,rc=status)
             call    MAPL_GetResource( STATE, FILETYPE, LABEL="INTERNAL_CHECKPOINT_TYPE:",                RC=status )
             if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
-               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', RC=status )
-               _VERIFY(status)
+               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
             end if
-            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,rc=status)
-            _VERIFY(status)
+            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
 #ifndef H5_HAVE_PARALLEL
             nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
             if(FILETYPE=='pnc4' .and. nwrgt1) then
@@ -2115,13 +2106,10 @@ contains
 #endif
             call MAPL_GetResource( STATE   , hdr,         &
                  default=0, &
-                 LABEL="INTERNAL_HEADER:", &
-                 RC=status)
-            _VERIFY(status)
+                 LABEL="INTERNAL_HEADER:", __RC__)
             internal_state => state%get_internal_state()
             call MAPL_ESMFStateWriteToFile(internal_state,CLOCK,FILENAME, &
-                 FILETYPE, STATE, hdr/=0, oClients = o_Clients, RC=status)
-            _VERIFY(status)
+                 FILETYPE, STATE, hdr/=0, oClients = o_Clients, __RC__)
          endif
 
          ! Checkpoint the import state if required.
@@ -2131,11 +2119,9 @@ contains
          if(status==ESMF_SUCCESS) then
             call    MAPL_GetResource( STATE, FILETYPE, LABEL="IMPORT_CHECKPOINT_TYPE:",                  RC=status )
             if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
-               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', RC=status )
-               _VERIFY(status)
+               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
             end if
-            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,rc=status)
-            _VERIFY(status)
+            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
 #ifndef H5_HAVE_PARALLEL
             nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
             if(FILETYPE=='pnc4' .and. nwrgt1) then
@@ -2144,8 +2130,7 @@ contains
             endif
 #endif
             call MAPL_ESMFStateWriteToFile(IMPORT,CLOCK,FILENAME, &
-                 FILETYPE, STATE, .FALSE., oClients = o_Clients, RC=status)
-            _VERIFY(status)
+                 FILETYPE, STATE, .FALSE., oClients = o_Clients, __RC__)
          endif
       end if
 
@@ -2166,8 +2151,7 @@ contains
       ! Clean-up
       !---------
       !ALT
-      call MAPL_GenericStateDestroy (STATE,  RC=status)
-      _VERIFY(status)
+      call MAPL_GenericStateDestroy (STATE,  __RC__)
 
       _RETURN(ESMF_SUCCESS)
 
@@ -2181,8 +2165,7 @@ contains
          type (ESMF_VM) :: vm
          character(1) :: empty(0)
 
-         call ESMF_VmGetCurrent(vm, rc=status)
-         _VERIFY(status)
+         call ESMF_VmGetCurrent(vm, __RC__)
 
          ! Generate stats _across_ processes covered by this timer
          ! Requires consistent call trees for now.
