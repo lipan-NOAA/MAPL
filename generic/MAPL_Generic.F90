@@ -1955,7 +1955,7 @@ contains
    ! !IROUTINE: MAPL_GenericFinalize -- Finalizes the component and its children
 
    ! !INTERFACE:
-   recursive subroutine MAPL_GenericFinalize ( GC, IMPORT, EXPORT, CLOCK, RC )
+   recursive subroutine MAPL_GenericFinalize ( GC, import, EXPORT, CLOCK, RC )
 
       !ARGUMENTS:
       type(ESMF_GridComp), intent(inout) :: GC     ! composite gridded component
@@ -2005,139 +2005,16 @@ contains
 
       !  Begin...
 
-      _UNUSED_DUMMY(EXPORT)
-
       Iam = "MAPL_GenericFinalize"
       call ESMF_GridCompGet(GC, name=comp_name, __RC__)
       Iam = trim(comp_name) // Iam
 
-
-      ! Retrieve the pointer to the state
-      !----------------------------------
       call MAPL_InternalStateRetrieve(GC, STATE, __RC__)
-
-      ! Finalize the children
-      ! ---------------------
-
-      t_p => get_global_time_profiler()
-
-      NC = STATE%get_num_children()
-      allocate(CHLDMAPL(NC), stat=status)
-      MAXPHASES = 0
-      do I=1,NC
-         gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
-         call MAPL_GetObjectFromGC(gridcomp, CHLDMAPL(I)%PTR, __RC__)
-         MAXPHASES = max(MAXPHASES, size(CHLDMAPL(I)%PTR%PHASE_FINAL))
-      end do
-
-      do PHASE = 1, MAXPHASES
-         do I=1,NC
-            NUMPHASES = size(CHLDMAPL(I)%PTR%PHASE_FINAL)
-            if (PHASE .le. NUMPHASES) then
-               gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
-               call ESMF_GridCompGet( gridcomp, NAME=CHILD_NAME, __RC__)
-
-               call MAPL_TimerOn (STATE,trim(CHILD_NAME))
-               child_import_state => STATE%get_child_import_state(i)
-               child_export_state => STATE%get_child_export_state(i)
-               call ESMF_GridCompFinalize (gridcomp, &
-                    importState=child_import_state, &
-                    exportState=child_export_state, &
-                    clock=CLOCK, PHASE=CHLDMAPL(I)%PTR%PHASE_FINAL(PHASE), &
-                    userRC=userRC, __RC__)
-               _VERIFY(userRC)
-               call MAPL_TimerOff(STATE,trim(CHILD_NAME),__RC__)
-            end if
-         enddo
-      end do
-      deallocate(CHLDMAPL)
+      call finalize_children(__RC__)
 
       call MAPL_TimerOn(STATE,"generic")
-
-      call MAPL_GetResource( STATE, RECFIN, LABEL="RECORD_FINAL:", &
-           RC=status )
-      final_checkpoint = .true.
-      IF (status == ESMF_SUCCESS) then
-         IF (RECFIN == "NO")  final_checkpoint = .false.
-      END IF
-
-      if (final_checkpoint) then
-         ! Checkpoint the internal state if required.
-         !------------------------------------------
-
-         call ESMF_ClockGet (clock, currTime=currTime, __RC__)
-         call ESMF_TimeGet( currTime, YY = YEAR, MM = MONTH, DD = DAY, H=HH, M=MM, S=SS, __RC__)
-
-         yyyymmdd = year*10000 + month*100 + day
-         hhmmss   = HH*10000 + MM*100 + SS
-
-         call MAPL_GetResource( STATE, ens_id_width,         &
-              LABEL="ENS_ID_WIDTH:", default=0, &
-              RC=status)
-
-         id_string=""
-         tmp_label = "INTERNAL_CHECKPOINT_FILE:"
-         call MAPL_GetResource( STATE   , FILEtpl,         &
-              LABEL=trim(tmp_label), &
-              RC=status)
-         if((status /= ESMF_SUCCESS) .and. ens_id_width>0) then
-            i = len(trim(comp_name))
-            id_string = comp_name(i-ens_id_width+1:i)
-            tmp_label =comp_name(1:i-ens_id_width)//"_"//trim(tmp_label)
-            call MAPL_GetResource( STATE   , FILEtpl,       &
-                 LABEL=trim(tmp_label), &
-                 RC=status)
-         endif
-
-         if(status==ESMF_SUCCESS) then
-            ! if the filename is tempate
-            call fill_grads_template(filename,trim(adjustl(filetpl)),experiment_id=trim(id_string), nymd=yyyymmdd,nhms=hhmmss,rc=status)
-            call    MAPL_GetResource( STATE, FILETYPE, LABEL="INTERNAL_CHECKPOINT_TYPE:",                RC=status )
-            if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
-               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
-            end if
-            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
-#ifndef H5_HAVE_PARALLEL
-            nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
-            if(FILETYPE=='pnc4' .and. nwrgt1) then
-               print*,trim(Iam),': num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel'
-               _ASSERT(.false.,'needs informative message')
-            endif
-#endif
-            call MAPL_GetResource( STATE   , hdr,         &
-                 default=0, &
-                 LABEL="INTERNAL_HEADER:", __RC__)
-            internal_state => state%get_internal_state()
-            call MAPL_ESMFStateWriteToFile(internal_state,CLOCK,FILENAME, &
-                 FILETYPE, STATE, hdr/=0, oClients = o_Clients, __RC__)
-         endif
-
-         ! Checkpoint the import state if required.
-         !----------------------------------------
-
-         call       MAPL_GetResource( STATE, FILENAME, LABEL="IMPORT_CHECKPOINT_FILE:",                  RC=status )
-         if(status==ESMF_SUCCESS) then
-            call    MAPL_GetResource( STATE, FILETYPE, LABEL="IMPORT_CHECKPOINT_TYPE:",                  RC=status )
-            if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
-               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
-            end if
-            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
-#ifndef H5_HAVE_PARALLEL
-            nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
-            if(FILETYPE=='pnc4' .and. nwrgt1) then
-               print*,trim(Iam),': num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel'
-               _ASSERT(.false.,'needs informative message')
-            endif
-#endif
-            call MAPL_ESMFStateWriteToFile(IMPORT,CLOCK,FILENAME, &
-                 FILETYPE, STATE, .FALSE., oClients = o_Clients, __RC__)
-         endif
-      end if
-
+      call handle_final_checkpoint(__RC__)
       call MAPL_TimerOff(STATE,"generic",__RC__)
-
-      ! Write summary of profiled times
-      !--------------------------------
 
       call state%t_profiler%stop('Finalize',__RC__)
       call state%t_profiler%stop(__RC__)
@@ -2146,14 +2023,15 @@ contains
          call report_generic_profile()
       end if
 
-      call t_p%stop(trim(state%compname),__RC__)
-
       ! Clean-up
       !---------
-      !ALT
       call MAPL_GenericStateDestroy (STATE,  __RC__)
 
+      t_p => get_global_time_profiler()
+      call t_p%stop(trim(state%compname),__RC__)
+
       _RETURN(ESMF_SUCCESS)
+      _UNUSED_DUMMY(EXPORT)
 
    contains
 
@@ -2222,6 +2100,127 @@ contains
          _RETURN(ESMF_SUCCESS)
       end subroutine report_generic_profile
 
+      recursive subroutine finalize_children(rc)
+         integer, optional, intent(out) :: rc
+         ! Finalize the children
+         ! ---------------------
+
+         NC = STATE%get_num_children()
+         allocate(CHLDMAPL(NC), stat=status)
+         MAXPHASES = 0
+         do I=1,NC
+            gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
+            call MAPL_GetObjectFromGC(gridcomp, CHLDMAPL(I)%PTR, __RC__)
+            MAXPHASES = max(MAXPHASES, size(CHLDMAPL(I)%PTR%PHASE_FINAL))
+         end do
+
+         do PHASE = 1, MAXPHASES
+            do I=1,NC
+               NUMPHASES = size(CHLDMAPL(I)%PTR%PHASE_FINAL)
+               if (PHASE .le. NUMPHASES) then
+                  gridcomp => STATE%GET_CHILD_GRIDCOMP(I)
+                  call ESMF_GridCompGet( gridcomp, NAME=CHILD_NAME, __RC__)
+
+                  call MAPL_TimerOn (STATE,trim(CHILD_NAME))
+                  child_import_state => STATE%get_child_import_state(i)
+                  child_export_state => STATE%get_child_export_state(i)
+                  call ESMF_GridCompFinalize (gridcomp, &
+                       importState=child_import_state, &
+                       exportState=child_export_state, &
+                       clock=CLOCK, PHASE=CHLDMAPL(I)%PTR%PHASE_FINAL(PHASE), &
+                       userRC=userRC, __RC__)
+                  _VERIFY(userRC)
+                  call MAPL_TimerOff(STATE,trim(CHILD_NAME),__RC__)
+               end if
+            enddo
+         end do
+         deallocate(CHLDMAPL)
+         _RETURN(ESMF_SUCCESS)
+      end subroutine finalize_children
+
+      subroutine handle_final_checkpoint(rc)
+         integer, optional, intent(out) :: rc
+
+         call MAPL_GetResource( STATE, RECFIN, LABEL="RECORD_FINAL:", RC=status)
+         final_checkpoint = .true.
+         IF (status == ESMF_SUCCESS) then
+            IF (RECFIN == "NO")  final_checkpoint = .false.
+         END IF
+
+         if (final_checkpoint) then
+            ! Checkpoint the internal state if required.
+            !------------------------------------------
+
+            call ESMF_ClockGet (clock, currTime=currTime, __RC__)
+            call ESMF_TimeGet( currTime, YY = YEAR, MM = MONTH, DD = DAY, H=HH, M=MM, S=SS, __RC__)
+
+            yyyymmdd = year*10000 + month*100 + day
+            hhmmss   = HH*10000 + MM*100 + SS
+
+            call MAPL_GetResource( STATE, ens_id_width,         &
+                 LABEL="ENS_ID_WIDTH:", default=0, &
+                 RC=status)
+
+            id_string=""
+            tmp_label = "INTERNAL_CHECKPOINT_FILE:"
+            call MAPL_GetResource( STATE   , FILEtpl,         &
+                 LABEL=trim(tmp_label), &
+                 RC=status)
+            if((status /= ESMF_SUCCESS) .and. ens_id_width>0) then
+               i = len(trim(comp_name))
+               id_string = comp_name(i-ens_id_width+1:i)
+               tmp_label =comp_name(1:i-ens_id_width)//"_"//trim(tmp_label)
+               call MAPL_GetResource( STATE   , FILEtpl,       &
+                    LABEL=trim(tmp_label), &
+                    RC=status)
+            endif
+
+            if(status==ESMF_SUCCESS) then
+               ! if the filename is tempate
+               call fill_grads_template(filename,trim(adjustl(filetpl)),experiment_id=trim(id_string), nymd=yyyymmdd,nhms=hhmmss,rc=status)
+               call    MAPL_GetResource( STATE, FILETYPE, LABEL="INTERNAL_CHECKPOINT_TYPE:",                RC=status )
+               if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
+                  call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
+               end if
+               FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
+#ifndef H5_HAVE_PARALLEL
+               nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
+               if(FILETYPE=='pnc4' .and. nwrgt1) then
+                  print*,trim(Iam),': num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel'
+                  _ASSERT(.false.,'needs informative message')
+               endif
+#endif
+               call MAPL_GetResource( STATE   , hdr,         &
+                    default=0, &
+                    LABEL="INTERNAL_HEADER:", __RC__)
+               internal_state => state%get_internal_state()
+               call MAPL_ESMFStateWriteToFile(internal_state,CLOCK,FILENAME, &
+                    FILETYPE, STATE, hdr/=0, oClients = o_Clients, __RC__)
+            endif
+
+            ! Checkpoint the import state if required.
+            !----------------------------------------
+
+            call       MAPL_GetResource( STATE, FILENAME, LABEL="IMPORT_CHECKPOINT_FILE:",                  RC=status )
+            if(status==ESMF_SUCCESS) then
+               call    MAPL_GetResource( STATE, FILETYPE, LABEL="IMPORT_CHECKPOINT_TYPE:",                  RC=status )
+               if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
+                  call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
+               end if
+               FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
+#ifndef H5_HAVE_PARALLEL
+               nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
+               if(FILETYPE=='pnc4' .and. nwrgt1) then
+                  print*,trim(Iam),': num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel'
+                  _ASSERT(.false.,'needs informative message')
+               endif
+#endif
+               call MAPL_ESMFStateWriteToFile(IMPORT,CLOCK,FILENAME, &
+                    FILETYPE, STATE, .FALSE., oClients = o_Clients, __RC__)
+            endif
+         end if
+         _RETURN(ESMF_SUCCESS)
+      end subroutine handle_final_checkpoint
    end subroutine MAPL_GenericFinalize
 
 
@@ -2886,7 +2885,6 @@ contains
             SPEC=>STATE%COMPONENT_SPEC%FORCING%OLD_VAR_SPECS(MAPL_VarSpecGetIndex(STATE%COMPONENT_SPEC%FORCING%OLD_VAR_SPECS,NAME))
          endif
       endif
-
 
       call MAPL_VarSpecSet(SPEC,            &
            ACCMLT_INTERVAL=AVERAGING_INTERVAL, &
@@ -3666,8 +3664,7 @@ contains
       type (MAPL_MetaComp),     pointer     :: META
       integer                               :: phase
 
-      call MAPL_InternalStateRetrieve( GC, META, RC=status)
-      _VERIFY(status)
+      call MAPL_InternalStateRetrieve( GC, META, __RC__)
 
       if (registeredMethod == ESMF_METHOD_INITIALIZE) then
          phase = MAPL_AddMethod(META%phase_init, RC=status)
@@ -3684,16 +3681,12 @@ contains
       endif
       _VERIFY(status)
 
-      if (phase > MAPL_MAX_PHASES) then
-         print *, 'ERROR: exceeded maximum number of run phases. Increase MAPL_MAX_PHASES and recompile'
-      end if
+      _ASSERT(phase <= MAPL_MAX_PHASES,'Exceeded maximum number of run phases. Increase MAPL_MAX_PHASES and recompile')
 
       call ESMF_GridCompSetEntryPoint(GC, registeredMethod, MAPL_GenericWrapper, &
-           phase=phase, rc=status)
-      _VERIFY(status)
+           phase=phase, __RC__)
       call ESMF_GridCompSetEntryPoint(GC, registeredMethod,  usersRoutine, &
-           phase=MAPL_MAX_PHASES+phase, rc=status)
-      _VERIFY(status)
+           phase=MAPL_MAX_PHASES+phase, __RC__)
 
       _RETURN(ESMF_SUCCESS)
    end subroutine MAPL_GridCompSetEntryPoint
