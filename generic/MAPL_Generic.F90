@@ -2139,7 +2139,7 @@ contains
             if (recfin == "NO") _RETURN(ESMF_SUCCESS)
          end if
 
-         call record_internal_state(state, clock, __RC__)
+         call record_internal_state_outer(state, clock, __RC__)
          call MAPL_GetResource( state, filename, LABEL="IMPORT_CHECKPOINT_FILE:", rc=status )
          if(status==ESMF_SUCCESS) then
             call record_import_state(state, filename, import, clock, __RC__)
@@ -2148,15 +2148,13 @@ contains
          _RETURN(ESMF_SUCCESS)
       end subroutine handle_final_checkpoint
 
-      subroutine record_internal_state(state, clock, unusable, rc)
+      subroutine record_internal_state_outer(state, clock, unusable, rc)
          type(MAPL_MetaComp), intent(inout) :: state
          type(ESMF_Clock),    intent(inout) :: clock
          class(KeywordEnforcer), optional, intent(out) :: unusable
          integer, optional, intent(out) :: rc
 
          integer :: status
-         character(len=ESMF_MAXSTR) :: filetype
-         integer :: hdr
          type(ESMF_State), pointer :: internal_state
          integer                                     :: yyyymmdd, hhmmss
          type(ESMF_Time)                             :: CurrTime
@@ -2194,25 +2192,34 @@ contains
          if(status==ESMF_SUCCESS) then
             ! if the filename is tempate
             call fill_grads_template(filename,trim(adjustl(filetpl)),experiment_id=trim(id_string), nymd=yyyymmdd,nhms=hhmmss,rc=status)
-            call    MAPL_GetResource( STATE, FILETYPE, LABEL="INTERNAL_CHECKPOINT_TYPE:",                RC=status )
-            if ( status/=ESMF_SUCCESS  .or.  FILETYPE == "default" ) then
-               call MAPL_GetResource( STATE, FILETYPE, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
-            end if
-            FILETYPE = ESMF_UtilStringLowerCase(FILETYPE,__RC__)
+            call record_internal_state(state, filename, clock, __RC__)
+
+         end if
+
+         _RETURN(ESMF_SUCCESS)
+      end subroutine record_internal_state_outer
+
+      subroutine record_internal_state(state, filename, clock, unusable, rc)
+         type(MAPL_MetaComp), intent(inout) :: state
+         character(*), intent(in) :: filename
+         type(ESMF_Clock),    intent(inout) :: clock
+         class(KeywordEnforcer), optional, intent(out) :: unusable
+         integer, optional, intent(out) :: rc
+
+         integer :: status
+         character(len=ESMF_MAXSTR) :: filetype
 #ifndef H5_HAVE_PARALLEL
-            nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
-            if(FILETYPE=='pnc4' .and. nwrgt1) then
-               print*,trim(Iam),': num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel'
-               _ASSERT(.false.,'needs informative message')
-            endif
+      logical :: nwrgt1
 #endif
-            call MAPL_GetResource( STATE   , hdr,         &
-                 default=0, &
-                 LABEL="INTERNAL_HEADER:", __RC__)
-            internal_state => state%get_internal_state()
-            call MAPL_ESMFStateWriteToFile(internal_state,CLOCK,FILENAME, &
-                 FILETYPE, STATE, hdr/=0, oClients = o_Clients, __RC__)
-         endif
+         integer :: hdr
+
+         call get_filetype(state, "INTERNAL", filetype, __RC__)
+
+         call MAPL_GetResource(state, hdr, default=0, LABEL="INTERNAL_HEADER:", __RC__)
+         internal_state => state%get_internal_state()
+         call MAPL_ESMFStateWriteToFile(internal_state, clock, filename, &
+              filetype, state, hdr/=0, oClients = o_Clients, __RC__)
+
          _RETURN(ESMF_SUCCESS)
       end subroutine record_internal_state
 
@@ -2228,27 +2235,36 @@ contains
 
       integer :: status
       character(len=ESMF_MAXSTR) :: filetype
-#ifndef H5_HAVE_PARALLEL
-      logical :: nwrgt1
-#endif
 
-      call    MAPL_GetResource( state, filetype, LABEL="IMPORT_CHECKPOINT_TYPE:",rc=status )
-      if ( status/=ESMF_SUCCESS  .or.  filetype == "default" ) then
-         call MAPL_GetResource( state, filetype, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
-      end if
-      filetype = ESMF_UtilStringLowerCase(filetype,__RC__)
-#ifndef H5_HAVE_PARALLEL
-      nwrgt1 = ((state%grid%num_readers > 1) .or. (state%grid%num_writers > 1))
-      if(filetype=='pnc4' .and. nwrgt1) then
-         _ASSERT(.false.,'num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel')
-      endif
-#endif
+      call get_filetype(state, "IMPORT", filetype, __RC__)
       call MAPL_ESMFStateWriteToFile(import, clock, filename, &
            filetype, state, .false., oClients = o_Clients, __RC__)
       
       _RETURN(ESMF_SUCCESS)
    end subroutine record_import_state
 
+   subroutine get_filetype(meta, state_type, filetype, unusable, rc)
+      type(MAPL_MetaComp), intent(inout) :: meta
+      character(*), intent(in) :: state_type
+      character(ESMF_MAXSTR), intent(out) :: filetype
+      class(KeywordEnforcer), optional, intent(in) :: unusable
+      integer, optional, intent(out) :: rc
+
+      integer :: status
+
+      call MAPL_GetResource(meta, filetype, LABEL=trim(state_type)//"_CHECKPOINT_TYPE:", rc=status )
+      if ( status /= ESMF_SUCCESS  .or.  filetype == "default") then
+         call MAPL_GetResource(meta, filetype, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
+      end if
+      filetype = ESMF_UtilStringLowerCase(filetype,__RC__)
+#ifndef H5_HAVE_PARALLEL
+      nwrgt1 = ((meta%grid%num_readers > 1) .or. (meta%grid%num_writers > 1))
+      if(FILETYPE=='pnc4' .and. nwrgt1) then
+         _ASSERT(.false.,'num_readers and number_writers must be 1 with pnc4 unless HDF5 was built with -enable-parallel')
+      end if
+#endif
+      _RETURN(ESMF_SUCCESS)
+   end subroutine get_filetype
 
    ! !IROUTINE: MAPL_GenericRecord -- Record the component and its children
 
