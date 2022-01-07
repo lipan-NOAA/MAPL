@@ -2199,30 +2199,6 @@ contains
          _RETURN(ESMF_SUCCESS)
       end subroutine record_internal_state_outer
 
-      subroutine record_internal_state(state, filename, clock, unusable, rc)
-         type(MAPL_MetaComp), intent(inout) :: state
-         character(*), intent(in) :: filename
-         type(ESMF_Clock),    intent(inout) :: clock
-         class(KeywordEnforcer), optional, intent(out) :: unusable
-         integer, optional, intent(out) :: rc
-
-         integer :: status
-         character(len=ESMF_MAXSTR) :: filetype
-#ifndef H5_HAVE_PARALLEL
-      logical :: nwrgt1
-#endif
-         integer :: hdr
-
-         call get_filetype(state, "INTERNAL", filetype, __RC__)
-
-         call MAPL_GetResource(state, hdr, default=0, LABEL="INTERNAL_HEADER:", __RC__)
-         internal_state => state%get_internal_state()
-         call MAPL_ESMFStateWriteToFile(internal_state, clock, filename, &
-              filetype, state, hdr/=0, oClients = o_Clients, __RC__)
-
-         _RETURN(ESMF_SUCCESS)
-      end subroutine record_internal_state
-
    end subroutine MAPL_GenericFinalize
 
    subroutine record_state(meta, filename, state_type, state, clock, unusable, rc)
@@ -2235,11 +2211,14 @@ contains
       integer, optional, intent(out) :: rc
 
       integer :: status
+      integer :: hdr
       character(len=ESMF_MAXSTR) :: filetype
 
       call get_filetype(meta, state_type, filetype, __RC__)
+      call MAPL_GetResource(meta, hdr, default=0, LABEL=state_type // "_HEADER:", __RC__)
+
       call MAPL_ESMFStateWriteToFile(state, clock, filename, &
-           filetype, meta, .false., oClients = o_Clients, __RC__)
+           filetype, meta, hdr /= 0, oClients = o_Clients, __RC__)
       
       _RETURN(ESMF_SUCCESS)
    end subroutine record_state
