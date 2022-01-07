@@ -50,9 +50,17 @@ contains
       integer :: status, semi_pos
       character(len=:), allocatable :: uname,vname
       type(FileStream) :: fstream
+
+      type(ExtDataFileStream), pointer :: temp_ds
+      type(ExtDataTimeSample), pointer :: temp_ts
+      type(ExtDataRule), pointer :: temp_rule
+      type(ExtDataDerived), pointer :: temp_derived
+
       type(Configuration) :: subconfigs
       character(len=:), allocatable :: sub_file
       integer :: i
+
+      type(ExtDataTimeSample), pointer :: ts_grr
 
       _UNUSED_DUMMY(unusable)
 
@@ -76,6 +84,8 @@ contains
          iter = sample_config%begin()
          do while (iter /= sample_config%end())
             call iter%get_key(key)
+            temp_ts => ext_config%sample_map%at(key)
+            _ASSERT(.not.associated(temp_ts),"defined duplicate named sample key")
             call iter%get_value(subcfg)
             ts = ExtDataTimeSample(subcfg,_RC)
             _VERIFY(status)
@@ -89,6 +99,8 @@ contains
          iter = ds_config%begin()
          do while (iter /= ds_config%end())
             call iter%get_key(key)
+            temp_ds => ext_config%file_stream_map%at(key)
+            _ASSERT(.not.associated(temp_ds),"defined duplicate named collection")
             call iter%get_value(subcfg)
             ds = ExtDataFileStream(subcfg,current_time,_RC)
             call ext_config%file_stream_map%insert(trim(key),ds)
@@ -110,9 +122,15 @@ contains
                call rule%split_vector(key,ucomp,vcomp,rc=status)
                uname = key(1:semi_pos-1)
                vname = key(semi_pos+1:len_trim(key))
+               temp_rule => ext_config%rule_map%at(trim(uname))
+               _ASSERT(.not.associated(temp_rule),"duplicated export entry key")
                call ext_config%rule_map%insert(trim(uname),ucomp)
+               temp_rule => ext_config%rule_map%at(trim(vname))
+               _ASSERT(.not.associated(temp_rule),"duplicated export entry key")
                call ext_config%rule_map%insert(trim(vname),vcomp)
             else
+               temp_rule => ext_config%rule_map%at(trim(key))
+               _ASSERT(.not.associated(temp_rule),"duplicated export entry key")
                call ext_config%rule_map%insert(trim(key),rule)
             end if
             call iter%next()
@@ -128,6 +146,8 @@ contains
             call iter%get_key(key)
             call iter%get_value(subcfg)
             derived = ExtDataDerived(subcfg,_RC)
+            temp_derived => ext_config%derived_map%at(trim(uname))
+             _ASSERT(.not.associated(temp_derived),"duplicated derived entry key")
             call ext_config%derived_map%insert(trim(key),derived)
             call iter%next()
          enddo
@@ -137,6 +157,7 @@ contains
          call config%get(ext_config%debug,"debug",rc=status)
          _VERIFY(status)
       end if
+      ts_grr =>ext_config%sample_map%at('sample_0')
 
       _RETURN(_SUCCESS)
    end subroutine new_ExtDataConfig_from_yaml

@@ -120,7 +120,6 @@ contains
          call ESMF_TimeSet(data_set%reff_time,yy=iyy,mm=imm,dd=idd,h=ihh,m=imn,__RC__)
       end if
       data_set%collection_id = MAPL_DataAddCollection(data_set%file_template)
-      write(*,*)"bmaa coll ",data_set%collection_id,data_set%file_template," ",allocated(data_set%valid_range),range_str /= ''
 
       _RETURN(_SUCCESS)
 
@@ -161,10 +160,8 @@ contains
       end if
 
       collection => DataCollections%at(this%collection_id)
-      write(*,*)"bmaa arrr ",allocated(this%valid_range),this%collection_id
       if (get_range_ .and. (.not.allocated(this%valid_range))) then
          if (index('%',this%file_template) == 0) then
-            write(*,*)"bmaa grrr ",trim(this%file_template)
             metadata => collection%find(this%file_template)
             call metadata%get_time_info(timeVector=time_series,__RC__)
             allocate(this%valid_range(2))
@@ -172,7 +169,6 @@ contains
             this%valid_range(2)=time_series(size(time_series))
          end if
       end if
-      write(*,*)"bmaa ",get_range_,this%collection_id
       if (get_range_) then
          call ESMF_TimePrint(this%valid_range(1),options='string')
          call ESMF_TimePrint(this%valid_range(2),options='string')
