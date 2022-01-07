@@ -2142,7 +2142,7 @@ contains
          call record_internal_state_outer(state, clock, __RC__)
          call MAPL_GetResource( state, filename, LABEL="IMPORT_CHECKPOINT_FILE:", rc=status )
          if(status==ESMF_SUCCESS) then
-            call record_import_state(state, filename, import, clock, __RC__)
+            call record_state(state, filename, "IMPORT", import, clock, __RC__)
          end if
 
          _RETURN(ESMF_SUCCESS)
@@ -2192,8 +2192,8 @@ contains
          if(status==ESMF_SUCCESS) then
             ! if the filename is tempate
             call fill_grads_template(filename,trim(adjustl(filetpl)),experiment_id=trim(id_string), nymd=yyyymmdd,nhms=hhmmss,rc=status)
-            call record_internal_state(state, filename, clock, __RC__)
-
+            internal_state => state%get_internal_state()
+            call record_state(state, filename, "INTERNAL", internal_state, clock, __RC__)
          end if
 
          _RETURN(ESMF_SUCCESS)
@@ -2225,10 +2225,11 @@ contains
 
    end subroutine MAPL_GenericFinalize
 
-   subroutine record_import_state(state, filename, import, clock, unusable, rc)
-      type(MAPL_MetaComp), intent(inout) :: state
+   subroutine record_state(meta, filename, state_type, state, clock, unusable, rc)
+      type(MAPL_MetaComp), intent(inout) :: meta
       character(len=*), intent(in) :: filename
-      type(ESMF_State),    intent(inout) :: import
+      character(len=*), intent(in) :: state_type
+      type(ESMF_State),    intent(inout) :: state
       type(ESMF_Clock),    intent(inout) :: clock 
       class(KeywordEnforcer), optional, intent(out) :: unusable
       integer, optional, intent(out) :: rc
@@ -2236,12 +2237,12 @@ contains
       integer :: status
       character(len=ESMF_MAXSTR) :: filetype
 
-      call get_filetype(state, "IMPORT", filetype, __RC__)
-      call MAPL_ESMFStateWriteToFile(import, clock, filename, &
-           filetype, state, .false., oClients = o_Clients, __RC__)
+      call get_filetype(meta, state_type, filetype, __RC__)
+      call MAPL_ESMFStateWriteToFile(state, clock, filename, &
+           filetype, meta, .false., oClients = o_Clients, __RC__)
       
       _RETURN(ESMF_SUCCESS)
-   end subroutine record_import_state
+   end subroutine record_state
 
    subroutine get_filetype(meta, state_type, filetype, unusable, rc)
       type(MAPL_MetaComp), intent(inout) :: meta
@@ -2434,6 +2435,7 @@ contains
       ! LOCAL VARIABLES
       integer                                     :: status
       type (MAPL_MetaComp), pointer               :: STATE
+      type(ESMF_State), pointer :: internal_state
       !=============================================================================
 
       !  Begin...
@@ -2444,42 +2446,15 @@ contains
       end if
 
       if (state%record%imp_len > 0) then
-         call record_import_state(state, state%record%imp_fname, import, clock, __RC__)
+         call record_state(state, state%record%imp_fname, "IMPORT", import, clock, __RC__)
       end if
       if (state%record%int_len > 0) then
-         call record_internal_state(state, clock, __RC__)
+         internal_state => STATE%get_internal_state()
+         call record_state(state, state%record%int_fname, "INTERNAL", internal_state, clock, __RC__)
       end if
 
       _RETURN(ESMF_SUCCESS)
       _UNUSED_DUMMY(EXPORT)
-
-   contains
-
-      subroutine record_internal_state(state, clock, unusable, rc)
-         type(MAPL_MetaComp), intent(inout) :: state
-         type(ESMF_Clock),    intent(inout) :: clock
-         class(KeywordEnforcer), optional, intent(out) :: unusable
-         integer, optional, intent(out) :: rc
-
-         integer :: status
-         character(len=ESMF_MAXSTR) :: filetype
-         integer :: hdr
-         type(ESMF_State), pointer :: internal_state
-
-         call    MAPL_GetResource( state, hdr,      LABEL="INTERNAL_HEADER:",         default=0,      __RC__)
-         call    MAPL_GetResource( state, filetype, LABEL="INTERNAL_CHECKPOINT_TYPE:",                RC=status )
-         if ( status/=ESMF_SUCCESS  .or.  filetype == "default" ) then
-            call MAPL_GetResource( state, filetype, LABEL="DEFAULT_CHECKPOINT_TYPE:", default='pnc4', __RC__)
-         end if
-
-         internal_state => STATE%get_internal_state()
-         call MAPL_ESMFStateWriteToFile(internal_state, clock, &
-              state%record%int_fname, &
-              filetype, STATE, hdr/=0, oClients=o_Clients, __RC__)
-
-         _RETURN(ESMF_SUCCESS)
-      end subroutine record_internal_state
-
    end subroutine MAPL_StateRecord
 
    recursive subroutine MAPL_GenericRefresh ( GC, IMPORT, EXPORT, CLOCK, RC )
